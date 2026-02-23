@@ -115,6 +115,16 @@
                 </div>
             </div>
 
+            <!-- 🌟 新增：Gemini API 設定區塊 -->
+            <div class="mb-6">
+                <h3 class="font-bold text-purple-800 mb-2">Gemini AI 金鑰設定</h3>
+                <p class="text-xs text-slate-500 mb-2">設定 AI 金鑰以啟用「AI 申請書自動填寫」功能。</p>
+                <input type="text" id="setting-gemini-input" value="AIzaSyDcr3EH_yPAd9kQO1Qi00d2q8QUP9YGnd8" class="w-full p-2.5 border border-slate-200 rounded-lg text-sm mb-3 text-slate-600 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-500">
+                <button id="btn-save-gemini" class="w-full bg-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-purple-700 transition-colors shadow">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> 儲存 AI 金鑰
+                </button>
+            </div>
+
             <div class="mb-6">
                 <h3 class="font-bold text-blue-800 mb-2">委員清單管理</h3>
                 <p class="text-xs text-slate-500 mb-3">新增後，在建立案件時可直接勾選訪視人員。</p>
@@ -502,7 +512,8 @@
         
         let settings = { 
             committee: [], 
-            gasUrl: 'https://script.google.com/macros/s/AKfycbxelfY8BWyg2ZWeO4UbnenSH8eLS20qojH5N-tvZgvj_fcgoLL-MJosD53NIdo03qPdFw/exec' 
+            gasUrl: 'https://script.google.com/macros/s/AKfycbxelfY8BWyg2ZWeO4UbnenSH8eLS20qojH5N-tvZgvj_fcgoLL-MJosD53NIdo03qPdFw/exec',
+            geminiApiKey: 'AIzaSyDcr3EH_yPAd9kQO1Qi00d2q8QUP9YGnd8'
         }; 
         let multiClients = []; 
 
@@ -627,6 +638,7 @@
         document.getElementById('btn-settings').addEventListener('click', () => {
             renderCommitteeList();
             document.getElementById('setting-gas-input').value = settings.gasUrl || '';
+            document.getElementById('setting-gemini-input').value = settings.geminiApiKey || '';
             showView('settings', '系統設定', false);
         });
 
@@ -639,6 +651,7 @@
                     const data = docSnap.data();
                     settings.committee = data.committee || [];
                     if(data.gasUrl) settings.gasUrl = data.gasUrl;
+                    if(data.geminiApiKey) settings.geminiApiKey = data.geminiApiKey;
                 }
             } catch (err) {
                 console.warn("載入設定失敗(權限可能未開):", err);
@@ -658,6 +671,15 @@
                 settings.gasUrl = url;
                 saveSettings();
                 showToast("Google API 網址已更新並儲存");
+            }
+        });
+
+        document.getElementById('btn-save-gemini').addEventListener('click', () => {
+            const key = document.getElementById('setting-gemini-input').value.trim();
+            if(key) {
+                settings.geminiApiKey = key;
+                saveSettings();
+                showToast("Gemini API 金鑰已更新並儲存");
             }
         });
 
@@ -847,8 +869,12 @@
 
         // 🌟 新增：Gemini AI 申請書辨識邏輯
         async function analyzeDocumentWithAI(file) {
-            const apiKey = "AIzaSyDcr3EH_yPAd9kQO1Qi00d2q8QUP9YGnd8"; 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const apiKey = settings.geminiApiKey; 
+            if (!apiKey) {
+                throw new Error("請先至右上角「設定」填寫您的 Gemini API 金鑰！");
+            }
+            
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             
             const base64Data = await new Promise((resolve) => {
                 const reader = new FileReader();
@@ -860,7 +886,7 @@
                 contents: [{
                     role: "user",
                     parts: [
-                        { text: "你是一個專業的資料擷取助理。請從這份職務再設計申請書(PDF或圖片)中擷取資訊並回傳 JSON 格式。\n包含以下欄位：\n- company: 服務單位或申請單位名稱\n- name: 個案姓名\n- gender: 性別(男或女)\n- dob: 出生年月日，請務必轉換為西元 YYYY-MM-DD 格式 (例如民國68年1月17日轉換為 1979-01-17)\n- title: 職稱\n- location: 實際工作地址\n- disability: 個人障礙情形與致障原因 (盡量合併成一句話)\n- problems: 遭遇問題及期待經由職務再設計改善事項 (濃縮重點即可)\n\n若無該欄位資訊請填空字串。必須回傳 JSON，不要包含其他文字說明。" },
+                        { text: "你是一個專業的資料擷取助理。請從這份職務再設計申請書(PDF或圖片)中擷取資訊並回傳 JSON 格式。\n包含以下欄位：\n- company: 服務單位/部門 或 申請單位名稱\n- name: 姓名\n- gender: 性別(男或女)\n- dob: 出生年月日，請務必轉換為西元 YYYY-MM-DD 格式 (例如民國68年1月17日轉換為 1979-01-17)\n- title: 職稱\n- location: 實際工作地點\n- disability: 個人障礙情形與致障原因 (盡量合併成一句話)\n- problems: 遭遇問題及期待改善事項 (濃縮重點即可)\n\n若無該欄位資訊請填空字串。必須回傳 JSON，不要包含其他文字說明。" },
                         { inlineData: { mimeType: file.type, data: base64Data } }
                     ]
                 }],
@@ -889,7 +915,14 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+                    
+                    if (!res.ok) {
+                        // 強化錯誤捕捉，讓您知道具體錯在哪裡
+                        const errText = await res.text();
+                        console.error("API 錯誤內容:", errText);
+                        throw new Error(`Google API 拒絕連線 (${res.status}): ${errText}`);
+                    }
+                    
                     const data = await res.json();
                     return JSON.parse(data.candidates[0].content.parts[0].text);
                 } catch (err) {
@@ -939,7 +972,8 @@
                 showToast("✨ AI 已成功為您填寫表單！");
             } catch (err) {
                 console.error("AI 錯誤:", err);
-                alert("AI 辨識失敗，請檢查網路連線或稍後再試。");
+                // 顯示更詳細的錯誤訊息
+                alert("AI 辨識失敗：\n" + err.message);
             } finally {
                 span.innerHTML = originalText;
                 label.classList.remove('opacity-50', 'pointer-events-none');
