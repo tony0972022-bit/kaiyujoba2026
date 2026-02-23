@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>職務再設計 - 訪視紀錄 APP</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SheetJS (Excel 匯入用) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -18,7 +15,6 @@
             .no-print { display: none !important; }
             .print-break-inside-avoid { page-break-inside: avoid; }
         }
-        /* 防止在畫布上滑動螢幕 */
         #drawing-board { touch-action: none; background-color: #ffffff; }
         .tool-active { outline: 2px solid #3b82f6; outline-offset: 2px; }
     </style>
@@ -63,11 +59,9 @@
                     <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden">
                 </label>
             </div>
-            
             <div id="cases-container" class="space-y-3">
                 <div class="text-center text-slate-400 py-10">載入案件中...</div>
             </div>
-
             <button id="btn-new-case" class="fixed bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-blue-700 active:scale-95 z-20">
                 <i class="fa-solid fa-plus"></i>
             </button>
@@ -103,6 +97,13 @@
             <h2 class="text-lg font-bold mb-4 text-slate-700 border-b pb-2"><i class="fa-solid fa-sliders mr-2"></i>系統設定</h2>
             
             <div class="mb-6">
+                <h3 class="font-bold text-blue-800 mb-2">Google Drive 雲端串接設定</h3>
+                <p class="text-xs text-slate-500 mb-2">請貼上您「新增部署作業」後取得的最新 GAS 網址。</p>
+                <input type="text" id="setting-gas-input" value="https://script.google.com/macros/s/AKfycbyW0a1OtPZkao60R_5SS5RcBeDHGkEPLuoumvlfj9BQVuEWfk6b8WtwMSTotRcQ9UjBog/exec" class="w-full p-2.5 border border-slate-200 rounded-lg text-sm mb-3 text-slate-600 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500">
+                <button id="btn-save-gas" class="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700">儲存 API 網址</button>
+            </div>
+
+            <div class="mb-6">
                 <h3 class="font-bold text-blue-800 mb-2">委員清單管理</h3>
                 <p class="text-xs text-slate-500 mb-3">新增後，在建立案件時可直接勾選訪視人員。</p>
                 <div class="flex gap-2 mb-4">
@@ -110,7 +111,6 @@
                     <button id="btn-add-committee" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700">新增</button>
                 </div>
                 <ul id="setting-committee-list" class="space-y-2">
-                    <!-- 委員名單動態生成 -->
                 </ul>
             </div>
         </div>
@@ -166,9 +166,7 @@
                         <h3 class="text-sm font-bold text-amber-800">工作站名單 (可新增多人)</h3>
                         <button type="button" id="btn-add-client-row" class="text-xs bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-700"><i class="fa-solid fa-plus"></i> 新增個案</button>
                     </div>
-                    <div id="multi-client-container" class="space-y-2">
-                        <!-- 動態個案輸入列 -->
-                    </div>
+                    <div id="multi-client-container" class="space-y-2"></div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -208,26 +206,38 @@
                 </div>
             </div>
 
-            <!-- 工作區 Tabs -->
             <div class="flex bg-white rounded-lg p-1 shadow-sm border border-slate-100 overflow-x-auto no-scrollbar">
-                <button class="ws-tab-btn flex-none w-1/3 py-2 text-sm font-bold rounded-md bg-blue-100 text-blue-700" data-target="tab-media">媒體/手寫</button>
+                <button class="ws-tab-btn flex-none w-1/3 py-2 text-sm font-bold rounded-md bg-blue-100 text-blue-700" data-target="tab-media">媒體與檔案</button>
                 <button class="ws-tab-btn flex-none w-1/3 py-2 text-sm font-bold rounded-md text-slate-500" data-target="tab-text">評估撰寫</button>
-                <button class="ws-tab-btn flex-none w-1/3 py-2 text-sm font-bold rounded-md text-slate-500" data-target="tab-assess">客觀/檢核</button>
+                <button class="ws-tab-btn flex-none w-1/3 py-2 text-sm font-bold rounded-md text-slate-500" data-target="tab-assess">客觀與檢核</button>
             </div>
 
-            <!-- 頁籤 1: 多媒體紀錄 (拍照、錄音、手寫板) -->
+            <!-- 頁籤 1: 多媒體紀錄 -->
             <div id="tab-media" class="ws-tab-content space-y-4">
                 
+                <!-- 檔案與 PDF 上傳區 -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-700"><i class="fa-solid fa-file-pdf text-red-500 mr-2"></i>雲端文件與檔案</h3>
+                        <label id="label-file-upload" class="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-sm font-bold cursor-pointer transition-colors">
+                            <i class="fa-solid fa-upload"></i> <span class="btn-text">上傳檔案</span>
+                            <input type="file" id="file-upload" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" class="hidden">
+                        </label>
+                    </div>
+                    <div id="files-container" class="space-y-2">
+                        <p class="text-sm text-slate-400 col-span-full">尚無文件。</p>
+                    </div>
+                </div>
+
                 <!-- 手寫畫板區 -->
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="font-bold text-slate-700"><i class="fa-solid fa-pen-nib text-blue-500 mr-2"></i>手寫草稿與動線繪圖</h3>
                         <button id="btn-save-canvas" class="text-xs text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded shadow flex items-center">
-                            <i class="fa-solid fa-cloud-arrow-up mr-1"></i> 轉存為圖片
+                            <i class="fa-solid fa-cloud-arrow-up mr-1"></i> 儲存畫布
                         </button>
                     </div>
                     
-                    <!-- 畫布工具列 -->
                     <div class="flex flex-wrap gap-3 items-center bg-slate-50 p-2 rounded-t-lg border-x border-t border-slate-200">
                         <div class="flex gap-2 items-center">
                             <button class="color-btn w-6 h-6 rounded-full bg-slate-900 tool-active" data-color="#0f172a"></button>
@@ -241,12 +251,10 @@
                         </div>
                     </div>
                     
-                    <!-- 畫布主體 -->
                     <div class="border-x border-slate-200 overflow-hidden relative">
                         <canvas id="drawing-board" class="w-full h-64 cursor-crosshair"></canvas>
                     </div>
                     
-                    <!-- 畫布分頁列 -->
                     <div class="flex justify-between items-center bg-slate-50 p-2 rounded-b-lg border-x border-b border-slate-200 text-sm">
                         <div class="flex items-center gap-3">
                             <button id="btn-prev-page" class="text-slate-600 hover:text-blue-600 p-1"><i class="fa-solid fa-chevron-left"></i></button>
@@ -254,8 +262,8 @@
                             <button id="btn-next-page" class="text-slate-600 hover:text-blue-600 p-1"><i class="fa-solid fa-chevron-right"></i></button>
                         </div>
                         <div class="flex gap-2">
-                            <button id="btn-del-page" class="text-red-500 hover:bg-red-50 px-2 py-1 rounded transition-colors"><i class="fa-solid fa-trash mr-1"></i>刪除此頁</button>
-                            <button id="btn-add-page" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors font-bold"><i class="fa-solid fa-plus mr-1"></i>新頁面</button>
+                            <button id="btn-del-page" class="text-red-500 hover:bg-red-50 px-2 py-1 rounded transition-colors"><i class="fa-solid fa-trash mr-1"></i>刪除</button>
+                            <button id="btn-add-page" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors font-bold"><i class="fa-solid fa-plus mr-1"></i>新頁</button>
                         </div>
                     </div>
                 </div>
@@ -263,9 +271,9 @@
                 <!-- 現場照片紀錄 -->
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                     <div class="flex justify-between items-center mb-3">
-                        <h3 class="font-bold text-slate-700"><i class="fa-solid fa-camera text-blue-500 mr-2"></i>現場照片與畫布圖檔</h3>
-                        <label class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-sm font-bold cursor-pointer transition-colors">
-                            <i class="fa-solid fa-plus"></i> 新增照片
+                        <h3 class="font-bold text-slate-700"><i class="fa-solid fa-image text-blue-500 mr-2"></i>雲端照片圖庫</h3>
+                        <label id="label-photo-upload" class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-sm font-bold cursor-pointer transition-colors">
+                            <i class="fa-solid fa-plus"></i> <span class="btn-text">上傳照片</span>
                             <input type="file" id="photo-upload" accept="image/*" capture="environment" class="hidden">
                         </label>
                     </div>
@@ -277,9 +285,9 @@
                 <!-- 錄音紀錄區 -->
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                     <div class="flex justify-between items-center mb-3">
-                        <h3 class="font-bold text-slate-700"><i class="fa-solid fa-microphone text-blue-500 mr-2"></i>現場訪談錄音</h3>
+                        <h3 class="font-bold text-slate-700"><i class="fa-solid fa-microphone text-blue-500 mr-2"></i>雲端訪談錄音</h3>
                         <button id="btn-record-audio" class="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
-                            <i class="fa-solid fa-circle text-xs mr-1"></i> 開始錄音
+                            <i class="fa-solid fa-circle text-xs mr-1"></i> <span class="btn-text">開始錄音</span>
                         </button>
                     </div>
                     <p id="recording-status" class="text-sm text-red-500 mb-2 hidden animate-pulse font-bold">● 錄音中... (點擊停止)</p>
@@ -312,8 +320,6 @@
 
             <!-- 頁籤 3: 客觀數據與環境檢核 -->
             <div id="tab-assess" class="ws-tab-content hidden space-y-4">
-                
-                <!-- 客觀數據登記區 -->
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                     <h3 class="font-bold text-slate-700 border-b pb-2 mb-3"><i class="fa-solid fa-ruler-combined text-blue-500 mr-2"></i>現場客觀數據登記</h3>
                     <div class="grid grid-cols-2 gap-4">
@@ -339,17 +345,41 @@
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                     <h3 class="font-bold text-slate-700 border-b pb-2 mb-3">現場環境與能力檢核</h3>
                     <div class="space-y-4" id="checklist-container">
-                        <!-- 動態生成分類的檢核表 -->
                     </div>
                     <button class="btn-save-ws w-full mt-6 bg-slate-800 text-white py-3 rounded-xl shadow-md font-bold hover:bg-slate-700">儲存檢核與數據</button>
                 </div>
             </div>
-
         </div>
     </main>
 
+    <!-- 🌟 線上預覽視窗 (Modal) -->
+    <div id="preview-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-95 z-50 flex flex-col no-print">
+        <div class="p-4 flex justify-between items-center text-white bg-slate-800 shadow-md">
+            <h3 id="preview-title" class="font-bold text-lg truncate pr-4">Google 雲端預覽</h3>
+            <button id="btn-close-preview" class="text-white hover:text-blue-300 text-2xl px-2">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-hidden flex justify-center items-center p-2 relative">
+            <div id="preview-loading" class="absolute text-white animate-pulse flex flex-col items-center">
+                <i class="fa-solid fa-spinner fa-spin text-4xl mb-2"></i>
+                <span class="text-sm mt-2">檔案載入中...</span>
+            </div>
+            <iframe id="preview-iframe" class="w-full h-full bg-white rounded-lg hidden shadow-lg" frameborder="0"></iframe>
+            <img id="preview-img" class="max-w-full max-h-full object-contain hidden rounded-lg shadow-lg" />
+        </div>
+        <div class="p-3 bg-slate-800 text-center flex justify-center gap-4">
+            <a id="preview-download-btn" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow transition-colors">
+                <i class="fa-solid fa-download mr-1"></i> 下載檔案
+            </a>
+            <a id="preview-external-btn" href="#" target="_blank" class="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow transition-colors">
+                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> 新分頁開啟
+            </a>
+        </div>
+    </div>
+
     <!-- 吐司通知 -->
-    <div id="toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50">
+    <div id="toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-[60]">
         已儲存
     </div>
 
@@ -358,7 +388,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        import { getStorage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAmoPK2soGiJQvCli9IlFXqS6mQy6q2ScQ",
@@ -375,14 +405,15 @@
         const auth = getAuth(app);
         const storage = getStorage(app);
 
-        // ==========================================
-        // 全域變數 & DOM
-        // ==========================================
         let currentUser = null;
         let casesData = [];
         let currentEditingCaseId = null;
-        let settings = { committee: [] }; // 系統設定
-        let multiClients = []; // 暫存新增的多個案名單
+        
+        let settings = { 
+            committee: [], 
+            gasUrl: 'https://script.google.com/macros/s/AKfycbyW0a1OtPZkao60R_5SS5RcBeDHGkEPLuoumvlfj9BQVuEWfk6b8WtwMSTotRcQ9UjBog/exec' 
+        }; 
+        let multiClients = []; 
 
         const DOM = {
             views: {
@@ -434,27 +465,54 @@
             setTimeout(() => DOM.toast.classList.add('opacity-0'), 2500);
         }
 
-        function showView(viewName, title = "訪視案件管理", showTabs = true) {
+        function showView(viewName, title = "訪視案件管理", showTabs = true, pushHistory = true) {
             Object.values(DOM.views).forEach(v => v.classList.add('hidden'));
             DOM.views[viewName].classList.remove('hidden');
             document.getElementById('app-title').textContent = title;
             
+            const btnSettings = document.getElementById('btn-settings');
+
             if (showTabs) {
                 DOM.mainTabs.classList.remove('hidden');
                 DOM.btnBack.classList.add('hidden');
                 DOM.btnNewCase.classList.remove('hidden');
+                if (btnSettings) btnSettings.classList.remove('hidden');
             } else {
                 DOM.mainTabs.classList.add('hidden');
                 DOM.btnBack.classList.remove('hidden');
                 DOM.btnNewCase.classList.add('hidden');
+                if (btnSettings) btnSettings.classList.add('hidden');
+            }
+
+            if (pushHistory) {
+                history.pushState({ view: viewName, title: title, showTabs: showTabs }, title, `#${viewName}`);
             }
         }
 
-        // ==========================================
-        // 系統設定 (委員清單) 邏輯
-        // ==========================================
+        window.addEventListener('popstate', (e) => {
+            if (document.getElementById('preview-modal').classList.contains('hidden') === false) {
+                closePreview(); 
+                history.pushState(e.state, '', location.hash); 
+                return;
+            }
+            if (e.state && e.state.view) {
+                showView(e.state.view, e.state.title, e.state.showTabs, false);
+            } else {
+                showView('list', '訪視案件管理', true, false);
+            }
+        });
+
+        DOM.btnBack.addEventListener('click', () => {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                showView('list', '訪視案件管理', true);
+            }
+        });
+
         document.getElementById('btn-settings').addEventListener('click', () => {
             renderCommitteeList();
+            document.getElementById('setting-gas-input').value = settings.gasUrl || '';
             showView('settings', '系統設定', false);
         });
 
@@ -462,16 +520,28 @@
             if(!currentUser) return;
             const docRef = doc(db, 'users', currentUser.uid, 'settings', 'main');
             const docSnap = await getDoc(docRef);
-            if(docSnap.exists()) settings = docSnap.data();
+            if(docSnap.exists()) {
+                const data = docSnap.data();
+                settings.committee = data.committee || [];
+                if(data.gasUrl) settings.gasUrl = data.gasUrl;
+            }
         }
 
         async function saveSettings() {
             if(!currentUser) return;
             await setDoc(doc(db, 'users', currentUser.uid, 'settings', 'main'), settings);
-            showToast("委員清單已更新");
             renderCommitteeList();
-            renderCommitteeCheckboxes(); // 更新表單內的勾選清單
+            renderCommitteeCheckboxes(); 
         }
+
+        document.getElementById('btn-save-gas').addEventListener('click', () => {
+            const url = document.getElementById('setting-gas-input').value.trim();
+            if(url) {
+                settings.gasUrl = url;
+                saveSettings();
+                showToast("Google API 網址已更新並儲存");
+            }
+        });
 
         function renderCommitteeList() {
             const list = document.getElementById('setting-committee-list');
@@ -518,14 +588,62 @@
         }
 
         // ==========================================
-        // 新增/編輯案件 (動態表單邏輯)
+        // 🌟 核心防呆升級：攔截 Failed to fetch 錯誤並白話文教學
+        // 移除多餘 headers 以完全規避 CORS 預檢 (OPTIONS)
+        // ==========================================
+        async function uploadToGoogleDrive(fileBlob, fileName) {
+            if (!settings.gasUrl) {
+                throw new Error("請先至右上角設定 GAS URL");
+            }
+
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(fileBlob);
+                reader.onloadend = async () => {
+                    const base64data = reader.result.split(',')[1];
+                    try {
+                        const response = await fetch(settings.gasUrl, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                name: fileName,
+                                mimeType: fileBlob.type || 'application/octet-stream',
+                                data: base64data
+                            })
+                            // 這裡不放 headers，確保瀏覽器視為 Simple Request
+                        });
+
+                        const resultText = await response.text();
+                        
+                        try {
+                            const result = JSON.parse(resultText);
+                            if (result.success) {
+                                resolve(result); 
+                            } else {
+                                reject(new Error(result.error || "GAS 程式內部錯誤"));
+                            }
+                        } catch (jsonErr) {
+                            console.error("GAS 吐回內容:", resultText);
+                            reject(new Error("API 回傳格式錯誤！請確認 GAS 部署權限是否為『所有人』且完成『新增部署作業』。"));
+                        }
+                    } catch (e) {
+                        console.error("Fetch Error:", e);
+                        reject(new Error("連線遭 Google 擋下 (Failed to fetch)。\n\n👉 請檢查兩件事：\n1. 回 GAS 執行一次 testAuth 函數來「強制授權」。\n2. 授權後「新增部署作業」，並將「誰可以存取」設為『所有人』，最後將新網址貼回 APP 設定！"));
+                    }
+                };
+                reader.onerror = () => reject(new Error("本機檔案讀取失敗"));
+            });
+        }
+
+
+        // ==========================================
+        // 新增/編輯案件表單
         // ==========================================
         document.querySelectorAll('input[name="form-category"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
                 const isWorkstation = e.target.value === '中高齡及高齡者';
                 document.getElementById('group-single-client').classList.toggle('hidden', isWorkstation);
                 document.getElementById('group-multi-client').classList.toggle('hidden', !isWorkstation);
-                if(isWorkstation && multiClients.length === 0) addWorkstationClient(); // 預設加一列
+                if(isWorkstation && multiClients.length === 0) addWorkstationClient(); 
             });
         });
 
@@ -561,8 +679,6 @@
             e.preventDefault();
             const caseId = document.getElementById('form-id').value;
             const category = document.querySelector('input[name="form-category"]:checked')?.value || '其他';
-            
-            // 收集選取的委員
             const visitors = Array.from(document.querySelectorAll('input[name="chk-visitor"]:checked')).map(cb => cb.value).join('、');
 
             const data = {
@@ -575,9 +691,8 @@
                 updatedAt: serverTimestamp()
             };
 
-            // 依據類別儲存個案資料
             if(category === '中高齡及高齡者') {
-                data.clients = multiClients.filter(c => c.name.trim() !== ''); // 工作站多人名單
+                data.clients = multiClients.filter(c => c.name.trim() !== ''); 
                 data.clientName = data.clients.length > 0 ? `${data.clients[0].name} 等 ${data.clients.length} 人` : '未命名工作站';
             } else {
                 data.clientName = document.getElementById('form-client-name').value;
@@ -592,7 +707,7 @@
                 showToast("更新成功");
             } else {
                 data.createdAt = serverTimestamp();
-                data.photos = []; data.audios = []; data.checklist = {};
+                data.photos = []; data.audios = []; data.files = []; data.checklist = {};
                 data.env = { lux: '', noise: '', height: '', weight: '' };
                 data.report = { status: "", limits: "", analysis: "", strategy: "" };
                 await addDoc(casesRef, data);
@@ -601,163 +716,6 @@
             showView('list', '訪視案件管理', true);
         });
 
-        // ==========================================
-        // 手寫畫板 (多頁面、橡皮擦、畫筆) 邏輯
-        // ==========================================
-        const canvas = document.getElementById('drawing-board');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        
-        let canvasPages = []; // 存放各頁面資料 [ imageData1, imageData2... ]
-        let currentCanvasIdx = 0;
-        let isDrawing = false;
-        let drawColor = '#0f172a';
-        let drawSize = 3;
-        let isEraser = false;
-
-        function initCanvasSize() {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = 250; 
-            fillWhite();
-        }
-
-        function fillWhite() {
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
-
-        function loadCanvasPage(idx) {
-            currentCanvasIdx = idx;
-            document.getElementById('page-indicator').textContent = `${idx + 1} / ${canvasPages.length || 1}`;
-            fillWhite();
-            if(canvasPages[idx]) {
-                const img = new Image();
-                img.onload = () => ctx.drawImage(img, 0, 0);
-                img.src = canvasPages[idx];
-            }
-        }
-
-        function saveCanvasPage() {
-            if(canvasPages.length === 0) canvasPages = ['']; // 確保有第一頁
-            canvasPages[currentCanvasIdx] = canvas.toDataURL('image/png');
-        }
-
-        // 工具列事件
-        document.querySelectorAll('.color-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                isEraser = false;
-                drawColor = e.target.dataset.color;
-                document.querySelectorAll('.color-btn, #btn-eraser').forEach(b => b.classList.remove('tool-active'));
-                e.target.classList.add('tool-active');
-            });
-        });
-
-        document.getElementById('btn-eraser').addEventListener('click', (e) => {
-            isEraser = true;
-            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('tool-active'));
-            e.currentTarget.classList.add('tool-active');
-        });
-
-        document.getElementById('pen-size').addEventListener('input', (e) => drawSize = e.target.value);
-
-        // 分頁控制
-        document.getElementById('btn-add-page').addEventListener('click', () => {
-            saveCanvasPage();
-            canvasPages.push(''); // 新增空白頁
-            loadCanvasPage(canvasPages.length - 1);
-        });
-
-        document.getElementById('btn-del-page').addEventListener('click', () => {
-            if(canvasPages.length <= 1) {
-                canvasPages = [''];
-                loadCanvasPage(0);
-                return;
-            }
-            canvasPages.splice(currentCanvasIdx, 1);
-            loadCanvasPage(Math.max(0, currentCanvasIdx - 1));
-        });
-
-        document.getElementById('btn-prev-page').addEventListener('click', () => {
-            if(currentCanvasIdx > 0) { saveCanvasPage(); loadCanvasPage(currentCanvasIdx - 1); }
-        });
-        document.getElementById('btn-next-page').addEventListener('click', () => {
-            if(currentCanvasIdx < canvasPages.length - 1) { saveCanvasPage(); loadCanvasPage(currentCanvasIdx + 1); }
-        });
-
-        // 繪畫事件
-        const startPos = (e) => { isDrawing = true; draw(e); };
-        const endPos = () => { isDrawing = false; ctx.beginPath(); };
-        const draw = (e) => {
-            if (!isDrawing) return;
-            e.preventDefault(); 
-            const rect = canvas.getBoundingClientRect();
-            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            ctx.lineWidth = drawSize;
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
-            // 橡皮擦模式就是畫白色
-            ctx.strokeStyle = isEraser ? "#ffffff" : drawColor;
-            
-            ctx.lineTo(clientX - rect.left, clientY - rect.top);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(clientX - rect.left, clientY - rect.top);
-        };
-
-        canvas.addEventListener('mousedown', startPos); canvas.addEventListener('mouseup', endPos);
-        canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseout', endPos);
-        canvas.addEventListener('touchstart', startPos, {passive: false});
-        canvas.addEventListener('touchend', endPos);
-        canvas.addEventListener('touchmove', draw, {passive: false});
-
-        // 上傳所有畫布
-        document.getElementById('btn-save-canvas').addEventListener('click', async () => {
-            if (!currentEditingCaseId || !currentUser) return;
-            saveCanvasPage(); // 先儲存當前畫面到陣列
-            const validPages = canvasPages.filter(p => p !== ''); // 濾掉完全沒動過的空白頁
-            if(validPages.length === 0) return alert("畫布是空白的");
-
-            showToast(`正在上傳 ${validPages.length} 張手寫圖...`);
-            document.getElementById('btn-save-canvas').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 上傳中';
-            
-            try {
-                let uploadedUrls = [];
-                for(let i=0; i<validPages.length; i++) {
-                    const res = await fetch(validPages[i]);
-                    const blob = await res.blob();
-                    const fileName = `canvas_${Date.now()}_P${i+1}.png`;
-                    const storageRef = ref(storage, `users/${currentUser.uid}/cases/${currentEditingCaseId}/photos/${fileName}`);
-                    await uploadBytes(storageRef, blob);
-                    uploadedUrls.push(await getDownloadURL(storageRef));
-                }
-                
-                const c = casesData.find(x => x.id === currentEditingCaseId);
-                const newPhotos = [...(c.photos || []), ...uploadedUrls];
-                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { photos: newPhotos });
-                
-                renderPhotos(newPhotos);
-                showToast("手寫圖上傳完成！");
-                
-                // 清空畫布重新開始
-                canvasPages = ['']; loadCanvasPage(0);
-            } catch (err) {
-                console.error(err); alert("上傳失敗");
-            } finally {
-                document.getElementById('btn-save-canvas').innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1"></i> 轉存為圖片';
-            }
-        });
-
-        window.addEventListener('resize', () => { 
-            if(!DOM.views.workspace.classList.contains('hidden')) {
-                saveCanvasPage(); initCanvasSize(); loadCanvasPage(currentCanvasIdx);
-            }
-        });
-
-        // ==========================================
-        // Firebase 認證與主頁資料載入
-        // ==========================================
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
@@ -767,7 +725,7 @@
                 renderCommitteeCheckboxes();
                 loadCases();
             } else {
-                signInAnonymously(auth).catch(err => alert("連線失敗，請檢查權限"));
+                signInAnonymously(auth).catch(err => alert("連線失敗，請檢查權限設定"));
             }
         });
 
@@ -786,7 +744,8 @@
             DOM.casesContainer.innerHTML = '';
             const filtered = casesData.filter(c => 
                 (c.company && c.company.includes(searchTerm)) || 
-                (c.clientName && c.clientName.includes(searchTerm))
+                (c.clientName && c.clientName.includes(searchTerm)) ||
+                (c.client && c.client.includes(searchTerm)) 
             );
             
             if (filtered.length === 0) {
@@ -801,14 +760,17 @@
                                (item.category === '身心障礙者') ? 'bg-emerald-100 text-emerald-700' : 
                                (item.category === '勞工就業通') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700';
                 
+                const clientDisplayName = item.clientName || item.client || '無';
+                const dateDisplayName = item.visitDate || item.date || '無';
+                
                 el.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-bold text-slate-800 text-lg">${item.company}</h3>
+                        <h3 class="font-bold text-slate-800 text-lg">${item.company || '未命名企業'}</h3>
                         <span class="text-xs ${catColor} px-2 py-1 rounded font-medium">${item.category || '未分類'}</span>
                     </div>
                     <div class="flex items-center text-sm text-slate-500 gap-3">
-                        <span class="truncate max-w-[120px]"><i class="fa-solid fa-users text-slate-400 mr-1"></i> ${item.clientName || '無'}</span>
-                        <span><i class="fa-solid fa-calendar text-slate-400 mr-1"></i> ${item.visitDate || item.date || '無'}</span>
+                        <span class="truncate max-w-[120px]"><i class="fa-solid fa-users text-slate-400 mr-1"></i> ${clientDisplayName}</span>
+                        <span><i class="fa-solid fa-calendar text-slate-400 mr-1"></i> ${dateDisplayName}</span>
                     </div>
                 `;
                 el.addEventListener('click', () => openWorkspace(item.id));
@@ -824,9 +786,20 @@
             document.getElementById('dash-job').textContent = casesData.filter(c => c.category === '勞工就業通').length;
         }
 
-        // ==========================================
-        // 工作區切換與資料載入
-        // ==========================================
+        document.querySelectorAll('.main-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.main-tab-btn').forEach(b => {
+                    b.classList.remove('text-blue-600', 'border-blue-600');
+                    b.classList.add('text-slate-500', 'border-transparent');
+                });
+                const targetBtn = e.currentTarget;
+                targetBtn.classList.remove('text-slate-500', 'border-transparent');
+                targetBtn.classList.add('text-blue-600', 'border-blue-600');
+                showView(targetBtn.dataset.target, "訪視案件管理", true);
+                if(targetBtn.dataset.target === 'dashboard') updateDashboard();
+            });
+        });
+
         document.querySelectorAll('.ws-tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.ws-tab-btn').forEach(b => {
@@ -845,51 +818,53 @@
         });
 
         function openWorkspace(id) {
-            currentEditingCaseId = id;
-            const c = casesData.find(x => x.id === id);
-            
-            document.getElementById('ws-category').textContent = c.category || '未分類';
-            document.getElementById('ws-company').textContent = c.company;
-            document.getElementById('ws-client').textContent = `${c.clientName} ${c.clientTitle ? '('+c.clientTitle+')' : ''}`;
-            document.getElementById('ws-visit-date').textContent = `初訪日: ${c.visitDate || '-'}`;
-            
-            // 載入報告文字
-            const rpt = c.report || {};
-            document.getElementById('ws-status-text').value = rpt.status || '';
-            document.getElementById('ws-limits-text').value = rpt.limits || '';
-            document.getElementById('ws-analysis-text').value = rpt.analysis || '';
-            document.getElementById('ws-strategy-text').value = rpt.strategy || '';
-            
-            // 載入客觀數據
-            const env = c.env || {};
-            document.getElementById('env-lux').value = env.lux || '';
-            document.getElementById('env-noise').value = env.noise || '';
-            document.getElementById('env-height').value = env.height || '';
-            document.getElementById('env-weight').value = env.weight || '';
+            try {
+                currentEditingCaseId = id;
+                const c = casesData.find(x => x.id === id);
+                
+                document.getElementById('ws-category').textContent = c.category || '未分類';
+                document.getElementById('ws-company').textContent = c.company || '未命名企業';
+                
+                const displayName = c.clientName || c.client || '未命名';
+                const displayTitle = c.clientTitle ? '('+c.clientTitle+')' : (c.jobTitle ? '('+c.jobTitle+')' : '');
+                document.getElementById('ws-client').textContent = `${displayName} ${displayTitle}`;
+                document.getElementById('ws-visit-date').textContent = `初訪日: ${c.visitDate || c.date || '-'}`;
+                
+                const rpt = c.report || {};
+                document.getElementById('ws-status-text').value = rpt.status || c.notes || '';
+                document.getElementById('ws-limits-text').value = rpt.limits || '';
+                document.getElementById('ws-analysis-text').value = rpt.analysis || '';
+                document.getElementById('ws-strategy-text').value = rpt.strategy || c.strategy || '';
+                
+                const env = c.env || {};
+                document.getElementById('env-lux').value = env.lux || '';
+                document.getElementById('env-noise').value = env.noise || '';
+                document.getElementById('env-height').value = env.height || '';
+                document.getElementById('env-weight').value = env.weight || '';
 
-            // 載入檢核表
-            Object.values(checklists).flat().forEach(item => {
-                const el = document.getElementById(item.id);
-                if (el) el.checked = c.checklist?.[item.id] || false;
-            });
+                Object.values(checklists).flat().forEach(item => {
+                    const el = document.getElementById(item.id);
+                    if (el) el.checked = c.checklist?.[item.id] || false;
+                });
 
-            renderPhotos(c.photos || []);
-            renderAudios(c.audios || []);
+                renderPhotos(c.photos || []);
+                renderFiles(c.files || []); 
+                renderAudios(c.audios || []);
 
-            // 初始畫布
-            canvasPages = ['']; currentCanvasIdx = 0; 
-            isEraser = false; drawColor = '#0f172a'; drawSize = 3;
-            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('tool-active'));
-            document.querySelector('.color-btn[data-color="#0f172a"]').classList.add('tool-active');
-            document.getElementById('btn-eraser').classList.remove('tool-active');
+                canvasPages = ['']; currentCanvasIdx = 0; 
+                isEraser = false; drawColor = '#0f172a'; drawSize = 3;
+                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('tool-active'));
+                document.querySelector('.color-btn[data-color="#0f172a"]').classList.add('tool-active');
+                document.getElementById('btn-eraser').classList.remove('tool-active');
 
-            showView('workspace', '現場紀錄與評估', false);
-            document.querySelector('[data-target="tab-media"]').click();
+                showView('workspace', '現場紀錄與評估', false);
+                document.querySelector('[data-target="tab-media"]').click();
+            } catch (err) {
+                console.error("開啟案件發生錯誤:", err);
+                alert("開啟案件時發生錯誤。");
+            }
         }
 
-        // ==========================================
-        // 儲存報告文字與客觀數據
-        // ==========================================
         document.querySelectorAll('.btn-save-ws').forEach(btn => {
             btn.addEventListener('click', async () => {
                 if (!currentEditingCaseId) return;
@@ -921,37 +896,181 @@
             });
         });
 
-        // 拍照與錄音
+        // ==========================================
+        // 預覽視窗 (Modal)
+        // ==========================================
+        const modal = document.getElementById('preview-modal');
+        const iframe = document.getElementById('preview-iframe');
+        const img = document.getElementById('preview-img');
+        const title = document.getElementById('preview-title');
+        const dlBtn = document.getElementById('preview-download-btn');
+        const extBtn = document.getElementById('preview-external-btn');
+        const loading = document.getElementById('preview-loading');
+
+        window.openPreview = (previewUrl, downloadUrl, type, name = "檔案預覽") => {
+            modal.classList.remove('hidden');
+            title.textContent = name;
+            dlBtn.href = downloadUrl || previewUrl;
+            extBtn.href = previewUrl;
+            
+            iframe.classList.add('hidden');
+            img.classList.add('hidden');
+            loading.classList.remove('hidden');
+            iframe.src = '';
+            img.src = '';
+
+            if (previewUrl && previewUrl.includes('drive.google.com')) {
+                iframe.src = previewUrl;
+                iframe.onload = () => { iframe.classList.remove('hidden'); loading.classList.add('hidden'); };
+            } else if (type && type.startsWith('image/')) {
+                img.src = previewUrl;
+                img.onload = () => { img.classList.remove('hidden'); loading.classList.add('hidden'); };
+            } else {
+                const gviewUrl = `https://docs.google.com/gview?url=${encodeURIComponent(previewUrl)}&embedded=true`;
+                iframe.src = gviewUrl;
+                iframe.onload = () => { iframe.classList.remove('hidden'); loading.classList.add('hidden'); };
+            }
+        };
+
+        function closePreview() {
+            modal.classList.add('hidden');
+            iframe.src = '';
+            img.src = '';
+        }
+        document.getElementById('btn-close-preview').addEventListener('click', closePreview);
+
+
+        // ==========================================
+        // 檔案上傳區
+        // ==========================================
+        
+        // --- 1. 照片上傳 ---
         document.getElementById('photo-upload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file || !currentEditingCaseId) return;
-            showToast("照片上傳中...");
+            
+            const label = document.getElementById('label-photo-upload');
+            const span = label.querySelector('.btn-text');
+            const originalText = span.textContent;
+            
+            span.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理上傳中...';
+            label.classList.add('opacity-50', 'pointer-events-none');
+            
             try {
-                const storageRef = ref(storage, `users/${currentUser.uid}/cases/${currentEditingCaseId}/photos/${Date.now()}_${file.name}`);
-                await uploadBytes(storageRef, file);
-                const url = await getDownloadURL(storageRef);
+                const result = await uploadToGoogleDrive(file, `${Date.now()}_${file.name}`);
                 const c = casesData.find(x => x.id === currentEditingCaseId);
-                const newPhotos = [...(c.photos || []), url];
+                const newPhotos = [...(c.photos || []), { 
+                    previewUrl: result.previewUrl, 
+                    downloadUrl: result.downloadUrl, 
+                    name: file.name 
+                }];
                 await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { photos: newPhotos });
                 renderPhotos(newPhotos);
                 showToast("照片上傳成功");
-            } catch (err) { alert("上傳失敗"); }
-            e.target.value = '';
+            } catch (err) { 
+                alert(err.message);
+            } finally {
+                span.textContent = originalText;
+                label.classList.remove('opacity-50', 'pointer-events-none');
+                e.target.value = '';
+            }
         });
 
         function renderPhotos(photosArr) {
             const container = document.getElementById('photos-container');
             if (photosArr.length === 0) {
-                container.innerHTML = '<p class="text-sm text-slate-400 col-span-full">尚無照片，含畫板儲存之圖片將顯示於此。</p>';
+                container.innerHTML = '<p class="text-sm text-slate-400 col-span-full">尚無照片。</p>';
                 return;
             }
-            container.innerHTML = photosArr.map(url => `
-                <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-sm relative">
-                    <img src="${url}" class="w-full h-full object-cover" alt="現場照片">
+            container.innerHTML = photosArr.map(p => {
+                const previewUrl = typeof p === 'string' ? p : p.previewUrl;
+                const downloadUrl = typeof p === 'string' ? p : p.downloadUrl;
+                const src = downloadUrl || previewUrl; 
+                
+                return `
+                <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-sm relative group cursor-pointer" 
+                     onclick="window.openPreview('${previewUrl}', '${downloadUrl}', 'image/jpeg', '現場照片')">
+                    <img src="${src}" class="w-full h-full object-cover" alt="現場照片">
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black bg-opacity-40 text-white transition-opacity">
+                        <i class="fa-solid fa-expand text-2xl mb-1"></i>
+                    </div>
+                    <a href="${downloadUrl}" target="_blank" onclick="event.stopPropagation();" 
+                       class="absolute bottom-1 right-1 bg-white text-blue-600 rounded-full w-8 h-8 flex items-center justify-center shadow hover:bg-blue-50">
+                        <i class="fa-solid fa-download"></i>
+                    </a>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
+        // --- 2. 檔案與 PDF 上傳 ---
+        document.getElementById('file-upload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !currentEditingCaseId) return;
+            
+            const label = document.getElementById('label-file-upload');
+            const span = label.querySelector('.btn-text');
+            const originalText = span.textContent;
+            
+            span.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 檔案上傳中...';
+            label.classList.add('opacity-50', 'pointer-events-none');
+
+            try {
+                const result = await uploadToGoogleDrive(file, `${Date.now()}_${file.name}`);
+                const fileData = { 
+                    name: file.name, 
+                    previewUrl: result.previewUrl, 
+                    downloadUrl: result.downloadUrl,
+                    type: file.type || 'application/octet-stream', 
+                    date: new Date().toLocaleDateString() 
+                };
+                
+                const c = casesData.find(x => x.id === currentEditingCaseId);
+                const newFiles = [...(c.files || []), fileData];
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { files: newFiles });
+                renderFiles(newFiles);
+                showToast("檔案上傳成功");
+            } catch (err) { 
+                alert(err.message);
+            } finally {
+                span.textContent = originalText;
+                label.classList.remove('opacity-50', 'pointer-events-none');
+                e.target.value = '';
+            }
+        });
+
+        function renderFiles(filesArr) {
+            const container = document.getElementById('files-container');
+            if (!filesArr || filesArr.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400 col-span-full">尚無文件。</p>';
+                return;
+            }
+            container.innerHTML = filesArr.map(f => {
+                let icon = 'fa-file';
+                if(f.type === 'application/pdf' || f.name.endsWith('.pdf')) icon = 'fa-file-pdf text-red-500';
+                else if(f.name.endsWith('.doc') || f.name.endsWith('.docx')) icon = 'fa-file-word text-blue-500';
+                else if(f.name.endsWith('.xls') || f.name.endsWith('.xlsx')) icon = 'fa-file-excel text-green-500';
+                
+                const pUrl = f.previewUrl || f.url; 
+                const dUrl = f.downloadUrl || f.url;
+                
+                return `
+                <div class="bg-slate-50 p-3 border border-slate-200 rounded-lg flex items-center justify-between hover:bg-slate-100 transition-colors">
+                    <div class="flex items-center gap-3 overflow-hidden flex-1 cursor-pointer" onclick="window.openPreview('${pUrl}', '${dUrl}', '${f.type}', '${f.name}')">
+                        <i class="fa-solid ${icon} text-xl"></i>
+                        <div class="truncate">
+                            <p class="text-sm font-bold text-slate-700 truncate">${f.name}</p>
+                            <p class="text-xs text-slate-400">${f.date || ''}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 shrink-0 ml-2">
+                        <button class="text-blue-500 hover:text-blue-700 px-2" onclick="window.openPreview('${pUrl}', '${dUrl}', '${f.type}', '${f.name}')"><i class="fa-solid fa-eye"></i></button>
+                        <a href="${dUrl}" target="_blank" class="text-green-600 hover:text-green-800 px-2 bg-green-50 rounded py-1"><i class="fa-solid fa-download mr-1"></i>下載</a>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        // --- 3. 錄音上傳 ---
         const btnRecord = document.getElementById('btn-record-audio');
         let mediaRecorder; let audioChunks = []; let isRecording = false;
 
@@ -959,7 +1078,7 @@
             if (isRecording) {
                 mediaRecorder.stop();
                 isRecording = false;
-                btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> 開始錄音';
+                btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> <span class="btn-text">開始錄音</span>';
                 btnRecord.classList.replace('bg-slate-100', 'bg-red-50');
                 btnRecord.classList.replace('text-slate-600', 'text-red-600');
                 document.getElementById('recording-status').classList.add('hidden');
@@ -970,19 +1089,28 @@
                     audioChunks = [];
                     mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
                     mediaRecorder.onstop = async () => {
-                        showToast("錄音處理中...");
+                        btnRecord.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 上傳雲端中';
+                        btnRecord.classList.add('opacity-50', 'pointer-events-none');
+                        
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         const fileName = `audio_${Date.now()}.webm`;
                         try {
-                            const storageRef = ref(storage, `users/${currentUser.uid}/cases/${currentEditingCaseId}/audios/${fileName}`);
-                            await uploadBytes(storageRef, audioBlob);
-                            const url = await getDownloadURL(storageRef);
+                            const result = await uploadToGoogleDrive(audioBlob, fileName);
                             const c = casesData.find(x => x.id === currentEditingCaseId);
-                            const newAudios = [...(c.audios || []), { name: new Date().toLocaleString(), url: url }];
+                            const newAudios = [...(c.audios || []), { 
+                                name: new Date().toLocaleString(), 
+                                previewUrl: result.previewUrl,
+                                downloadUrl: result.downloadUrl
+                            }];
                             await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
                             renderAudios(newAudios);
-                            showToast("錄音已上傳");
-                        } catch(err) { alert("錄音上傳失敗"); }
+                            showToast("錄音已成功上傳");
+                        } catch(err) { 
+                            alert(err.message);
+                        } finally {
+                            btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> <span class="btn-text">開始錄音</span>';
+                            btnRecord.classList.remove('opacity-50', 'pointer-events-none');
+                        }
                         stream.getTracks().forEach(track => track.stop());
                     };
                     mediaRecorder.start();
@@ -991,7 +1119,7 @@
                     btnRecord.classList.replace('bg-red-50', 'bg-slate-100');
                     btnRecord.classList.replace('text-red-600', 'text-slate-600');
                     document.getElementById('recording-status').classList.remove('hidden');
-                } catch (err) { alert("無法存取麥克風"); }
+                } catch (err) { alert("無法存取麥克風，請檢查瀏覽器權限設定"); }
             }
         });
 
@@ -1001,13 +1129,168 @@
                 container.innerHTML = '<p class="text-sm text-slate-400">尚無錄音。</p>';
                 return;
             }
-            container.innerHTML = audiosArr.map(audio => `
+            container.innerHTML = audiosArr.map(audio => {
+                const dUrl = audio.downloadUrl || audio.url;
+                return `
                 <div class="bg-slate-50 p-2 border border-slate-200 rounded-lg flex flex-col gap-2">
-                    <span class="text-xs text-slate-500 font-medium">${audio.name}</span>
-                    <audio controls src="${audio.url}" class="w-full h-8"></audio>
+                    <div class="flex justify-between items-center px-1">
+                        <span class="text-xs text-slate-500 font-medium">${audio.name}</span>
+                        <a href="${dUrl}" target="_blank" class="text-green-600 hover:text-green-800 text-sm bg-green-50 px-2 py-1 rounded"><i class="fa-solid fa-download mr-1"></i>下載</a>
+                    </div>
+                    <audio controls src="${dUrl}" class="w-full h-8"></audio>
                 </div>
-            `).join('');
+            `}).join('');
         }
+
+        // --- 4. 畫布上傳 ---
+        const canvas = document.getElementById('drawing-board');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        let canvasPages = []; let currentCanvasIdx = 0; let isDrawing = false;
+        let drawColor = '#0f172a'; let drawSize = 3; let isEraser = false;
+
+        function initCanvasSize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width; canvas.height = 250; fillWhite();
+        }
+        function fillWhite() { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+        function loadCanvasPage(idx) {
+            currentCanvasIdx = idx; document.getElementById('page-indicator').textContent = `${idx + 1} / ${canvasPages.length || 1}`;
+            fillWhite();
+            if(canvasPages[idx]) { const img = new Image(); img.onload = () => ctx.drawImage(img, 0, 0); img.src = canvasPages[idx]; }
+        }
+        function saveCanvasPage() {
+            if(canvasPages.length === 0) canvasPages = [''];
+            canvasPages[currentCanvasIdx] = canvas.toDataURL('image/png');
+        }
+
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                isEraser = false; drawColor = e.target.dataset.color;
+                document.querySelectorAll('.color-btn, #btn-eraser').forEach(b => b.classList.remove('tool-active'));
+                e.target.classList.add('tool-active');
+            });
+        });
+
+        document.getElementById('btn-eraser').addEventListener('click', (e) => {
+            isEraser = true; document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('tool-active'));
+            e.currentTarget.classList.add('tool-active');
+        });
+        document.getElementById('pen-size').addEventListener('input', (e) => drawSize = e.target.value);
+        document.getElementById('btn-add-page').addEventListener('click', () => { saveCanvasPage(); canvasPages.push(''); loadCanvasPage(canvasPages.length - 1); });
+        document.getElementById('btn-del-page').addEventListener('click', () => {
+            if(canvasPages.length <= 1) { canvasPages = ['']; loadCanvasPage(0); return; }
+            canvasPages.splice(currentCanvasIdx, 1); loadCanvasPage(Math.max(0, currentCanvasIdx - 1));
+        });
+        document.getElementById('btn-prev-page').addEventListener('click', () => { if(currentCanvasIdx > 0) { saveCanvasPage(); loadCanvasPage(currentCanvasIdx - 1); } });
+        document.getElementById('btn-next-page').addEventListener('click', () => { if(currentCanvasIdx < canvasPages.length - 1) { saveCanvasPage(); loadCanvasPage(currentCanvasIdx + 1); } });
+
+        const startPos = (e) => { isDrawing = true; draw(e); };
+        const endPos = () => { isDrawing = false; ctx.beginPath(); };
+        const draw = (e) => {
+            if (!isDrawing) return;
+            e.preventDefault(); 
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            ctx.lineWidth = drawSize; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = isEraser ? "#ffffff" : drawColor;
+            ctx.lineTo(clientX - rect.left, clientY - rect.top); ctx.stroke(); ctx.beginPath(); ctx.moveTo(clientX - rect.left, clientY - rect.top);
+        };
+
+        canvas.addEventListener('mousedown', startPos); canvas.addEventListener('mouseup', endPos);
+        canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseout', endPos);
+        canvas.addEventListener('touchstart', startPos, {passive: false});
+        canvas.addEventListener('touchend', endPos);
+        canvas.addEventListener('touchmove', draw, {passive: false});
+
+        document.getElementById('btn-save-canvas').addEventListener('click', async () => {
+            if (!currentEditingCaseId || !currentUser) return;
+            saveCanvasPage(); 
+            const validPages = canvasPages.filter(p => p !== ''); 
+            if(validPages.length === 0) return alert("畫布是空白的");
+
+            const btn = document.getElementById('btn-save-canvas');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 上傳中';
+            btn.classList.add('opacity-50', 'pointer-events-none');
+            
+            try {
+                let uploadedData = [];
+                for(let i=0; i<validPages.length; i++) {
+                    const res = await fetch(validPages[i]);
+                    const blob = await res.blob();
+                    const fileName = `canvas_${Date.now()}_P${i+1}.png`;
+                    const result = await uploadToGoogleDrive(blob, fileName);
+                    uploadedData.push({
+                        previewUrl: result.previewUrl,
+                        downloadUrl: result.downloadUrl,
+                        name: fileName
+                    });
+                }
+                
+                const c = casesData.find(x => x.id === currentEditingCaseId);
+                const newPhotos = [...(c.photos || []), ...uploadedData];
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { photos: newPhotos });
+                
+                renderPhotos(newPhotos);
+                showToast("手寫圖雲端上傳完成！");
+                canvasPages = ['']; loadCanvasPage(0);
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1"></i> 儲存畫布';
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        });
+
+        window.addEventListener('resize', () => { 
+            if(!DOM.views.workspace.classList.contains('hidden')) {
+                saveCanvasPage(); initCanvasSize(); loadCanvasPage(currentCanvasIdx);
+            }
+        });
+
+        // ==========================================
+        // Excel 匯入
+        // ==========================================
+        document.getElementById('excel-upload').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file || !currentUser) return;
+            
+            showToast("正在讀取 Excel...");
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet);
+                    
+                    let importCount = 0;
+                    for(let row of json) {
+                        if (!row['企業名稱'] && !row['個案姓名']) continue;
+                        await addDoc(collection(db, 'users', currentUser.uid, 'cases'), {
+                            category: row['案件類別'] || '其他',
+                            company: row['企業名稱'] || '未命名企業',
+                            clientName: row['個案姓名'] || '未命名',
+                            disability: row['障礙類別'] || '',
+                            clientTitle: row['職稱'] || '',
+                            visitDate: row['訪視日期'] || new Date().toISOString().split('T')[0],
+                            photos: [], audios: [], files: [], checklist: {},
+                            report: { status: "", limits: "", analysis: "", strategy: "" },
+                            env: { lux: '', noise: '', height: '', weight: '' },
+                            createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+                        });
+                        importCount++;
+                    }
+                    showToast(`成功匯入 ${importCount} 筆資料`);
+                    e.target.value = ''; 
+                } catch (err) {
+                    console.error(err);
+                    alert("匯入失敗，請確認檔案格式正確 (需包含: 案件類別, 企業名稱, 個案姓名等)");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        history.replaceState({ view: 'list', title: '訪視案件管理', showTabs: true }, '', '#list');
 
     </script>
 </body>
