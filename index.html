@@ -18,12 +18,25 @@
         #drawing-board { touch-action: none; background-color: #ffffff; }
         .tool-active { outline: 2px solid #3b82f6; outline-offset: 2px; }
         #preview-header { cursor: move; touch-action: none; }
-        
-        /* 文字框自適應高度過渡動畫 */
         textarea { transition: height 0.2s ease; overflow-y: hidden; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen flex flex-col overflow-hidden">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen flex flex-col overflow-hidden relative">
+
+    <!-- 🌟 全新新增：Google 登入防護遮罩 -->
+    <div id="login-overlay" class="fixed inset-0 bg-slate-100 z-[200] flex flex-col items-center justify-center transition-opacity duration-300">
+        <div class="bg-white p-8 md:p-12 rounded-3xl shadow-2xl flex flex-col items-center text-center max-w-md mx-4 border border-slate-100">
+            <div class="w-20 h-20 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-4xl mb-6 shadow-inner">
+                <i class="fa-solid fa-briefcase-medical"></i>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-black text-slate-800 mb-3">職務再設計訪視系統</h1>
+            <p class="text-slate-500 mb-8 font-medium">為確保您的電腦與 iPad 平板資料能即時同步，請使用 Google 帳號登入系統。</p>
+            <button id="btn-google-login" class="w-full bg-white border-2 border-slate-200 shadow-sm px-6 py-4 rounded-xl text-lg font-bold text-slate-700 flex items-center justify-center gap-4 hover:bg-slate-50 hover:border-blue-300 transition-all active:scale-95">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6">
+                使用 Google 帳號登入
+            </button>
+        </div>
+    </div>
 
     <!-- 頂部導航列 (iPad 放大觸控區) -->
     <header class="bg-blue-600 text-white shadow-md p-4 md:p-5 flex justify-between items-center no-print shrink-0 z-10 relative">
@@ -34,7 +47,10 @@
             <h1 id="app-title" class="text-xl md:text-2xl font-bold tracking-wide">訪視案件管理</h1>
         </div>
         <div class="flex items-center gap-4">
-            <span id="auth-status" class="text-xs md:text-sm bg-slate-500 px-3 py-1.5 rounded-full text-white shadow"><i class="fa-solid fa-spinner fa-spin"></i> 載入中</span>
+            <!-- 登入狀態區 (登入後會顯示大頭貼) -->
+            <span id="auth-status" class="bg-slate-500 px-4 py-2 rounded-full text-white shadow font-bold text-sm flex items-center gap-2 transition-colors">
+                <i class="fa-solid fa-spinner fa-spin"></i> 系統啟動中
+            </span>
             <button id="btn-settings" class="text-white hover:text-blue-200 p-2 text-xl md:text-2xl">
                 <i class="fa-solid fa-gear"></i>
             </button>
@@ -271,7 +287,6 @@
         <!-- ================= 視圖 4: 案件工作區 ================= -->
         <div id="view-workspace" class="hidden max-w-5xl mx-auto flex flex-col h-full space-y-4 pb-20">
             
-            <!-- 🌟 全新升級：可摺疊的基本資料面板 -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 mb-2 overflow-hidden relative z-20">
                 <div class="p-4 md:p-5 flex justify-between items-start cursor-pointer hover:bg-slate-50 transition-colors select-none" id="btn-toggle-info">
                     <div class="flex-1 pr-4">
@@ -296,7 +311,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- 移除了「訪視委員/人員」區塊 -->
                 <div id="ws-expanded-info" class="hidden p-4 md:p-6 border-t border-slate-100 bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm md:text-base">
                     <div>
                         <p class="text-slate-500 text-xs mb-1">實際工作地點</p>
@@ -309,7 +323,6 @@
                 </div>
             </div>
 
-            <!-- 🌟 工作區 Tabs 排序與新增成果報告 -->
             <div class="flex bg-white rounded-xl p-1 shadow-sm border border-slate-200 overflow-x-auto no-scrollbar">
                 <button class="ws-tab-btn whitespace-nowrap flex-1 py-3 md:py-4 text-sm md:text-base font-bold rounded-lg bg-blue-100 text-blue-800" data-target="tab-media">媒體與檔案</button>
                 <button class="ws-tab-btn whitespace-nowrap flex-1 py-3 md:py-4 text-sm md:text-base font-bold rounded-lg text-slate-500 hover:bg-slate-50" data-target="tab-assess">客觀與檢核</button>
@@ -320,7 +333,6 @@
             <!-- 頁籤 1: 多媒體紀錄 -->
             <div id="tab-media" class="ws-tab-content space-y-4">
                 
-                <!-- 檔案與 PDF 上傳區 -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-slate-700 text-lg"><i class="fa-solid fa-file-pdf text-red-500 mr-2"></i>雲端文件與檔案</h3>
@@ -332,7 +344,6 @@
                     <div id="files-container" class="space-y-3"></div>
                 </div>
 
-                <!-- 手寫畫板區 -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="font-bold text-slate-700 text-lg"><i class="fa-solid fa-pen-nib text-blue-500 mr-2"></i>手寫草稿與繪圖 (支援手寫筆)</h3>
@@ -371,7 +382,6 @@
                     </div>
                 </div>
 
-                <!-- 現場照片紀錄 -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-slate-700 text-lg"><i class="fa-solid fa-image text-blue-500 mr-2"></i>雲端照片圖庫</h3>
@@ -385,7 +395,6 @@
                     </div>
                 </div>
 
-                <!-- 錄音紀錄區 -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-slate-700 text-lg"><i class="fa-solid fa-microphone text-blue-500 mr-2"></i>雲端訪談錄音 (支援 AI 逐字稿)</h3>
@@ -400,7 +409,7 @@
                 </div>
             </div>
 
-            <!-- 頁籤 2: 客觀數據與環境檢核 (改為第二頁籤) -->
+            <!-- 頁籤 2: 客觀數據與環境檢核 -->
             <div id="tab-assess" class="ws-tab-content hidden space-y-5">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                     <h3 class="font-bold text-lg text-slate-700 border-b pb-3 mb-4"><i class="fa-solid fa-ruler-combined text-blue-500 mr-2"></i>現場客觀數據登記</h3>
@@ -460,7 +469,7 @@
                 </button>
             </div>
 
-            <!-- 🌟 全新新增: 頁籤 4: 改善成果報告 -->
+            <!-- 頁籤 4: 改善成果報告 -->
             <div id="tab-outcome" class="ws-tab-content hidden space-y-5">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                     <h3 class="font-bold text-lg text-emerald-800 border-b-2 border-emerald-100 pb-2 mb-3">五、 審查會決議</h3>
@@ -487,7 +496,6 @@
 
     <!-- 🌟 懸浮預覽視窗 (PiP) -->
     <div id="preview-modal" class="hidden fixed top-24 right-6 w-80 md:w-[500px] h-[500px] md:h-[600px] bg-white shadow-[0_15px_50px_rgba(0,0,0,0.3)] border border-slate-300 rounded-2xl z-[100] flex flex-col overflow-hidden resize transition-shadow focus-within:shadow-[0_15px_50px_rgba(59,130,246,0.3)]">
-        <!-- 頂部拖曳條 -->
         <div id="preview-header" class="p-3 md:p-4 flex justify-between items-center text-white bg-slate-800 select-none cursor-move active:bg-slate-700 transition-colors">
             <div class="flex items-center overflow-hidden">
                 <i class="fa-solid fa-grip-lines text-slate-400 mr-3 text-sm"></i>
@@ -502,7 +510,6 @@
                 </button>
             </div>
         </div>
-        <!-- 內容區 -->
         <div class="flex-1 overflow-auto flex justify-center items-center relative bg-slate-100">
             <div id="preview-loading" class="absolute text-slate-500 animate-pulse flex flex-col items-center">
                 <i class="fa-solid fa-spinner fa-spin text-5xl mb-3"></i>
@@ -511,7 +518,6 @@
             <iframe id="preview-iframe" class="w-full h-full bg-white hidden" frameborder="0"></iframe>
             <img id="preview-img" class="w-full h-full object-contain hidden" />
         </div>
-        <!-- 底部按鈕區 -->
         <div class="p-3 bg-white border-t border-slate-200 text-center flex justify-center gap-4">
             <a id="preview-download-btn" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold shadow transition-colors">
                 <i class="fa-solid fa-download mr-2"></i> 下載
@@ -531,17 +537,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
-        // ==========================================
-        // Firebase 連線逾時偵測
-        // ==========================================
-        const connTimeout = setTimeout(() => {
-            const el = document.getElementById('auth-status');
-            if (el && el.innerText.includes('載入中')) {
-                alert("⚠️ 系統連線被阻擋或網路異常！\n\n常見原因：\n1. 您的網域未加入 Firebase 的安全白名單。\n2. 您使用阻擋廣告的瀏覽器封鎖了資料庫。\n\n請排除問題後重新整理頁面！");
-            }
-        }, 12000);
+        let connTimeout;
 
         const firebaseConfig = {
             apiKey: "AIzaSyAmoPK2soGiJQvCli9IlFXqS6mQy6q2ScQ",
@@ -557,8 +555,6 @@
             app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-            document.getElementById('auth-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 連線資料庫...';
-            document.getElementById('auth-status').classList.replace('bg-slate-500', 'bg-blue-500');
         } catch (initErr) {
             alert("Firebase 模組載入失敗，請確認您的網路未阻擋 Google 服務。");
         }
@@ -611,10 +607,9 @@
             setTimeout(() => DOM.toast.classList.add('opacity-0'), 3000);
         }
 
-        // 🌟 新增：文字框高度自適應 (Auto-Resize) 引擎
         function autoResizeTextarea(el) {
-            el.style.height = 'auto'; // 先重置高度
-            el.style.height = (el.scrollHeight + 2) + 'px'; // 設定為內容高度
+            el.style.height = 'auto'; 
+            el.style.height = (el.scrollHeight + 2) + 'px'; 
         }
         
         document.addEventListener('input', function (e) {
@@ -623,7 +618,6 @@
             }
         });
 
-        // 觸發畫面上所有 auto-resize 重算高度
         function triggerAutoResize() {
             setTimeout(() => {
                 document.querySelectorAll('.auto-resize').forEach(ta => autoResizeTextarea(ta));
@@ -694,9 +688,6 @@
             }
         });
 
-        // ==========================================
-        // 系統設定 (GAS, Gemini, 委員, 檢核表)
-        // ==========================================
         document.getElementById('btn-settings').addEventListener('click', () => {
             renderCommitteeList();
             document.getElementById('setting-gas-input').value = settings.gasUrl || '';
@@ -722,7 +713,7 @@
                     if(data.checklists) settings.checklists = data.checklists;
                 }
             } catch (err) {
-                console.warn("載入設定失敗(權限可能未開):", err);
+                console.warn("載入設定失敗:", err);
             }
         }
 
@@ -964,8 +955,6 @@
             };
 
             const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-latest', 'gemini-1.5-flash'];
-            let lastError = null;
-
             for (const model of models) {
                 try {
                     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -1091,7 +1080,6 @@
                     strategy: "" 
                 };
                 
-                // 初始化新的成果報告欄位
                 data.outcome = { resolution: "", acceptance: "", benefit: "", closeDate: "" };
 
                 await addDoc(casesRef, data);
@@ -1100,20 +1088,51 @@
             showView('list', '訪視案件管理', true);
         });
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('auth-status').innerHTML = '<i class="fa-solid fa-cloud-check"></i> 已連線';
-                document.getElementById('auth-status').classList.replace('bg-blue-500', 'bg-green-600');
-                document.getElementById('auth-status').classList.replace('bg-slate-500', 'bg-green-600');
-                document.getElementById('auth-status').classList.replace('bg-red-600', 'bg-green-600');
+        // ==========================================
+        // 🌟 核心防護：Google 帳號認證與登入系統
+        // ==========================================
+        const provider = new GoogleAuthProvider();
+
+        if (auth) {
+            onAuthStateChanged(auth, async (user) => {
+                clearTimeout(connTimeout); 
+                const statusEl = document.getElementById('auth-status');
+                const overlay = document.getElementById('login-overlay');
                 
-                await loadSettings();
-                renderCommitteeCheckboxes();
-                loadCases();
-            } else {
-                signInAnonymously(auth).catch(err => alert("連線失敗，請檢查權限設定"));
-            }
+                if (user) {
+                    currentUser = user;
+                    // 隱藏登入遮罩
+                    overlay.classList.add('opacity-0', 'pointer-events-none');
+                    setTimeout(() => overlay.classList.add('hidden'), 300);
+                    
+                    // 顯示使用者頭像與名稱
+                    statusEl.innerHTML = `<img src="${user.photoURL || ''}" class="w-6 h-6 md:w-7 md:h-7 rounded-full border-2 border-white bg-white"> <span class="hidden md:inline font-bold">${user.displayName || '已登入'}</span> <i class="fa-solid fa-right-from-bracket ml-1 text-xs opacity-80"></i>`;
+                    statusEl.className = "bg-blue-700 hover:bg-blue-800 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-white shadow-md font-bold text-xs md:text-sm flex items-center gap-2 cursor-pointer transition-colors";
+                    
+                    statusEl.onclick = () => {
+                        if(confirm("確定要登出此帳號嗎？\n登出後將無法存取雲端案件資料。")) signOut(auth);
+                    };
+
+                    await loadSettings();
+                    renderCommitteeCheckboxes();
+                    loadCases();
+                } else {
+                    // 顯示登入遮罩
+                    overlay.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
+                    statusEl.innerHTML = '<i class="fa-solid fa-user-xmark"></i> 未登入';
+                    statusEl.className = "bg-slate-500 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-white shadow font-bold text-xs md:text-sm flex items-center gap-2";
+                    statusEl.onclick = null;
+                }
+            });
+        }
+
+        document.getElementById('btn-google-login').addEventListener('click', () => {
+            const btn = document.getElementById('btn-google-login');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-600 text-2xl mr-2"></i> 登入授權中...';
+            signInWithPopup(auth, provider).catch(err => {
+                alert("登入失敗: " + err.message);
+                btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6"> 使用 Google 帳號登入';
+            });
         });
 
         function loadCases() {
@@ -1177,12 +1196,12 @@
         document.querySelectorAll('.main-tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.main-tab-btn').forEach(b => {
-                    b.classList.remove('text-blue-600', 'border-blue-600');
+                    b.classList.remove('text-blue-600', 'border-b-4', 'border-blue-600');
                     b.classList.add('text-slate-500', 'border-transparent');
                 });
                 const targetBtn = e.currentTarget;
                 targetBtn.classList.remove('text-slate-500', 'border-transparent');
-                targetBtn.classList.add('text-blue-600', 'border-blue-600');
+                targetBtn.classList.add('text-blue-600', 'border-b-4', 'border-blue-600');
                 showView(targetBtn.dataset.target, "訪視案件管理", true);
                 if(targetBtn.dataset.target === 'dashboard') updateDashboard();
             });
@@ -1199,7 +1218,7 @@
                 e.target.classList.add('bg-blue-100', 'text-blue-800');
                 document.getElementById(e.target.dataset.target).classList.remove('hidden');
                 
-                triggerAutoResize(); // 切換頁籤時重新計算高度
+                triggerAutoResize();
                 
                 if(e.target.dataset.target === 'tab-media') {
                     setTimeout(() => { initCanvasSize(); loadCanvasPage(0); }, 50);
@@ -1208,7 +1227,7 @@
         });
 
         // ==========================================
-        // 🌟 摺疊基本資料面板邏輯
+        // 摺疊基本資料面板邏輯
         // ==========================================
         document.getElementById('btn-toggle-info').addEventListener('click', (e) => {
             const panel = document.getElementById('ws-expanded-info');
@@ -1247,19 +1266,16 @@
                 const disText = (c.disability || c.disabilityCause) ? `${c.disability || ''} ${c.disabilityCause ? '('+c.disabilityCause+')' : ''}` : '無紀錄';
                 document.getElementById('ws-details-disability').innerHTML = `<i class="fa-solid fa-notes-medical mr-1"></i> ${disText}`;
                 
-                // 預設展開面板
                 document.getElementById('ws-expanded-info').classList.remove('hidden');
                 document.getElementById('info-toggle-icon').classList.replace('fa-chevron-down', 'fa-chevron-up');
                 document.getElementById('info-toggle-text').textContent = '收合資料';
                 
-                // 載入評估撰寫草稿
                 const rpt = c.report || {};
                 document.getElementById('ws-status-text').value = rpt.status || c.notes || '';
                 document.getElementById('ws-limits-text').value = rpt.limits || '';
                 document.getElementById('ws-analysis-text').value = rpt.analysis || '';
                 document.getElementById('ws-strategy-text').value = rpt.strategy || c.strategy || '';
                 
-                // 載入改善成果報告
                 const outcome = c.outcome || {};
                 document.getElementById('ws-outcome-resolution').value = outcome.resolution || '';
                 document.getElementById('ws-outcome-acceptance').value = outcome.acceptance || '';
@@ -1272,7 +1288,6 @@
                 document.getElementById('env-height').value = env.height || '';
                 document.getElementById('env-weight').value = env.weight || '';
 
-                // 動態載入自訂檢核表
                 const chkContainer = document.getElementById('checklist-container');
                 chkContainer.innerHTML = '';
                 for (const [category, items] of Object.entries(settings.checklists)) {
@@ -1303,11 +1318,10 @@
                 showView('workspace', '現場紀錄與評估', false);
                 document.querySelector('[data-target="tab-media"]').click();
                 
-                triggerAutoResize(); // 載入資料後調整高度
+                triggerAutoResize(); 
             } catch (err) { alert("開啟案件時發生錯誤。"); }
         }
 
-        // 編輯基本資料
         document.getElementById('btn-edit-case').addEventListener('click', () => {
             const c = casesData.find(x => x.id === currentEditingCaseId);
             if (!c) return;
@@ -1347,7 +1361,6 @@
             triggerAutoResize();
         });
 
-        // 刪除案件
         document.getElementById('btn-delete-case').addEventListener('click', async () => {
             if (!currentEditingCaseId) return;
             const confirmDelete = confirm("⚠️ 警告：您確定要永久刪除此案件嗎？\n刪除後資料將無法復原！");
@@ -1361,7 +1374,6 @@
             }
         });
 
-        // 儲存文字與檢核表 (統一按鈕邏輯)
         document.querySelectorAll('.btn-save-ws').forEach(btn => {
             btn.addEventListener('click', async () => {
                 if (!currentEditingCaseId) return;
@@ -1392,7 +1404,6 @@
                     updatedAt: serverTimestamp()
                 };
                 
-                // 動態抓取所有檢核表狀態
                 document.querySelectorAll('.chk-dynamic').forEach(checkbox => {
                     const key = checkbox.dataset.chkkey;
                     dataToUpdate.checklist[key] = checkbox.checked;
@@ -1587,9 +1598,6 @@
                 </div>`}).join('');
         }
 
-        // ==========================================
-        // 🌟 錄音與 AI 逐字稿生成
-        // ==========================================
         const btnRecord = document.getElementById('btn-record-audio');
         let mediaRecorder; let audioChunks = []; let isRecording = false;
 
