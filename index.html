@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>職務再設計 - 訪視紀錄 APP</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS (Excel 匯入用) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @media print {
+            body { background-color: white; }
+            .no-print { display: none !important; }
+            .print-break-inside-avoid { page-break-inside: avoid; }
+        }
+        /* 防止在畫布上滑動螢幕 */
+        #drawing-board { touch-action: none; background-color: #ffffff; }
+        .tool-active { outline: 2px solid #3b82f6; outline-offset: 2px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen flex flex-col overflow-hidden">
+
+    <!-- 頂部導航列 -->
+    <header class="bg-blue-600 text-white shadow-md p-4 flex justify-between items-center no-print shrink-0 z-10">
+        <div class="flex items-center gap-2">
+            <button id="btn-back" class="hidden text-white hover:text-blue-200 p-2 -ml-2">
+                <i class="fa-solid fa-arrow-left text-xl"></i>
+            </button>
+            <h1 id="app-title" class="text-xl font-bold tracking-wide">訪視案件管理</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <span id="auth-status" class="text-xs bg-blue-500 px-2 py-1 rounded-full"><i class="fa-solid fa-spinner fa-spin"></i> 連線中</span>
+            <button id="btn-settings" class="text-white hover:text-blue-200 p-2">
+                <i class="fa-solid fa-gear text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主選單 Tabs -->
+    <div id="main-tabs" class="bg-white shadow-sm flex no-print z-10 shrink-0">
+        <button class="main-tab-btn flex-1 py-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600" data-target="list">
+            <i class="fa-solid fa-list mr-1"></i> 案件列表
+        </button>
+        <button class="main-tab-btn flex-1 py-3 text-sm font-bold text-slate-500 border-b-2 border-transparent hover:text-blue-500" data-target="dashboard">
+            <i class="fa-solid fa-chart-pie mr-1"></i> 儀表板
+        </button>
+    </div>
+
+    <!-- 主要內容區 -->
+    <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar p-4 relative no-print">
+        
+        <!-- ================= 視圖 1: 案件列表 ================= -->
+        <div id="view-list" class="space-y-4 max-w-3xl mx-auto pb-24">
+            <div class="flex gap-2 mb-2">
+                <input type="text" id="search-input" placeholder="搜尋企業或個案..." class="flex-1 p-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                <label class="bg-emerald-500 text-white px-4 rounded-xl shadow-sm flex items-center justify-center cursor-pointer hover:bg-emerald-600 transition-colors">
+                    <i class="fa-solid fa-file-excel mr-1"></i> 匯入
+                    <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden">
+                </label>
+            </div>
+            
+            <div id="cases-container" class="space-y-3">
+                <div class="text-center text-slate-400 py-10">載入案件中...</div>
+            </div>
+
+            <button id="btn-new-case" class="fixed bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-blue-700 active:scale-95 z-20">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+        </div>
+
+        <!-- ================= 視圖 2: 儀表板 ================= -->
+        <div id="view-dashboard" class="hidden max-w-3xl mx-auto pb-24 space-y-4">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                <h2 class="text-lg font-bold text-slate-700 mb-4 border-b pb-2">案件統計概況</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-xl text-center">
+                        <p class="text-sm text-blue-600 font-bold mb-1">總案件數</p>
+                        <p class="text-3xl font-black text-blue-800" id="dash-total">0</p>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-xl text-center">
+                        <p class="text-sm text-amber-600 font-bold mb-1">中高齡/高齡者</p>
+                        <p class="text-3xl font-black text-amber-800" id="dash-elder">0</p>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-xl text-center">
+                        <p class="text-sm text-emerald-600 font-bold mb-1">身心障礙者</p>
+                        <p class="text-3xl font-black text-emerald-800" id="dash-disabled">0</p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-xl text-center">
+                        <p class="text-sm text-purple-600 font-bold mb-1">勞工就業通</p>
+                        <p class="text-3xl font-black text-purple-800" id="dash-job">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 視圖: 系統設定 ================= -->
+        <div id="view-settings" class="hidden max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-slate-100 pb-20">
+            <h2 class="text-lg font-bold mb-4 text-slate-700 border-b pb-2"><i class="fa-solid fa-sliders mr-2"></i>系統設定</h2>
+            
+            <div class="mb-6">
+                <h3 class="font-bold text-blue-800 mb-2">委員清單管理</h3>
+                <p class="text-xs text-slate-500 mb-3">新增後，在建立案件時可直接勾選訪視人員。</p>
+                <div class="flex gap-2 mb-4">
+                    <input type="text" id="setting-committee-input" placeholder="輸入委員姓名" class="flex-1 p-2 border border-slate-200 rounded-lg">
+                    <button id="btn-add-committee" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700">新增</button>
+                </div>
+                <ul id="setting-committee-list" class="space-y-2">
+                    <!-- 委員名單動態生成 -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- ================= 視圖 3: 新增/編輯案件表單 ================= -->
+        <div id="view-form" class="hidden max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-slate-100 pb-20">
+            <h2 class="text-lg font-bold mb-4 text-slate-700 border-b pb-2" id="form-title">新增訪視案件</h2>
+            <form id="case-form" class="space-y-4">
+                <input type="hidden" id="form-id">
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">對象別 (將影響個案登打模式) *</label>
+                    <div class="flex flex-wrap gap-3">
+                        <label class="flex items-center"><input type="radio" name="form-category" value="中高齡及高齡者" class="mr-1" required> 中高齡及高齡者(工作站)</label>
+                        <label class="flex items-center"><input type="radio" name="form-category" value="身心障礙者" class="mr-1"> 身心障礙者(單人)</label>
+                        <label class="flex items-center"><input type="radio" name="form-category" value="勞工就業通" class="mr-1"> 勞工就業通</label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">申請單位 *</label>
+                        <input type="text" id="form-company" required class="w-full p-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">聯絡電話</label>
+                        <input type="tel" id="form-phone" class="w-full p-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- 單一個案登打區 -->
+                <div id="group-single-client" class="bg-blue-50 p-3 rounded-lg border border-blue-100 space-y-3">
+                    <h3 class="text-sm font-bold text-blue-800">單一個案資料</h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="col-span-2">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">個案姓名 *</label>
+                            <input type="text" id="form-client-name" class="w-full p-2 rounded border border-slate-200">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">職稱</label>
+                            <input type="text" id="form-client-title" class="w-full p-2 rounded border border-slate-200">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">障礙類別</label>
+                            <input type="text" id="form-client-disability" placeholder="如:第二類(聽障)-重度" class="w-full p-2 rounded border border-slate-200">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 工作站多人登打區 -->
+                <div id="group-multi-client" class="bg-amber-50 p-3 rounded-lg border border-amber-100 space-y-3 hidden">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-amber-800">工作站名單 (可新增多人)</h3>
+                        <button type="button" id="btn-add-client-row" class="text-xs bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-700"><i class="fa-solid fa-plus"></i> 新增個案</button>
+                    </div>
+                    <div id="multi-client-container" class="space-y-2">
+                        <!-- 動態個案輸入列 -->
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">接案日期</label>
+                        <input type="date" id="form-intake-date" class="w-full p-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">初訪日期</label>
+                        <input type="date" id="form-visit-date" required class="w-full p-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">訪視人員 / 委員 (可複選)</label>
+                    <div id="form-committee-checkboxes" class="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <span class="text-xs text-slate-400">請先至右上角「設定」新增委員名單</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md hover:bg-blue-700 mt-6">
+                    儲存案件基本資料
+                </button>
+            </form>
+        </div>
+
+        <!-- ================= 視圖 4: 案件工作區 ================= -->
+        <div id="view-workspace" class="hidden max-w-3xl mx-auto flex flex-col h-full space-y-4 pb-20">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100 flex justify-between items-start">
+                <div>
+                    <span id="ws-category" class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-600 mb-1 inline-block font-bold">類別</span>
+                    <h2 id="ws-company" class="text-lg font-bold text-slate-800">載入中...</h2>
+                    <p id="ws-client" class="text-sm text-slate-500">載入中...</p>
+                </div>
+                <div class="text-right text-xs text-slate-400">
+                    <div id="ws-visit-date">訪視日: -</div>
+                </div>
+            </div>
+
+            <!-- 工作區 Tabs -->
+            <div class="flex bg-white rounded-lg p-1 shadow-sm border border-slate-100 overflow-x-auto no-scrollbar">
+                <button class="ws-tab-btn flex-none w-1/3 py-2 text-sm font-bold rounded-md bg-blue-100 text-blue-700" data-target="tab-media">媒體/手寫</button>
+                <button class="ws-tab-btn flex-none w-1/3 py-2 text-sm font-bold rounded-md text-slate-500" data-target="tab-text">評估撰寫</button>
+                <button class="ws-tab-btn flex-none w-1/3 py-2 text-sm font-bold rounded-md text-slate-500" data-target="tab-assess">客觀/檢核</button>
+            </div>
+
+            <!-- 頁籤 1: 多媒體紀錄 (拍照、錄音、手寫板) -->
+            <div id="tab-media" class="ws-tab-content space-y-4">
+                
+                <!-- 手寫畫板區 -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-slate-700"><i class="fa-solid fa-pen-nib text-blue-500 mr-2"></i>手寫草稿與動線繪圖</h3>
+                        <button id="btn-save-canvas" class="text-xs text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded shadow flex items-center">
+                            <i class="fa-solid fa-cloud-arrow-up mr-1"></i> 轉存為圖片
+                        </button>
+                    </div>
+                    
+                    <!-- 畫布工具列 -->
+                    <div class="flex flex-wrap gap-3 items-center bg-slate-50 p-2 rounded-t-lg border-x border-t border-slate-200">
+                        <div class="flex gap-2 items-center">
+                            <button class="color-btn w-6 h-6 rounded-full bg-slate-900 tool-active" data-color="#0f172a"></button>
+                            <button class="color-btn w-6 h-6 rounded-full bg-red-500" data-color="#ef4444"></button>
+                            <button class="color-btn w-6 h-6 rounded-full bg-blue-500" data-color="#3b82f6"></button>
+                            <button id="btn-eraser" class="ml-1 px-2 py-1 bg-white border border-slate-300 rounded text-xs text-slate-600 hover:bg-slate-100"><i class="fa-solid fa-eraser"></i> 橡皮擦</button>
+                        </div>
+                        <div class="flex items-center gap-1 ml-auto">
+                            <i class="fa-solid fa-pen text-xs text-slate-400"></i>
+                            <input type="range" id="pen-size" min="1" max="10" value="3" class="w-16">
+                        </div>
+                    </div>
+                    
+                    <!-- 畫布主體 -->
+                    <div class="border-x border-slate-200 overflow-hidden relative">
+                        <canvas id="drawing-board" class="w-full h-64 cursor-crosshair"></canvas>
+                    </div>
+                    
+                    <!-- 畫布分頁列 -->
+                    <div class="flex justify-between items-center bg-slate-50 p-2 rounded-b-lg border-x border-b border-slate-200 text-sm">
+                        <div class="flex items-center gap-3">
+                            <button id="btn-prev-page" class="text-slate-600 hover:text-blue-600 p-1"><i class="fa-solid fa-chevron-left"></i></button>
+                            <span id="page-indicator" class="font-bold text-slate-700 w-12 text-center">1 / 1</span>
+                            <button id="btn-next-page" class="text-slate-600 hover:text-blue-600 p-1"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="btn-del-page" class="text-red-500 hover:bg-red-50 px-2 py-1 rounded transition-colors"><i class="fa-solid fa-trash mr-1"></i>刪除此頁</button>
+                            <button id="btn-add-page" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors font-bold"><i class="fa-solid fa-plus mr-1"></i>新頁面</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 現場照片紀錄 -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-700"><i class="fa-solid fa-camera text-blue-500 mr-2"></i>現場照片與畫布圖檔</h3>
+                        <label class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-sm font-bold cursor-pointer transition-colors">
+                            <i class="fa-solid fa-plus"></i> 新增照片
+                            <input type="file" id="photo-upload" accept="image/*" capture="environment" class="hidden">
+                        </label>
+                    </div>
+                    <div id="photos-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        <p class="text-sm text-slate-400 col-span-full">尚無照片。</p>
+                    </div>
+                </div>
+
+                <!-- 錄音紀錄區 -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-slate-700"><i class="fa-solid fa-microphone text-blue-500 mr-2"></i>現場訪談錄音</h3>
+                        <button id="btn-record-audio" class="bg-red-50 text-red-600 hover:bg-red-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors">
+                            <i class="fa-solid fa-circle text-xs mr-1"></i> 開始錄音
+                        </button>
+                    </div>
+                    <p id="recording-status" class="text-sm text-red-500 mb-2 hidden animate-pulse font-bold">● 錄音中... (點擊停止)</p>
+                    <div id="audios-container" class="space-y-2">
+                        <p class="text-sm text-slate-400">尚無錄音。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 頁籤 2: 評估報告撰寫 -->
+            <div id="tab-text" class="ws-tab-content hidden space-y-4">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">一、 個案之就業狀況</h3>
+                    <textarea id="ws-status-text" rows="4" class="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="工作時間、主要工作內容、操作流程..."></textarea>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">二、 個案之生理限制</h3>
+                    <textarea id="ws-limits-text" rows="4" class="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="聽力/視力數據、中高齡體能退化情形..."></textarea>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">三、 個案就業問題診斷與分析</h3>
+                    <textarea id="ws-analysis-text" rows="5" class="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="描述生理限制與工作環境衝突所導致的困難..."></textarea>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">四、 改善方式、內容及輔具建議</h3>
+                    <textarea id="ws-strategy-text" rows="5" class="w-full p-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-sm" placeholder="預計提供的輔具規格、人力協助時數規劃..."></textarea>
+                </div>
+                <button class="btn-save-ws w-full bg-slate-800 text-white py-3 rounded-xl shadow-md font-bold text-lg hover:bg-slate-700">儲存所有文字紀錄</button>
+            </div>
+
+            <!-- 頁籤 3: 客觀數據與環境檢核 -->
+            <div id="tab-assess" class="ws-tab-content hidden space-y-4">
+                
+                <!-- 客觀數據登記區 -->
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-700 border-b pb-2 mb-3"><i class="fa-solid fa-ruler-combined text-blue-500 mr-2"></i>現場客觀數據登記</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">環境照度 (Lux)</label>
+                            <input type="number" id="env-lux" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">環境噪音 (dB)</label>
+                            <input type="number" id="env-noise" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">操作檯面高度 (cm)</label>
+                            <input type="number" id="env-height" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">搬運物重量 (kg)</label>
+                            <input type="number" id="env-weight" class="w-full p-2 border border-slate-200 rounded-lg bg-slate-50">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-slate-700 border-b pb-2 mb-3">現場環境與能力檢核</h3>
+                    <div class="space-y-4" id="checklist-container">
+                        <!-- 動態生成分類的檢核表 -->
+                    </div>
+                    <button class="btn-save-ws w-full mt-6 bg-slate-800 text-white py-3 rounded-xl shadow-md font-bold hover:bg-slate-700">儲存檢核與數據</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- 吐司通知 -->
+    <div id="toast" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300 opacity-0 pointer-events-none z-50">
+        已儲存
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAmoPK2soGiJQvCli9IlFXqS6mQy6q2ScQ",
+            authDomain: "kaiyujoba2026.firebaseapp.com",
+            projectId: "kaiyujoba2026",
+            storageBucket: "kaiyujoba2026.firebasestorage.app",
+            messagingSenderId: "94972665738",
+            appId: "1:94972665738:web:53bb278db8dd99707af273",
+            measurementId: "G-J0LC1ECXH3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        const storage = getStorage(app);
+
+        // ==========================================
+        // 全域變數 & DOM
+        // ==========================================
+        let currentUser = null;
+        let casesData = [];
+        let currentEditingCaseId = null;
+        let settings = { committee: [] }; // 系統設定
+        let multiClients = []; // 暫存新增的多個案名單
+
+        const DOM = {
+            views: {
+                list: document.getElementById('view-list'),
+                dashboard: document.getElementById('view-dashboard'),
+                settings: document.getElementById('view-settings'),
+                form: document.getElementById('view-form'),
+                workspace: document.getElementById('view-workspace')
+            },
+            mainTabs: document.getElementById('main-tabs'),
+            btnBack: document.getElementById('btn-back'),
+            btnNewCase: document.getElementById('btn-new-case'),
+            casesContainer: document.getElementById('cases-container'),
+            toast: document.getElementById('toast'),
+            form: document.getElementById('case-form')
+        };
+
+        const checklists = {
+            "中高齡/人因工程": [
+                { id: 'chk_ergo_1', label: '頻繁彎腰或過度伸展手臂作業？' },
+                { id: 'chk_ergo_2', label: '需搬運超過 10 公斤之重物？' },
+                { id: 'chk_ergo_3', label: '需長時間站立或走動 (單次>4小時)？' },
+                { id: 'chk_ergo_4', label: '工作環境照明是否不足或產生眩光？' }
+            ],
+            "身障/感官與無障礙": [
+                { id: 'chk_dis_1', label: '工作環境是否吵雜，影響口語溝通？' },
+                { id: 'chk_dis_2', label: '需要頻繁與不特定人員進行互動或指令接收？' },
+                { id: 'chk_dis_3', label: '門寬、走道寬度是否小於 90 公分？' },
+                { id: 'chk_dis_4', label: '缺乏適當之輔助扶手或視覺引導標示？' }
+            ]
+        };
+
+        const checklistContainer = document.getElementById('checklist-container');
+        for (const [category, items] of Object.entries(checklists)) {
+            let html = `<div class="mb-4"><h4 class="text-sm font-bold text-blue-600 mb-2">${category}</h4><div class="space-y-2">`;
+            items.forEach(item => {
+                html += `<label class="flex items-start gap-3 p-2 bg-slate-50 hover:bg-blue-50 rounded cursor-pointer border border-transparent">
+                            <input type="checkbox" id="${item.id}" class="mt-1 w-4 h-4 text-blue-600 rounded">
+                            <span class="text-sm text-slate-700 leading-snug">${item.label}</span>
+                        </label>`;
+            });
+            html += `</div></div>`;
+            checklistContainer.innerHTML += html;
+        }
+
+        function showToast(msg) {
+            DOM.toast.textContent = msg;
+            DOM.toast.classList.remove('opacity-0');
+            setTimeout(() => DOM.toast.classList.add('opacity-0'), 2500);
+        }
+
+        function showView(viewName, title = "訪視案件管理", showTabs = true) {
+            Object.values(DOM.views).forEach(v => v.classList.add('hidden'));
+            DOM.views[viewName].classList.remove('hidden');
+            document.getElementById('app-title').textContent = title;
+            
+            if (showTabs) {
+                DOM.mainTabs.classList.remove('hidden');
+                DOM.btnBack.classList.add('hidden');
+                DOM.btnNewCase.classList.remove('hidden');
+            } else {
+                DOM.mainTabs.classList.add('hidden');
+                DOM.btnBack.classList.remove('hidden');
+                DOM.btnNewCase.classList.add('hidden');
+            }
+        }
+
+        // ==========================================
+        // 系統設定 (委員清單) 邏輯
+        // ==========================================
+        document.getElementById('btn-settings').addEventListener('click', () => {
+            renderCommitteeList();
+            showView('settings', '系統設定', false);
+        });
+
+        async function loadSettings() {
+            if(!currentUser) return;
+            const docRef = doc(db, 'users', currentUser.uid, 'settings', 'main');
+            const docSnap = await getDoc(docRef);
+            if(docSnap.exists()) settings = docSnap.data();
+        }
+
+        async function saveSettings() {
+            if(!currentUser) return;
+            await setDoc(doc(db, 'users', currentUser.uid, 'settings', 'main'), settings);
+            showToast("委員清單已更新");
+            renderCommitteeList();
+            renderCommitteeCheckboxes(); // 更新表單內的勾選清單
+        }
+
+        function renderCommitteeList() {
+            const list = document.getElementById('setting-committee-list');
+            list.innerHTML = '';
+            (settings.committee || []).forEach((name, idx) => {
+                list.innerHTML += `<li class="flex justify-between items-center bg-slate-50 p-2 border border-slate-200 rounded">
+                    <span>${name}</span>
+                    <button class="text-red-500 hover:text-red-700 text-sm" onclick="window.removeCommittee(${idx})"><i class="fa-solid fa-trash"></i></button>
+                </li>`;
+            });
+        }
+
+        document.getElementById('btn-add-committee').addEventListener('click', () => {
+            const input = document.getElementById('setting-committee-input');
+            const val = input.value.trim();
+            if(val) {
+                if(!settings.committee) settings.committee = [];
+                settings.committee.push(val);
+                input.value = '';
+                saveSettings();
+            }
+        });
+
+        window.removeCommittee = (idx) => {
+            settings.committee.splice(idx, 1);
+            saveSettings();
+        };
+
+        function renderCommitteeCheckboxes() {
+            const container = document.getElementById('form-committee-checkboxes');
+            if(!settings.committee || settings.committee.length === 0) {
+                container.innerHTML = '<span class="text-xs text-slate-400">目前無名單，請至「設定」新增。</span>';
+                return;
+            }
+            container.innerHTML = '';
+            settings.committee.forEach(name => {
+                container.innerHTML += `
+                    <label class="flex items-center gap-2 text-sm bg-white p-2 rounded border border-slate-200 cursor-pointer hover:border-blue-400">
+                        <input type="checkbox" name="chk-visitor" value="${name}" class="text-blue-600 rounded">
+                        <span>${name}</span>
+                    </label>
+                `;
+            });
+        }
+
+        // ==========================================
+        // 新增/編輯案件 (動態表單邏輯)
+        // ==========================================
+        document.querySelectorAll('input[name="form-category"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const isWorkstation = e.target.value === '中高齡及高齡者';
+                document.getElementById('group-single-client').classList.toggle('hidden', isWorkstation);
+                document.getElementById('group-multi-client').classList.toggle('hidden', !isWorkstation);
+                if(isWorkstation && multiClients.length === 0) addWorkstationClient(); // 預設加一列
+            });
+        });
+
+        function renderWorkstationClients() {
+            const container = document.getElementById('multi-client-container');
+            container.innerHTML = multiClients.map((c, idx) => `
+                <div class="flex gap-2 items-center bg-white p-2 rounded border border-amber-200">
+                    <input type="text" placeholder="姓名" class="flex-1 p-1.5 border border-slate-200 rounded text-sm w-1/3" value="${c.name}" onchange="window.updateMultiClient(${idx}, 'name', this.value)">
+                    <input type="text" placeholder="年齡" class="w-16 p-1.5 border border-slate-200 rounded text-sm" value="${c.age}" onchange="window.updateMultiClient(${idx}, 'age', this.value)">
+                    <input type="text" placeholder="職稱" class="flex-1 p-1.5 border border-slate-200 rounded text-sm w-1/3" value="${c.title}" onchange="window.updateMultiClient(${idx}, 'title', this.value)">
+                    <button type="button" class="text-red-500 p-1" onclick="window.removeMultiClient(${idx})"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            `).join('');
+        }
+
+        window.updateMultiClient = (idx, field, val) => multiClients[idx][field] = val;
+        window.removeMultiClient = (idx) => { multiClients.splice(idx, 1); renderWorkstationClients(); };
+        function addWorkstationClient() { multiClients.push({name:'', age:'', title:''}); renderWorkstationClients(); }
+        document.getElementById('btn-add-client-row').addEventListener('click', addWorkstationClient);
+
+        DOM.btnNewCase.addEventListener('click', () => {
+            DOM.form.reset();
+            document.getElementById('form-id').value = '';
+            document.getElementById('form-visit-date').valueAsDate = new Date();
+            multiClients = [];
+            document.getElementById('group-single-client').classList.remove('hidden');
+            document.getElementById('group-multi-client').classList.add('hidden');
+            renderCommitteeCheckboxes();
+            showView('form', '新增訪視案件', false);
+        });
+
+        DOM.form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const caseId = document.getElementById('form-id').value;
+            const category = document.querySelector('input[name="form-category"]:checked')?.value || '其他';
+            
+            // 收集選取的委員
+            const visitors = Array.from(document.querySelectorAll('input[name="chk-visitor"]:checked')).map(cb => cb.value).join('、');
+
+            const data = {
+                category,
+                company: document.getElementById('form-company').value,
+                phone: document.getElementById('form-phone').value,
+                intakeDate: document.getElementById('form-intake-date').value,
+                visitDate: document.getElementById('form-visit-date').value,
+                visitors: visitors,
+                updatedAt: serverTimestamp()
+            };
+
+            // 依據類別儲存個案資料
+            if(category === '中高齡及高齡者') {
+                data.clients = multiClients.filter(c => c.name.trim() !== ''); // 工作站多人名單
+                data.clientName = data.clients.length > 0 ? `${data.clients[0].name} 等 ${data.clients.length} 人` : '未命名工作站';
+            } else {
+                data.clientName = document.getElementById('form-client-name').value;
+                data.clientTitle = document.getElementById('form-client-title').value;
+                data.disability = document.getElementById('form-client-disability').value;
+                data.clients = [];
+            }
+
+            const casesRef = collection(db, 'users', currentUser.uid, 'cases');
+            if (caseId) {
+                await updateDoc(doc(casesRef, caseId), data);
+                showToast("更新成功");
+            } else {
+                data.createdAt = serverTimestamp();
+                data.photos = []; data.audios = []; data.checklist = {};
+                data.env = { lux: '', noise: '', height: '', weight: '' };
+                data.report = { status: "", limits: "", analysis: "", strategy: "" };
+                await addDoc(casesRef, data);
+                showToast("新增成功");
+            }
+            showView('list', '訪視案件管理', true);
+        });
+
+        // ==========================================
+        // 手寫畫板 (多頁面、橡皮擦、畫筆) 邏輯
+        // ==========================================
+        const canvas = document.getElementById('drawing-board');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        let canvasPages = []; // 存放各頁面資料 [ imageData1, imageData2... ]
+        let currentCanvasIdx = 0;
+        let isDrawing = false;
+        let drawColor = '#0f172a';
+        let drawSize = 3;
+        let isEraser = false;
+
+        function initCanvasSize() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = 250; 
+            fillWhite();
+        }
+
+        function fillWhite() {
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function loadCanvasPage(idx) {
+            currentCanvasIdx = idx;
+            document.getElementById('page-indicator').textContent = `${idx + 1} / ${canvasPages.length || 1}`;
+            fillWhite();
+            if(canvasPages[idx]) {
+                const img = new Image();
+                img.onload = () => ctx.drawImage(img, 0, 0);
+                img.src = canvasPages[idx];
+            }
+        }
+
+        function saveCanvasPage() {
+            if(canvasPages.length === 0) canvasPages = ['']; // 確保有第一頁
+            canvasPages[currentCanvasIdx] = canvas.toDataURL('image/png');
+        }
+
+        // 工具列事件
+        document.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                isEraser = false;
+                drawColor = e.target.dataset.color;
+                document.querySelectorAll('.color-btn, #btn-eraser').forEach(b => b.classList.remove('tool-active'));
+                e.target.classList.add('tool-active');
+            });
+        });
+
+        document.getElementById('btn-eraser').addEventListener('click', (e) => {
+            isEraser = true;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('tool-active'));
+            e.currentTarget.classList.add('tool-active');
+        });
+
+        document.getElementById('pen-size').addEventListener('input', (e) => drawSize = e.target.value);
+
+        // 分頁控制
+        document.getElementById('btn-add-page').addEventListener('click', () => {
+            saveCanvasPage();
+            canvasPages.push(''); // 新增空白頁
+            loadCanvasPage(canvasPages.length - 1);
+        });
+
+        document.getElementById('btn-del-page').addEventListener('click', () => {
+            if(canvasPages.length <= 1) {
+                canvasPages = [''];
+                loadCanvasPage(0);
+                return;
+            }
+            canvasPages.splice(currentCanvasIdx, 1);
+            loadCanvasPage(Math.max(0, currentCanvasIdx - 1));
+        });
+
+        document.getElementById('btn-prev-page').addEventListener('click', () => {
+            if(currentCanvasIdx > 0) { saveCanvasPage(); loadCanvasPage(currentCanvasIdx - 1); }
+        });
+        document.getElementById('btn-next-page').addEventListener('click', () => {
+            if(currentCanvasIdx < canvasPages.length - 1) { saveCanvasPage(); loadCanvasPage(currentCanvasIdx + 1); }
+        });
+
+        // 繪畫事件
+        const startPos = (e) => { isDrawing = true; draw(e); };
+        const endPos = () => { isDrawing = false; ctx.beginPath(); };
+        const draw = (e) => {
+            if (!isDrawing) return;
+            e.preventDefault(); 
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            ctx.lineWidth = drawSize;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            // 橡皮擦模式就是畫白色
+            ctx.strokeStyle = isEraser ? "#ffffff" : drawColor;
+            
+            ctx.lineTo(clientX - rect.left, clientY - rect.top);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(clientX - rect.left, clientY - rect.top);
+        };
+
+        canvas.addEventListener('mousedown', startPos); canvas.addEventListener('mouseup', endPos);
+        canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseout', endPos);
+        canvas.addEventListener('touchstart', startPos, {passive: false});
+        canvas.addEventListener('touchend', endPos);
+        canvas.addEventListener('touchmove', draw, {passive: false});
+
+        // 上傳所有畫布
+        document.getElementById('btn-save-canvas').addEventListener('click', async () => {
+            if (!currentEditingCaseId || !currentUser) return;
+            saveCanvasPage(); // 先儲存當前畫面到陣列
+            const validPages = canvasPages.filter(p => p !== ''); // 濾掉完全沒動過的空白頁
+            if(validPages.length === 0) return alert("畫布是空白的");
+
+            showToast(`正在上傳 ${validPages.length} 張手寫圖...`);
+            document.getElementById('btn-save-canvas').innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 上傳中';
+            
+            try {
+                let uploadedUrls = [];
+                for(let i=0; i<validPages.length; i++) {
+                    const res = await fetch(validPages[i]);
+                    const blob = await res.blob();
+                    const fileName = `canvas_${Date.now()}_P${i+1}.png`;
+                    const storageRef = ref(storage, `users/${currentUser.uid}/cases/${currentEditingCaseId}/photos/${fileName}`);
+                    await uploadBytes(storageRef, blob);
+                    uploadedUrls.push(await getDownloadURL(storageRef));
+                }
+                
+                const c = casesData.find(x => x.id === currentEditingCaseId);
+                const newPhotos = [...(c.photos || []), ...uploadedUrls];
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { photos: newPhotos });
+                
+                renderPhotos(newPhotos);
+                showToast("手寫圖上傳完成！");
+                
+                // 清空畫布重新開始
+                canvasPages = ['']; loadCanvasPage(0);
+            } catch (err) {
+                console.error(err); alert("上傳失敗");
+            } finally {
+                document.getElementById('btn-save-canvas').innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-1"></i> 轉存為圖片';
+            }
+        });
+
+        window.addEventListener('resize', () => { 
+            if(!DOM.views.workspace.classList.contains('hidden')) {
+                saveCanvasPage(); initCanvasSize(); loadCanvasPage(currentCanvasIdx);
+            }
+        });
+
+        // ==========================================
+        // Firebase 認證與主頁資料載入
+        // ==========================================
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-status').innerHTML = '<i class="fa-solid fa-cloud-check text-green-200"></i> 已連線';
+                document.getElementById('auth-status').classList.replace('bg-blue-500', 'bg-green-600');
+                await loadSettings();
+                renderCommitteeCheckboxes();
+                loadCases();
+            } else {
+                signInAnonymously(auth).catch(err => alert("連線失敗，請檢查權限"));
+            }
+        });
+
+        function loadCases() {
+            if (!currentUser) return;
+            const q = query(collection(db, 'users', currentUser.uid, 'cases'), orderBy('createdAt', 'desc'));
+            onSnapshot(q, (snapshot) => {
+                casesData = [];
+                snapshot.forEach(doc => casesData.push({ id: doc.id, ...doc.data() }));
+                renderCaseList();
+                if(!DOM.views.dashboard.classList.contains('hidden')) updateDashboard();
+            });
+        }
+
+        function renderCaseList(searchTerm = '') {
+            DOM.casesContainer.innerHTML = '';
+            const filtered = casesData.filter(c => 
+                (c.company && c.company.includes(searchTerm)) || 
+                (c.clientName && c.clientName.includes(searchTerm))
+            );
+            
+            if (filtered.length === 0) {
+                DOM.casesContainer.innerHTML = '<div class="text-center text-slate-400 py-10">目前無案件</div>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                const el = document.createElement('div');
+                el.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-100 hover:shadow-md cursor-pointer";
+                let catColor = (item.category === '中高齡及高齡者') ? 'bg-amber-100 text-amber-700' : 
+                               (item.category === '身心障礙者') ? 'bg-emerald-100 text-emerald-700' : 
+                               (item.category === '勞工就業通') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700';
+                
+                el.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-slate-800 text-lg">${item.company}</h3>
+                        <span class="text-xs ${catColor} px-2 py-1 rounded font-medium">${item.category || '未分類'}</span>
+                    </div>
+                    <div class="flex items-center text-sm text-slate-500 gap-3">
+                        <span class="truncate max-w-[120px]"><i class="fa-solid fa-users text-slate-400 mr-1"></i> ${item.clientName || '無'}</span>
+                        <span><i class="fa-solid fa-calendar text-slate-400 mr-1"></i> ${item.visitDate || item.date || '無'}</span>
+                    </div>
+                `;
+                el.addEventListener('click', () => openWorkspace(item.id));
+                DOM.casesContainer.appendChild(el);
+            });
+        }
+        document.getElementById('search-input').addEventListener('input', (e) => renderCaseList(e.target.value));
+
+        function updateDashboard() {
+            document.getElementById('dash-total').textContent = casesData.length;
+            document.getElementById('dash-elder').textContent = casesData.filter(c => c.category === '中高齡及高齡者').length;
+            document.getElementById('dash-disabled').textContent = casesData.filter(c => c.category === '身心障礙者').length;
+            document.getElementById('dash-job').textContent = casesData.filter(c => c.category === '勞工就業通').length;
+        }
+
+        // ==========================================
+        // 工作區切換與資料載入
+        // ==========================================
+        document.querySelectorAll('.ws-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.ws-tab-btn').forEach(b => {
+                    b.classList.remove('bg-blue-100', 'text-blue-700');
+                    b.classList.add('text-slate-500');
+                });
+                document.querySelectorAll('.ws-tab-content').forEach(c => c.classList.add('hidden'));
+                e.target.classList.remove('text-slate-500');
+                e.target.classList.add('bg-blue-100', 'text-blue-700');
+                document.getElementById(e.target.dataset.target).classList.remove('hidden');
+                
+                if(e.target.dataset.target === 'tab-media') {
+                    setTimeout(() => { initCanvasSize(); loadCanvasPage(0); }, 50);
+                }
+            });
+        });
+
+        function openWorkspace(id) {
+            currentEditingCaseId = id;
+            const c = casesData.find(x => x.id === id);
+            
+            document.getElementById('ws-category').textContent = c.category || '未分類';
+            document.getElementById('ws-company').textContent = c.company;
+            document.getElementById('ws-client').textContent = `${c.clientName} ${c.clientTitle ? '('+c.clientTitle+')' : ''}`;
+            document.getElementById('ws-visit-date').textContent = `初訪日: ${c.visitDate || '-'}`;
+            
+            // 載入報告文字
+            const rpt = c.report || {};
+            document.getElementById('ws-status-text').value = rpt.status || '';
+            document.getElementById('ws-limits-text').value = rpt.limits || '';
+            document.getElementById('ws-analysis-text').value = rpt.analysis || '';
+            document.getElementById('ws-strategy-text').value = rpt.strategy || '';
+            
+            // 載入客觀數據
+            const env = c.env || {};
+            document.getElementById('env-lux').value = env.lux || '';
+            document.getElementById('env-noise').value = env.noise || '';
+            document.getElementById('env-height').value = env.height || '';
+            document.getElementById('env-weight').value = env.weight || '';
+
+            // 載入檢核表
+            Object.values(checklists).flat().forEach(item => {
+                const el = document.getElementById(item.id);
+                if (el) el.checked = c.checklist?.[item.id] || false;
+            });
+
+            renderPhotos(c.photos || []);
+            renderAudios(c.audios || []);
+
+            // 初始畫布
+            canvasPages = ['']; currentCanvasIdx = 0; 
+            isEraser = false; drawColor = '#0f172a'; drawSize = 3;
+            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('tool-active'));
+            document.querySelector('.color-btn[data-color="#0f172a"]').classList.add('tool-active');
+            document.getElementById('btn-eraser').classList.remove('tool-active');
+
+            showView('workspace', '現場紀錄與評估', false);
+            document.querySelector('[data-target="tab-media"]').click();
+        }
+
+        // ==========================================
+        // 儲存報告文字與客觀數據
+        // ==========================================
+        document.querySelectorAll('.btn-save-ws').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (!currentEditingCaseId) return;
+                const dataToUpdate = {
+                    report: {
+                        status: document.getElementById('ws-status-text').value,
+                        limits: document.getElementById('ws-limits-text').value,
+                        analysis: document.getElementById('ws-analysis-text').value,
+                        strategy: document.getElementById('ws-strategy-text').value
+                    },
+                    env: {
+                        lux: document.getElementById('env-lux').value,
+                        noise: document.getElementById('env-noise').value,
+                        height: document.getElementById('env-height').value,
+                        weight: document.getElementById('env-weight').value
+                    },
+                    checklist: {}, 
+                    updatedAt: serverTimestamp()
+                };
+                
+                Object.values(checklists).flat().forEach(item => {
+                    dataToUpdate.checklist[item.id] = document.getElementById(item.id).checked;
+                });
+                
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 儲存中...';
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), dataToUpdate);
+                btn.textContent = btn.closest('#tab-text') ? '儲存所有文字紀錄' : '儲存檢核與數據';
+                showToast("資料已安全儲存！");
+            });
+        });
+
+        // 拍照與錄音
+        document.getElementById('photo-upload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !currentEditingCaseId) return;
+            showToast("照片上傳中...");
+            try {
+                const storageRef = ref(storage, `users/${currentUser.uid}/cases/${currentEditingCaseId}/photos/${Date.now()}_${file.name}`);
+                await uploadBytes(storageRef, file);
+                const url = await getDownloadURL(storageRef);
+                const c = casesData.find(x => x.id === currentEditingCaseId);
+                const newPhotos = [...(c.photos || []), url];
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { photos: newPhotos });
+                renderPhotos(newPhotos);
+                showToast("照片上傳成功");
+            } catch (err) { alert("上傳失敗"); }
+            e.target.value = '';
+        });
+
+        function renderPhotos(photosArr) {
+            const container = document.getElementById('photos-container');
+            if (photosArr.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400 col-span-full">尚無照片，含畫板儲存之圖片將顯示於此。</p>';
+                return;
+            }
+            container.innerHTML = photosArr.map(url => `
+                <div class="aspect-square bg-slate-100 rounded-lg overflow-hidden border border-slate-200 shadow-sm relative">
+                    <img src="${url}" class="w-full h-full object-cover" alt="現場照片">
+                </div>
+            `).join('');
+        }
+
+        const btnRecord = document.getElementById('btn-record-audio');
+        let mediaRecorder; let audioChunks = []; let isRecording = false;
+
+        btnRecord.addEventListener('click', async () => {
+            if (isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> 開始錄音';
+                btnRecord.classList.replace('bg-slate-100', 'bg-red-50');
+                btnRecord.classList.replace('text-slate-600', 'text-red-600');
+                document.getElementById('recording-status').classList.add('hidden');
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
+                    mediaRecorder.onstop = async () => {
+                        showToast("錄音處理中...");
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const fileName = `audio_${Date.now()}.webm`;
+                        try {
+                            const storageRef = ref(storage, `users/${currentUser.uid}/cases/${currentEditingCaseId}/audios/${fileName}`);
+                            await uploadBytes(storageRef, audioBlob);
+                            const url = await getDownloadURL(storageRef);
+                            const c = casesData.find(x => x.id === currentEditingCaseId);
+                            const newAudios = [...(c.audios || []), { name: new Date().toLocaleString(), url: url }];
+                            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
+                            renderAudios(newAudios);
+                            showToast("錄音已上傳");
+                        } catch(err) { alert("錄音上傳失敗"); }
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btnRecord.innerHTML = '<i class="fa-solid fa-stop mr-1"></i> 停止錄音';
+                    btnRecord.classList.replace('bg-red-50', 'bg-slate-100');
+                    btnRecord.classList.replace('text-red-600', 'text-slate-600');
+                    document.getElementById('recording-status').classList.remove('hidden');
+                } catch (err) { alert("無法存取麥克風"); }
+            }
+        });
+
+        function renderAudios(audiosArr) {
+            const container = document.getElementById('audios-container');
+            if (audiosArr.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400">尚無錄音。</p>';
+                return;
+            }
+            container.innerHTML = audiosArr.map(audio => `
+                <div class="bg-slate-50 p-2 border border-slate-200 rounded-lg flex flex-col gap-2">
+                    <span class="text-xs text-slate-500 font-medium">${audio.name}</span>
+                    <audio controls src="${audio.url}" class="w-full h-8"></audio>
+                </div>
+            `).join('');
+        }
+
+    </script>
+</body>
+</html>
