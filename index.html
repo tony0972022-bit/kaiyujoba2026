@@ -18,6 +18,9 @@
         #drawing-board { touch-action: none; background-color: #ffffff; }
         .tool-active { outline: 2px solid #3b82f6; outline-offset: 2px; }
         #preview-header { cursor: move; touch-action: none; }
+        
+        /* 文字框自適應高度過渡動畫 */
+        textarea { transition: height 0.2s ease; overflow-y: hidden; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen flex flex-col overflow-hidden">
@@ -48,7 +51,7 @@
         </button>
     </div>
 
-    <!-- 主要內容區 (適應 iPad 放寬最大寬度 max-w-5xl) -->
+    <!-- 主要內容區 -->
     <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar p-4 md:p-6 relative no-print">
         
         <!-- ================= 視圖 1: 案件列表 ================= -->
@@ -118,7 +121,6 @@
                 </button>
             </div>
 
-            <!-- 🌟 全新升級：檢核表自訂編輯區 -->
             <div class="mb-8">
                 <h3 class="font-bold text-lg text-indigo-800 mb-2">自訂客觀與檢核項目</h3>
                 <p class="text-sm text-slate-500 mb-3">請在下方編輯您的檢核題目 (每行一題)，系統將自動套用至案件的檢核區。</p>
@@ -220,8 +222,8 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">個人障礙情形或工作內容 (帶入報告草稿)</label>
-                        <textarea id="form-client-condition" rows="3" class="w-full p-3 rounded-lg border border-slate-200 text-base" placeholder="描述個案目前的障礙狀況或主要工作..."></textarea>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">個人障礙情形或工作內容</label>
+                        <textarea id="form-client-condition" rows="3" class="auto-resize w-full p-3 rounded-lg border border-slate-200 text-base" placeholder="描述個案目前的障礙狀況或主要工作..."></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-1">實際工作地點</label>
@@ -229,7 +231,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-1">遭遇問題及期待改善事項 (帶入報告草稿)</label>
-                        <textarea id="form-initial-problems" rows="3" class="w-full p-3 rounded-lg border border-slate-200 text-base" placeholder="上傳申請書後將自動擷取於此..."></textarea>
+                        <textarea id="form-initial-problems" rows="3" class="auto-resize w-full p-3 rounded-lg border border-slate-200 text-base" placeholder="上傳申請書後將自動擷取於此..."></textarea>
                     </div>
                 </div>
 
@@ -271,7 +273,6 @@
             
             <!-- 🌟 全新升級：可摺疊的基本資料面板 -->
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 mb-2 overflow-hidden relative z-20">
-                <!-- 面板標題區 (點擊收合/展開) -->
                 <div class="p-4 md:p-5 flex justify-between items-start cursor-pointer hover:bg-slate-50 transition-colors select-none" id="btn-toggle-info">
                     <div class="flex-1 pr-4">
                         <div class="flex items-center gap-2 mb-2">
@@ -282,7 +283,6 @@
                         <p id="ws-client" class="text-sm md:text-base text-slate-600 font-bold">載入中...</p>
                     </div>
                     <div class="flex flex-col items-end gap-3 shrink-0">
-                        <!-- 將編輯與刪除按鈕移到不會被擋住的右上角 -->
                         <div class="flex gap-2">
                             <button id="btn-edit-case" class="text-blue-700 hover:bg-blue-100 bg-blue-50 px-3 py-1.5 rounded-lg text-sm font-bold border border-blue-200 shadow-sm transition-colors" onclick="event.stopPropagation();">
                                 <i class="fa-solid fa-pen mr-1"></i> 編輯
@@ -296,7 +296,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- 詳細資料展開區 -->
+                <!-- 移除了「訪視委員/人員」區塊 -->
                 <div id="ws-expanded-info" class="hidden p-4 md:p-6 border-t border-slate-100 bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm md:text-base">
                     <div>
                         <p class="text-slate-500 text-xs mb-1">實際工作地點</p>
@@ -306,17 +306,15 @@
                         <p class="text-slate-500 text-xs mb-1">障礙類別與原因</p>
                         <p id="ws-details-disability" class="font-medium text-slate-800 bg-white p-2 rounded border border-slate-200">-</p>
                     </div>
-                    <div class="md:col-span-2">
-                        <p class="text-slate-500 text-xs mb-1">訪視人員 / 委員</p>
-                        <p id="ws-details-visitors" class="font-medium text-slate-800 bg-white p-2 rounded border border-slate-200">-</p>
-                    </div>
                 </div>
             </div>
 
+            <!-- 🌟 工作區 Tabs 排序與新增成果報告 -->
             <div class="flex bg-white rounded-xl p-1 shadow-sm border border-slate-200 overflow-x-auto no-scrollbar">
-                <button class="ws-tab-btn flex-none w-1/3 py-3 md:py-4 text-sm md:text-base font-bold rounded-lg bg-blue-100 text-blue-800" data-target="tab-media">媒體與檔案</button>
-                <button class="ws-tab-btn flex-none w-1/3 py-3 md:py-4 text-sm md:text-base font-bold rounded-lg text-slate-500 hover:bg-slate-50" data-target="tab-text">評估撰寫</button>
-                <button class="ws-tab-btn flex-none w-1/3 py-3 md:py-4 text-sm md:text-base font-bold rounded-lg text-slate-500 hover:bg-slate-50" data-target="tab-assess">客觀與檢核</button>
+                <button class="ws-tab-btn whitespace-nowrap flex-1 py-3 md:py-4 text-sm md:text-base font-bold rounded-lg bg-blue-100 text-blue-800" data-target="tab-media">媒體與檔案</button>
+                <button class="ws-tab-btn whitespace-nowrap flex-1 py-3 md:py-4 text-sm md:text-base font-bold rounded-lg text-slate-500 hover:bg-slate-50" data-target="tab-assess">客觀與檢核</button>
+                <button class="ws-tab-btn whitespace-nowrap flex-1 py-3 md:py-4 text-sm md:text-base font-bold rounded-lg text-slate-500 hover:bg-slate-50" data-target="tab-text">評估撰寫</button>
+                <button class="ws-tab-btn whitespace-nowrap flex-1 py-3 md:py-4 text-sm md:text-base font-bold rounded-lg text-slate-500 hover:bg-slate-50" data-target="tab-outcome">成果報告</button>
             </div>
 
             <!-- 頁籤 1: 多媒體紀錄 -->
@@ -387,7 +385,7 @@
                     </div>
                 </div>
 
-                <!-- 錄音紀錄區 (升級 AI 轉文字功能) -->
+                <!-- 錄音紀錄區 -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-slate-700 text-lg"><i class="fa-solid fa-microphone text-blue-500 mr-2"></i>雲端訪談錄音 (支援 AI 逐字稿)</h3>
@@ -402,30 +400,7 @@
                 </div>
             </div>
 
-            <!-- 頁籤 2: 評估報告撰寫 -->
-            <div id="tab-text" class="ws-tab-content hidden space-y-5">
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-lg text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">一、 個案之就業狀況</h3>
-                    <textarea id="ws-status-text" rows="5" class="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed" placeholder="工作時間、主要工作內容、操作流程..."></textarea>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-lg text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">二、 個案之生理限制</h3>
-                    <textarea id="ws-limits-text" rows="4" class="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed" placeholder="聽力/視力數據、中高齡體能退化情形..."></textarea>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-lg text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">三、 個案就業問題診斷與分析</h3>
-                    <textarea id="ws-analysis-text" rows="6" class="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed" placeholder="描述生理限制與工作環境衝突所導致的困難..."></textarea>
-                </div>
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-lg text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">四、 改善方式、內容及輔具建議</h3>
-                    <textarea id="ws-strategy-text" rows="6" class="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed" placeholder="預計提供的輔具規格、人力協助時數規劃..."></textarea>
-                </div>
-                <button class="btn-save-ws w-full bg-slate-800 text-white py-4 rounded-2xl shadow-xl font-bold text-xl hover:bg-slate-700 transition-transform active:scale-[0.98]">
-                    <i class="fa-solid fa-floppy-disk mr-2"></i>儲存所有文字紀錄
-                </button>
-            </div>
-
-            <!-- 頁籤 3: 客觀數據與環境檢核 -->
+            <!-- 頁籤 2: 客觀數據與環境檢核 (改為第二頁籤) -->
             <div id="tab-assess" class="ws-tab-content hidden space-y-5">
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
                     <h3 class="font-bold text-lg text-slate-700 border-b pb-3 mb-4"><i class="fa-solid fa-ruler-combined text-blue-500 mr-2"></i>現場客觀數據登記</h3>
@@ -455,17 +430,62 @@
                         <p class="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded font-bold"><i class="fa-solid fa-circle-info"></i> 可至設定區自訂題目</p>
                     </div>
                     <div class="space-y-5" id="checklist-container">
-                        <!-- 動態生成分類的檢核表 -->
                     </div>
                     <button class="btn-save-ws w-full mt-8 bg-slate-800 text-white py-4 rounded-2xl shadow-xl font-bold text-xl hover:bg-slate-700 transition-transform active:scale-[0.98]">
                         <i class="fa-solid fa-check-double mr-2"></i>儲存檢核與數據
                     </button>
                 </div>
             </div>
+
+            <!-- 頁籤 3: 評估報告撰寫 -->
+            <div id="tab-text" class="ws-tab-content hidden space-y-5">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-lg text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">一、 個案之就業狀況</h3>
+                    <textarea id="ws-status-text" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed" placeholder="工作時間、主要工作內容、操作流程..."></textarea>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-lg text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">二、 個案之生理限制</h3>
+                    <textarea id="ws-limits-text" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed" placeholder="聽力/視力數據、中高齡體能退化情形..."></textarea>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-lg text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">三、 個案就業問題診斷與分析</h3>
+                    <textarea id="ws-analysis-text" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed" placeholder="描述生理限制與工作環境衝突所導致的困難..."></textarea>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-lg text-blue-800 border-b-2 border-blue-100 pb-2 mb-3">四、 改善方式、內容及輔具建議</h3>
+                    <textarea id="ws-strategy-text" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed" placeholder="預計提供的輔具規格、人力協助時數規劃..."></textarea>
+                </div>
+                <button class="btn-save-ws w-full bg-slate-800 text-white py-4 rounded-2xl shadow-xl font-bold text-xl hover:bg-slate-700 transition-transform active:scale-[0.98]">
+                    <i class="fa-solid fa-floppy-disk mr-2"></i>儲存評估撰寫紀錄
+                </button>
+            </div>
+
+            <!-- 🌟 全新新增: 頁籤 4: 改善成果報告 -->
+            <div id="tab-outcome" class="ws-tab-content hidden space-y-5">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-lg text-emerald-800 border-b-2 border-emerald-100 pb-2 mb-3">五、 審查會決議</h3>
+                    <textarea id="ws-outcome-resolution" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base leading-relaxed" placeholder="例如：申請項目、申請金額、核准金額、是否回收..."></textarea>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-lg text-emerald-800 border-b-2 border-emerald-100 pb-2 mb-3">六、 輔具試用、訓練及驗收</h3>
+                    <textarea id="ws-outcome-acceptance" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base leading-relaxed" placeholder="記錄輔具試用狀況、教育訓練或驗收期程..."></textarea>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-lg text-emerald-800 border-b-2 border-emerald-100 pb-2 mb-3">七、 職務再設計前後效益評估</h3>
+                    <textarea id="ws-outcome-benefit" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base leading-relaxed" placeholder="描述解決之困難、工作便利性評分 (如：改善前0分，改善後10分)..."></textarea>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 class="font-bold text-lg text-emerald-800 border-b-2 border-emerald-100 pb-2 mb-3">八、 結案日期</h3>
+                    <input type="date" id="ws-outcome-date" class="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base">
+                </div>
+                <button class="btn-save-ws w-full bg-slate-800 text-white py-4 rounded-2xl shadow-xl font-bold text-xl hover:bg-slate-700 transition-transform active:scale-[0.98]">
+                    <i class="fa-solid fa-flag-checkered mr-2"></i>儲存成果報告
+                </button>
+            </div>
         </div>
     </main>
 
-    <!-- 🌟 全新升級：懸浮預覽視窗 (可拖曳、可邊看邊打字) -->
+    <!-- 🌟 懸浮預覽視窗 (PiP) -->
     <div id="preview-modal" class="hidden fixed top-24 right-6 w-80 md:w-[500px] h-[500px] md:h-[600px] bg-white shadow-[0_15px_50px_rgba(0,0,0,0.3)] border border-slate-300 rounded-2xl z-[100] flex flex-col overflow-hidden resize transition-shadow focus-within:shadow-[0_15px_50px_rgba(59,130,246,0.3)]">
         <!-- 頂部拖曳條 -->
         <div id="preview-header" class="p-3 md:p-4 flex justify-between items-center text-white bg-slate-800 select-none cursor-move active:bg-slate-700 transition-colors">
@@ -591,6 +611,25 @@
             setTimeout(() => DOM.toast.classList.add('opacity-0'), 3000);
         }
 
+        // 🌟 新增：文字框高度自適應 (Auto-Resize) 引擎
+        function autoResizeTextarea(el) {
+            el.style.height = 'auto'; // 先重置高度
+            el.style.height = (el.scrollHeight + 2) + 'px'; // 設定為內容高度
+        }
+        
+        document.addEventListener('input', function (e) {
+            if (e.target.classList.contains('auto-resize')) {
+                autoResizeTextarea(e.target);
+            }
+        });
+
+        // 觸發畫面上所有 auto-resize 重算高度
+        function triggerAutoResize() {
+            setTimeout(() => {
+                document.querySelectorAll('.auto-resize').forEach(ta => autoResizeTextarea(ta));
+            }, 100);
+        }
+
         function updateAge() {
             const dobVal = document.getElementById('form-client-dob').value;
             if(dobVal) {
@@ -663,11 +702,11 @@
             document.getElementById('setting-gas-input').value = settings.gasUrl || '';
             document.getElementById('setting-gemini-input').value = settings.geminiApiKey || '';
             
-            // 載入檢核表設定
             document.getElementById('setting-check-ergo').value = (settings.checklists["中高齡/人因工程"] || []).join('\n');
             document.getElementById('setting-check-dis').value = (settings.checklists["身障/感官與無障礙"] || []).join('\n');
             
             showView('settings', '系統設定', false);
+            triggerAutoResize();
         });
 
         async function loadSettings() {
@@ -693,6 +732,28 @@
             renderCommitteeList();
             renderCommitteeCheckboxes(); 
         }
+
+        document.getElementById('btn-test-gas').addEventListener('click', async () => {
+            const url = document.getElementById('setting-gas-input').value.trim();
+            if (!url) return alert("請先貼上網址！");
+            const btn = document.getElementById('btn-test-gas');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 測試中...';
+            try {
+                const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+                const text = await res.text();
+                try {
+                    const json = JSON.parse(text);
+                    if (json.success) alert("✅ 連線大成功！\n您的 API 權限已完全開啟，可以正常上傳檔案了。");
+                    else alert("❌ 連線失敗 (內部錯誤)：\n" + text);
+                } catch(e) {
+                    alert("❌ 測試失敗 (權限遭阻擋)！\n\n請確認 GAS 部署時「誰可以存取」是否為『所有人 (Anyone)』。");
+                }
+            } catch (err) {
+                alert("❌ 嚴重錯誤 (Failed to fetch)！\n\n您的連線被徹底阻擋。\n請確認您有進行『新增部署作業』！");
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-satellite-dish mr-1"></i> 測試連線';
+            }
+        });
 
         document.getElementById('btn-save-gas').addEventListener('click', () => {
             const url = document.getElementById('setting-gas-input').value.trim();
@@ -754,28 +815,6 @@
             });
         }
 
-        document.getElementById('btn-test-gas').addEventListener('click', async () => {
-            const url = document.getElementById('setting-gas-input').value.trim();
-            if (!url) return alert("請先貼上網址！");
-            const btn = document.getElementById('btn-test-gas');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 測試中...';
-            try {
-                const res = await fetch(url, { method: 'GET', redirect: 'follow' });
-                const text = await res.text();
-                try {
-                    const json = JSON.parse(text);
-                    if (json.success) alert("✅ 連線大成功！\n您的 API 權限已完全開啟，可以正常上傳檔案了。");
-                    else alert("❌ 連線失敗 (內部錯誤)：\n" + text);
-                } catch(e) {
-                    alert("❌ 測試失敗 (權限遭阻擋)！\n\n請確認 GAS 部署時「誰可以存取」是否為『所有人 (Anyone)』。");
-                }
-            } catch (err) {
-                alert("❌ 嚴重錯誤 (Failed to fetch)！\n\n您的連線被徹底阻擋。\n請確認您有進行『新增部署作業』！");
-            } finally {
-                btn.innerHTML = '<i class="fa-solid fa-satellite-dish mr-1"></i> 測試連線';
-            }
-        });
-
 
         // ==========================================
         // 雲端上傳與 AI 轉譯引擎
@@ -829,7 +868,6 @@
             });
         }
 
-        // 🌟 新增：錄音檔 AI 自動轉逐字稿
         async function transcribeAudioWithAI(audioBlob) {
             const apiKey = settings.geminiApiKey; 
             if (!apiKey) return "未設定 Gemini API 金鑰，無法產生逐字稿。";
@@ -845,7 +883,7 @@
                 contents: [{
                     role: "user",
                     parts: [
-                        { text: "請將這段現場訪談錄音轉成逐字稿，只要輸出精確的文字內容即可，不要加任何其他多餘的說明或引言。" },
+                        { text: "請將這段現場訪談錄音轉成繁體中文逐字稿，只要輸出精確的文字內容即可，不要加任何其他多餘的說明或引言。" },
                         { inlineData: { mimeType: audioBlob.type, data: base64Data } }
                     ]
                 }]
@@ -872,6 +910,7 @@
                 document.getElementById('group-single-client').classList.toggle('hidden', isWorkstation);
                 document.getElementById('group-multi-client').classList.toggle('hidden', !isWorkstation);
                 if(isWorkstation && multiClients.length === 0) addWorkstationClient(); 
+                triggerAutoResize();
             });
         });
 
@@ -892,7 +931,7 @@
         function addWorkstationClient() { multiClients.push({name:'', age:'', title:''}); renderWorkstationClients(); }
         document.getElementById('btn-add-client-row').addEventListener('click', addWorkstationClient);
 
-        // AI 申請書辨識邏輯
+        // AI 申請書辨識邏輯 (自動備援機制)
         async function analyzeDocumentWithAI(file) {
             const apiKey = settings.geminiApiKey; 
             if (!apiKey) throw new Error("請先至右上角「設定」填寫您的 Gemini API 金鑰！");
@@ -955,7 +994,7 @@
             const span = label.querySelector('.btn-text');
             const originalText = span.textContent;
             
-            span.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI 辨識中...';
+            span.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 辨識中...';
             label.classList.add('opacity-50', 'pointer-events-none');
             
             try {
@@ -982,6 +1021,7 @@
                 if(radio) { radio.checked = true; radio.dispatchEvent(new Event('change')); }
                 
                 showToast("✨ AI 已成功為您填寫表單！");
+                triggerAutoResize();
             } catch (err) { alert(err.message); } 
             finally { span.innerHTML = originalText; label.classList.remove('opacity-50', 'pointer-events-none'); e.target.value = ''; }
         });
@@ -995,6 +1035,7 @@
             document.getElementById('group-multi-client').classList.add('hidden');
             renderCommitteeCheckboxes();
             showView('form', '新增訪視案件', false);
+            triggerAutoResize();
         });
 
         DOM.form.addEventListener('submit', async (e) => {
@@ -1050,6 +1091,9 @@
                     strategy: "" 
                 };
                 
+                // 初始化新的成果報告欄位
+                data.outcome = { resolution: "", acceptance: "", benefit: "", closeDate: "" };
+
                 await addDoc(casesRef, data);
                 showToast("新增案件成功");
             }
@@ -1148,12 +1192,14 @@
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.ws-tab-btn').forEach(b => {
                     b.classList.remove('bg-blue-100', 'text-blue-800');
-                    b.classList.add('text-slate-500');
+                    b.classList.add('text-slate-500', 'hover:bg-slate-50');
                 });
                 document.querySelectorAll('.ws-tab-content').forEach(c => c.classList.add('hidden'));
-                e.target.classList.remove('text-slate-500');
+                e.target.classList.remove('text-slate-500', 'hover:bg-slate-50');
                 e.target.classList.add('bg-blue-100', 'text-blue-800');
                 document.getElementById(e.target.dataset.target).classList.remove('hidden');
+                
+                triggerAutoResize(); // 切換頁籤時重新計算高度
                 
                 if(e.target.dataset.target === 'tab-media') {
                     setTimeout(() => { initCanvasSize(); loadCanvasPage(0); }, 50);
@@ -1200,32 +1246,38 @@
                 document.getElementById('ws-details-location').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i> ${c.workLocation || c.company || '未填寫'}`;
                 const disText = (c.disability || c.disabilityCause) ? `${c.disability || ''} ${c.disabilityCause ? '('+c.disabilityCause+')' : ''}` : '無紀錄';
                 document.getElementById('ws-details-disability').innerHTML = `<i class="fa-solid fa-notes-medical mr-1"></i> ${disText}`;
-                document.getElementById('ws-details-visitors').innerHTML = `<i class="fa-solid fa-user-tie mr-1"></i> ${c.visitors || '無紀錄'}`;
-
-                // 展開面板預設開啟
+                
+                // 預設展開面板
                 document.getElementById('ws-expanded-info').classList.remove('hidden');
                 document.getElementById('info-toggle-icon').classList.replace('fa-chevron-down', 'fa-chevron-up');
                 document.getElementById('info-toggle-text').textContent = '收合資料';
                 
+                // 載入評估撰寫草稿
                 const rpt = c.report || {};
                 document.getElementById('ws-status-text').value = rpt.status || c.notes || '';
                 document.getElementById('ws-limits-text').value = rpt.limits || '';
                 document.getElementById('ws-analysis-text').value = rpt.analysis || '';
                 document.getElementById('ws-strategy-text').value = rpt.strategy || c.strategy || '';
                 
+                // 載入改善成果報告
+                const outcome = c.outcome || {};
+                document.getElementById('ws-outcome-resolution').value = outcome.resolution || '';
+                document.getElementById('ws-outcome-acceptance').value = outcome.acceptance || '';
+                document.getElementById('ws-outcome-benefit').value = outcome.benefit || '';
+                document.getElementById('ws-outcome-date').value = outcome.closeDate || '';
+
                 const env = c.env || {};
                 document.getElementById('env-lux').value = env.lux || '';
                 document.getElementById('env-noise').value = env.noise || '';
                 document.getElementById('env-height').value = env.height || '';
                 document.getElementById('env-weight').value = env.weight || '';
 
-                // 🌟 動態載入自訂檢核表
+                // 動態載入自訂檢核表
                 const chkContainer = document.getElementById('checklist-container');
                 chkContainer.innerHTML = '';
                 for (const [category, items] of Object.entries(settings.checklists)) {
                     let html = `<div class="mb-5"><h4 class="text-base font-bold text-blue-700 bg-blue-50 p-2 rounded-lg mb-3">${category}</h4><div class="space-y-3">`;
                     items.forEach(item => {
-                        // 使用項目的文字作為 Firebase 儲存的 Key (去除特殊字元避免報錯)
                         const safeKey = item.replace(/[.#$/[\]]/g, '_');
                         const isChecked = c.checklist && c.checklist[safeKey] ? 'checked' : '';
                         html += `
@@ -1250,6 +1302,8 @@
 
                 showView('workspace', '現場紀錄與評估', false);
                 document.querySelector('[data-target="tab-media"]').click();
+                
+                triggerAutoResize(); // 載入資料後調整高度
             } catch (err) { alert("開啟案件時發生錯誤。"); }
         }
 
@@ -1290,6 +1344,7 @@
             document.querySelectorAll('input[name="chk-visitor"]').forEach(cb => { cb.checked = visitorArr.includes(cb.value); });
 
             showView('form', '編輯訪視案件', false);
+            triggerAutoResize();
         });
 
         // 刪除案件
@@ -1306,7 +1361,7 @@
             }
         });
 
-        // 儲存文字與檢核表 (動態 ID 儲存)
+        // 儲存文字與檢核表 (統一按鈕邏輯)
         document.querySelectorAll('.btn-save-ws').forEach(btn => {
             btn.addEventListener('click', async () => {
                 if (!currentEditingCaseId) return;
@@ -1320,6 +1375,12 @@
                         limits: document.getElementById('ws-limits-text').value,
                         analysis: document.getElementById('ws-analysis-text').value,
                         strategy: document.getElementById('ws-strategy-text').value
+                    },
+                    outcome: {
+                        resolution: document.getElementById('ws-outcome-resolution').value,
+                        acceptance: document.getElementById('ws-outcome-acceptance').value,
+                        benefit: document.getElementById('ws-outcome-benefit').value,
+                        closeDate: document.getElementById('ws-outcome-date').value
                     },
                     env: {
                         lux: document.getElementById('env-lux').value,
@@ -1349,7 +1410,7 @@
         });
 
         // ==========================================
-        // 🌟 懸浮預覽視窗 (可拖曳、全螢幕)
+        // 🌟 懸浮預覽視窗 (PiP 模式)
         // ==========================================
         const modal = document.getElementById('preview-modal');
         const header = document.getElementById('preview-header');
@@ -1553,9 +1614,7 @@
                         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                         const fileName = `audio_${Date.now()}.webm`;
                         try {
-                            // 1. 上傳 Google Drive
                             const result = await uploadToGoogleDrive(audioBlob, fileName);
-                            // 2. 呼叫 Gemini 生成逐字稿
                             const transcript = await transcribeAudioWithAI(audioBlob);
                             
                             const c = casesData.find(x => x.id === currentEditingCaseId);
@@ -1586,7 +1645,6 @@
             }
         });
 
-        // 複製逐字稿到剪貼簿的全域函數
         window.copyTranscript = (text) => {
             navigator.clipboard.writeText(text).then(() => {
                 showToast("逐字稿已複製，可貼上至報告區塊！");
