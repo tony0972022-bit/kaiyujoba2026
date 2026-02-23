@@ -69,10 +69,9 @@
         </button>
     </div>
 
-    <!-- 主要內容區 (外層容器改為 flex-row 支援側邊欄) -->
+    <!-- 主要內容區 -->
     <main id="main-content" class="flex-1 flex overflow-hidden relative no-print bg-slate-50">
         
-        <!-- 包含所有全螢幕視圖的容器 (List, Dashboard, Settings, Form) -->
         <div id="view-container-standard" class="w-full h-full overflow-y-auto p-4 md:p-6">
             
             <!-- ================= 視圖 1: 案件列表 ================= -->
@@ -92,29 +91,62 @@
                 </button>
             </div>
 
-            <!-- ================= 視圖 2: 儀表板 ================= -->
-            <div id="view-dashboard" class="hidden max-w-5xl mx-auto pb-24 space-y-4">
+            <!-- ================= 視圖 2: 儀表板 (全新升級進度分類) ================= -->
+            <div id="view-dashboard" class="hidden max-w-5xl mx-auto pb-24 space-y-6">
+                
                 <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
-                    <h2 class="text-xl md:text-2xl font-bold text-slate-700 mb-6 border-b pb-3">案件統計概況</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                        <div class="bg-blue-50 p-6 rounded-xl text-center">
-                            <p class="text-base md:text-lg text-blue-600 font-bold mb-2">總案件數</p>
-                            <p class="text-4xl md:text-5xl font-black text-blue-800" id="dash-total">0</p>
+                    <h2 class="text-xl md:text-2xl font-bold text-slate-700 mb-6 border-b pb-3">案件進度追蹤 (點擊方塊查看清單)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
+                        <!-- 報告撰寫中 -->
+                        <div class="bg-amber-50 border border-amber-200 p-6 rounded-2xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.showDashboardList('progress')">
+                            <p class="text-lg text-amber-700 font-bold mb-2">✍️ 報告撰寫中</p>
+                            <p class="text-5xl font-black text-amber-600" id="dash-progress">0</p>
                         </div>
-                        <div class="bg-amber-50 p-6 rounded-xl text-center">
-                            <p class="text-base md:text-lg text-amber-600 font-bold mb-2">中高齡/高齡者</p>
-                            <p class="text-4xl md:text-5xl font-black text-amber-800" id="dash-elder">0</p>
+                        <!-- 完成報告 -->
+                        <div class="bg-blue-50 border border-blue-200 p-6 rounded-2xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.showDashboardList('done')">
+                            <p class="text-lg text-blue-700 font-bold mb-2">📄 完成報告</p>
+                            <p class="text-5xl font-black text-blue-600" id="dash-done">0</p>
                         </div>
-                        <div class="bg-emerald-50 p-6 rounded-xl text-center">
-                            <p class="text-base md:text-lg text-emerald-600 font-bold mb-2">身心障礙者</p>
-                            <p class="text-4xl md:text-5xl font-black text-emerald-800" id="dash-disabled">0</p>
+                        <!-- 已結案 -->
+                        <div class="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.showDashboardList('closed')">
+                            <p class="text-lg text-emerald-700 font-bold mb-2">✅ 已結案數量</p>
+                            <p class="text-5xl font-black text-emerald-600" id="dash-closed">0</p>
                         </div>
-                        <div class="bg-purple-50 p-6 rounded-xl text-center">
-                            <p class="text-base md:text-lg text-purple-600 font-bold mb-2">勞工就業通</p>
-                            <p class="text-4xl md:text-5xl font-black text-purple-800" id="dash-job">0</p>
+                    </div>
+
+                    <!-- 儀表板：展開的清單容器 -->
+                    <div id="dashboard-list-container" class="hidden bg-slate-50 p-4 md:p-6 rounded-2xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-4 border-b border-slate-200 pb-3">
+                            <h3 id="dashboard-list-title" class="font-bold text-lg text-slate-800">案件清單</h3>
+                            <button onclick="document.getElementById('dashboard-list-container').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 bg-white px-3 py-1 rounded-lg border border-slate-200"><i class="fa-solid fa-xmark mr-1"></i> 關閉</button>
+                        </div>
+                        <div id="dashboard-list-content" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <!-- 傳統統計資料保留於下方供參考 -->
+                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
+                    <h2 class="text-lg font-bold text-slate-700 mb-4 border-b pb-2">身分別統計概況</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-slate-50 p-4 rounded-xl text-center">
+                            <p class="text-sm text-slate-500 font-bold mb-1">總案件數</p>
+                            <p class="text-2xl font-black text-slate-700" id="dash-total">0</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl text-center">
+                            <p class="text-sm text-slate-500 font-bold mb-1">中高齡者</p>
+                            <p class="text-2xl font-black text-slate-700" id="dash-elder">0</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl text-center">
+                            <p class="text-sm text-slate-500 font-bold mb-1">身心障礙者</p>
+                            <p class="text-2xl font-black text-slate-700" id="dash-disabled">0</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl text-center">
+                            <p class="text-sm text-slate-500 font-bold mb-1">勞工就業通</p>
+                            <p class="text-2xl font-black text-slate-700" id="dash-job">0</p>
                         </div>
                     </div>
                 </div>
+
             </div>
 
             <!-- ================= 視圖: 系統設定 ================= -->
@@ -285,7 +317,7 @@
             </div>
         </div>
 
-        <!-- ================= 🌟 全新視圖 4: 案件工作區 (iPad 側邊欄佈局) ================= -->
+        <!-- ================= 🌟 視圖 4: 案件工作區 (iPad 側邊欄佈局) ================= -->
         <div id="view-workspace" class="hidden w-full h-full flex overflow-hidden relative">
             
             <!-- ⬅️ 左側邊欄 (Sidebar) -->
@@ -353,15 +385,15 @@
             <!-- ➡️ 右側主要工作區 -->
             <div id="ws-main-area" class="flex-1 bg-slate-100 flex flex-col overflow-y-auto relative p-4 md:p-8 pb-24 sidebar-transition">
                 
-                <!-- 懸浮展開按鈕 (預設隱藏，當側邊欄收合時顯示) -->
-                <button id="btn-open-sidebar" class="hidden absolute top-6 left-0 bg-blue-600 text-white p-3 md:p-4 rounded-r-xl shadow-[5px_5px_15px_rgba(0,0,0,0.2)] z-40 hover:bg-blue-700 transition-transform active:scale-95 flex items-center gap-2 font-bold">
-                    <i class="fa-solid fa-angles-right text-lg"></i> <span class="hidden md:inline">展開選單</span>
+                <!-- 🌟 全新精簡版側邊展開按鈕 (去文字、小巧) -->
+                <button id="btn-open-sidebar" class="hidden absolute top-1/2 -translate-y-1/2 left-0 bg-white/90 backdrop-blur shadow-[4px_0_15px_rgba(0,0,0,0.1)] border border-l-0 border-slate-200 text-blue-600 p-2 py-6 rounded-r-xl z-40 hover:bg-blue-50 transition-all active:scale-95">
+                    <i class="fa-solid fa-chevron-right text-2xl"></i>
                 </button>
 
                 <!-- 頁籤 1: 媒體與現場紀錄 (相機、畫布、錄音) -->
                 <div id="tab-media" class="ws-tab-content max-w-4xl mx-auto w-full space-y-6">
                     
-                    <!-- 📸 新版：照片暫存與批次上傳區 -->
+                    <!-- 📸 照片暫存與批次上傳區 -->
                     <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-4">
                             <div>
@@ -390,7 +422,7 @@
                         </div>
                     </div>
 
-                    <!-- 🎙️ 新版：錄音與手動 AI 轉譯 -->
+                    <!-- 🎙️ 錄音與手動 AI 轉譯 -->
                     <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center mb-5">
                             <div>
@@ -600,8 +632,8 @@
         let currentUser = null;
         let casesData = [];
         let currentEditingCaseId = null;
-        let pendingPhotosQueue = []; // 新增：照片暫存佇列
-        let audioBlobCache = {}; // 新增：錄音檔暫存 (用於轉逐字稿)
+        let pendingPhotosQueue = []; 
+        let audioBlobCache = {}; 
         
         let settings = { 
             committee: [], 
@@ -647,7 +679,6 @@
             setTimeout(() => DOM.toast.classList.add('opacity-0'), 3000);
         }
 
-        // 文字框自適應高度
         function autoResizeTextarea(el) {
             el.style.height = 'auto'; 
             el.style.height = (el.scrollHeight + 2) + 'px'; 
@@ -679,7 +710,6 @@
         document.getElementById('form-client-dob').addEventListener('change', updateAge);
 
         function showView(viewName, title = "訪視案件管理", showTabs = true, pushHistory = true) {
-            // 切換視圖前，隱藏 workspace 特有的結構
             if(viewName !== 'workspace') {
                 document.getElementById('view-container-standard').classList.remove('hidden');
                 DOM.views.workspace.classList.add('hidden');
@@ -916,6 +946,27 @@
             return data.candidates[0].content.parts[0].text.trim();
         }
 
+        // 🌟 新增：全域檔案刪除函式
+        window.deleteMedia = async (type, index) => {
+            if (!confirm(`確定要永久刪除這個項目嗎？\n(注意：刪除後無法復原)`)) return;
+            
+            const c = casesData.find(x => x.id === currentEditingCaseId);
+            if (!c) return;
+
+            const newArr = [...(c[type] || [])];
+            newArr.splice(index, 1);
+
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { [type]: newArr });
+                if (type === 'photos') renderPhotos(newArr);
+                if (type === 'audios') renderAudios(newArr);
+                if (type === 'files') renderFiles(newArr);
+                showToast("已成功刪除");
+            } catch(e) {
+                alert("刪除失敗：" + e.message);
+            }
+        };
+
         // ==========================================
         // Google 帳號認證
         // ==========================================
@@ -959,7 +1010,7 @@
         });
 
         // ==========================================
-        // 列表與表單邏輯
+        // 列表與儀表板邏輯 (全新儀表板分類)
         // ==========================================
         function loadCases() {
             if (!currentUser) return;
@@ -1005,10 +1056,55 @@
         document.getElementById('search-input').addEventListener('input', (e) => renderCaseList(e.target.value));
 
         function updateDashboard() {
+            // 傳統分類
             document.getElementById('dash-total').textContent = casesData.length;
             document.getElementById('dash-elder').textContent = casesData.filter(c => c.category === '中高齡及高齡者').length;
             document.getElementById('dash-disabled').textContent = casesData.filter(c => c.category === '身心障礙者').length;
             document.getElementById('dash-job').textContent = casesData.filter(c => c.category === '勞工就業通').length;
+
+            // 🌟 新增進度分類統計
+            const closedCases = casesData.filter(c => c.outcome && c.outcome.closeDate);
+            const doneCases = casesData.filter(c => !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && c.report.strategy.trim() !== ''));
+            const progressCases = casesData.filter(c => !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && c.report.strategy.trim() !== ''));
+
+            document.getElementById('dash-closed').textContent = closedCases.length;
+            document.getElementById('dash-done').textContent = doneCases.length;
+            document.getElementById('dash-progress').textContent = progressCases.length;
+        }
+
+        // 🌟 新增：儀表板清單顯示功能
+        window.showDashboardList = (type) => {
+            const container = document.getElementById('dashboard-list-container');
+            const content = document.getElementById('dashboard-list-content');
+            const title = document.getElementById('dashboard-list-title');
+            
+            let filtered = [];
+            if (type === 'progress') {
+                title.innerHTML = '✍️ 報告撰寫中 - 案件清單';
+                filtered = casesData.filter(c => !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && c.report.strategy.trim() !== ''));
+            } else if (type === 'done') {
+                title.innerHTML = '📄 完成報告 - 案件清單';
+                filtered = casesData.filter(c => !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && c.report.strategy.trim() !== ''));
+            } else if (type === 'closed') {
+                title.innerHTML = '✅ 已結案 - 案件清單';
+                filtered = casesData.filter(c => c.outcome && c.outcome.closeDate);
+            }
+
+            if (filtered.length === 0) {
+                content.innerHTML = '<p class="text-slate-400 text-center py-6 text-lg">此分類目前無案件</p>';
+            } else {
+                content.innerHTML = filtered.map(item => `
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:border-blue-400 cursor-pointer flex justify-between items-center transition-colors" onclick="window.openWorkspace('${item.id}')">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-lg">${item.company || '未命名企業'}</h4>
+                            <p class="text-sm text-slate-500 mt-1"><i class="fa-solid fa-user mr-1"></i> ${item.clientName || '無'} | <i class="fa-solid fa-calendar mr-1"></i> ${item.visitDate || item.date || '-'}</p>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-blue-500 text-xl"></i>
+                    </div>
+                `).join('');
+            }
+            container.classList.remove('hidden');
+            container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         document.querySelectorAll('.main-tab-btn').forEach(btn => {
@@ -1024,9 +1120,10 @@
             });
         });
 
-        // 🌟 新增：工作區側邊欄收合邏輯
+        // ==========================================
+        // 🌟 工作區側邊欄收合邏輯 (優化小箭頭按鈕)
+        // ==========================================
         const wsSidebar = document.getElementById('ws-sidebar');
-        const wsMainArea = document.getElementById('ws-main-area');
         const btnCloseSidebar = document.getElementById('btn-close-sidebar');
         const btnOpenSidebar = document.getElementById('btn-open-sidebar');
 
@@ -1062,7 +1159,9 @@
             });
         });
 
+        // ==========================================
         // 開啟工作區
+        // ==========================================
         function openWorkspace(id) {
             try {
                 currentEditingCaseId = id;
@@ -1117,10 +1216,8 @@
                     chkContainer.innerHTML += html;
                 }
 
-                // 清空暫存照片佇列
                 pendingPhotosQueue = [];
                 renderPendingPhotos();
-                
                 renderPhotos(c.photos || []);
                 renderFiles(c.files || []); 
                 renderAudios(c.audios || []);
@@ -1130,7 +1227,6 @@
                 document.querySelector('.color-btn[data-color="#0f172a"]').classList.add('tool-active');
                 document.getElementById('btn-eraser').classList.remove('tool-active');
 
-                // 確保側邊欄是開啟的
                 btnOpenSidebar.click();
                 showView('workspace', '現場紀錄與評估', false);
                 document.querySelector('[data-target="tab-media"]').click();
@@ -1485,7 +1581,7 @@
             if (photosArr.length === 0) {
                 container.innerHTML = '<p class="text-sm text-slate-400 col-span-full">尚無照片。</p>'; return;
             }
-            container.innerHTML = photosArr.map(p => {
+            container.innerHTML = photosArr.map((p, index) => {
                 const previewUrl = typeof p === 'string' ? p : p.previewUrl;
                 const downloadUrl = typeof p === 'string' ? p : p.downloadUrl;
                 const src = downloadUrl || previewUrl; 
@@ -1493,11 +1589,21 @@
                 <div class="aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-sm relative group cursor-pointer" 
                      onclick="window.openPreview('${previewUrl}', '${downloadUrl}', 'image/jpeg', '現場照片')">
                     <img src="${src}" class="w-full h-full object-cover" alt="現場照片">
-                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black bg-opacity-40 text-white transition-opacity">
+                    
+                    <!-- 預覽提示圖示 (居中) -->
+                    <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black bg-opacity-30 text-white transition-opacity">
                         <i class="fa-solid fa-expand text-3xl mb-1"></i>
                     </div>
+                    
+                    <!-- 🗑️ 刪除按鈕 (左上角) -->
+                    <button onclick="event.stopPropagation(); window.deleteMedia('photos', ${index})" 
+                       class="absolute top-2 left-2 bg-red-500/90 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors z-10">
+                        <i class="fa-solid fa-trash text-sm"></i>
+                    </button>
+
+                    <!-- 下載按鈕 (右下角) -->
                     <a href="${downloadUrl}" target="_blank" onclick="event.stopPropagation();" 
-                       class="absolute bottom-2 right-2 bg-white text-blue-600 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-blue-50">
+                       class="absolute bottom-2 right-2 bg-white text-blue-600 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-blue-50 z-10">
                         <i class="fa-solid fa-download text-lg"></i>
                     </a>
                 </div>`}).join('');
@@ -1524,7 +1630,7 @@
             if (!filesArr || filesArr.length === 0) {
                 container.innerHTML = '<p class="text-sm text-slate-400 col-span-full">尚無文件。</p>'; return;
             }
-            container.innerHTML = filesArr.map(f => {
+            container.innerHTML = filesArr.map((f, index) => {
                 let icon = 'fa-file';
                 if(f.type === 'application/pdf' || f.name.endsWith('.pdf')) icon = 'fa-file-pdf text-red-500';
                 else if(f.name.endsWith('.doc') || f.name.endsWith('.docx')) icon = 'fa-file-word text-blue-500';
@@ -1532,13 +1638,18 @@
                 const pUrl = f.previewUrl || f.url; const dUrl = f.downloadUrl || f.url;
                 
                 return `
-                <div class="bg-slate-50 p-3 border border-slate-200 rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors shadow-sm cursor-pointer" onclick="window.openPreview('${pUrl}', '${dUrl}', '${f.type}', '${f.name}')">
+                <div class="bg-slate-50 p-3 border border-slate-200 rounded-xl flex items-center justify-between hover:bg-slate-100 transition-colors shadow-sm cursor-pointer group" onclick="window.openPreview('${pUrl}', '${dUrl}', '${f.type}', '${f.name}')">
                     <div class="flex items-center gap-3 overflow-hidden flex-1">
                         <i class="fa-solid ${icon} text-2xl"></i>
                         <div class="truncate">
                             <p class="text-sm font-bold text-slate-700 truncate">${f.name}</p>
                             <p class="text-xs text-slate-400">${f.date || ''}</p>
                         </div>
+                    </div>
+                    <!-- 🗑️ 刪除按鈕與下載 -->
+                    <div class="flex gap-2 shrink-0 ml-2">
+                        <button class="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg text-sm" onclick="event.stopPropagation(); window.deleteMedia('files', ${index})"><i class="fa-solid fa-trash"></i></button>
+                        <button class="text-blue-600 hover:text-blue-800 p-2 text-xl hidden group-hover:block" onclick="window.openPreview('${pUrl}', '${dUrl}', '${f.type}', '${f.name}')"><i class="fa-solid fa-eye"></i></button>
                     </div>
                 </div>`}).join('');
         }
@@ -1647,7 +1758,7 @@
             if (audiosArr.length === 0) {
                 container.innerHTML = '<p class="text-sm text-slate-400">尚無錄音。</p>'; return;
             }
-            container.innerHTML = audiosArr.map(audio => {
+            container.innerHTML = audiosArr.map((audio, index) => {
                 const dUrl = audio.downloadUrl || audio.url;
                 const safeBtnId = 'btn-transcribe-' + audio.name.replace(/[^a-zA-Z0-9]/g, '');
                 
@@ -1673,10 +1784,14 @@
                 }
 
                 return `
-                <div class="bg-slate-50 p-5 border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm">
+                <div class="bg-slate-50 p-5 border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm relative group">
                     <div class="flex justify-between items-center">
                         <span class="text-base md:text-lg text-slate-700 font-bold"><i class="fa-solid fa-headphones text-blue-500 mr-2"></i>${audio.displayName || audio.name}</span>
-                        <a href="${dUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-800 text-sm bg-emerald-100 px-3 py-1.5 rounded-lg font-bold"><i class="fa-solid fa-download mr-1"></i>下載錄音</a>
+                        <div class="flex gap-2">
+                            <!-- 🗑️ 刪除按鈕 -->
+                            <button onclick="window.deleteMedia('audios', ${index})" class="text-red-500 hover:text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors"><i class="fa-solid fa-trash"></i></button>
+                            <a href="${dUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-800 text-sm bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg font-bold transition-colors"><i class="fa-solid fa-download"></i></a>
+                        </div>
                     </div>
                     <audio controls src="${dUrl}" class="w-full h-12 mt-1"></audio>
                     ${transcriptSection}
