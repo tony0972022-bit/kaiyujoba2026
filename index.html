@@ -17,12 +17,15 @@
         }
         #drawing-board { touch-action: none; background-color: #ffffff; }
         .tool-active { outline: 2px solid #3b82f6; outline-offset: 2px; }
+        
+        /* 懸浮預覽視窗的拖曳條樣式 */
+        #preview-header { cursor: move; touch-action: none; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen flex flex-col overflow-hidden">
 
     <!-- 頂部導航列 -->
-    <header class="bg-blue-600 text-white shadow-md p-4 flex justify-between items-center no-print shrink-0 z-10">
+    <header class="bg-blue-600 text-white shadow-md p-4 flex justify-between items-center no-print shrink-0 z-10 relative">
         <div class="flex items-center gap-2">
             <button id="btn-back" class="hidden text-white hover:text-blue-200 p-2 -ml-2">
                 <i class="fa-solid fa-arrow-left text-xl"></i>
@@ -30,7 +33,7 @@
             <h1 id="app-title" class="text-xl font-bold tracking-wide">訪視案件管理</h1>
         </div>
         <div class="flex items-center gap-3">
-            <span id="auth-status" class="text-xs bg-blue-500 px-2 py-1 rounded-full"><i class="fa-solid fa-spinner fa-spin"></i> 連線中</span>
+            <span id="auth-status" class="text-xs bg-slate-500 px-2 py-1 rounded-full text-white shadow"><i class="fa-solid fa-spinner fa-spin"></i> 載入核心中</span>
             <button id="btn-settings" class="text-white hover:text-blue-200 p-2">
                 <i class="fa-solid fa-gear text-lg"></i>
             </button>
@@ -60,7 +63,7 @@
                 </label>
             </div>
             <div id="cases-container" class="space-y-3">
-                <div class="text-center text-slate-400 py-10">載入案件中...</div>
+                <div class="text-center text-slate-400 py-10">等待資料連線中...</div>
             </div>
             <button id="btn-new-case" class="fixed bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl hover:bg-blue-700 active:scale-95 z-20">
                 <i class="fa-solid fa-plus"></i>
@@ -99,8 +102,17 @@
             <div class="mb-6">
                 <h3 class="font-bold text-blue-800 mb-2">Google Drive 雲端串接設定</h3>
                 <p class="text-xs text-slate-500 mb-2">請貼上您「新增部署作業」後取得的最新 GAS 網址。</p>
-                <input type="text" id="setting-gas-input" value="https://script.google.com/macros/s/AKfycbyW0a1OtPZkao60R_5SS5RcBeDHGkEPLuoumvlfj9BQVuEWfk6b8WtwMSTotRcQ9UjBog/exec" class="w-full p-2.5 border border-slate-200 rounded-lg text-sm mb-3 text-slate-600 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500">
-                <button id="btn-save-gas" class="w-full bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700">儲存 API 網址</button>
+                <div class="flex gap-2 mb-3">
+                    <input type="text" id="setting-gas-input" value="https://script.google.com/macros/s/AKfycbxelfY8BWyg2ZWeO4UbnenSH8eLS20qojH5N-tvZgvj_fcgoLL-MJosD53NIdo03qPdFw/exec" class="w-full p-2.5 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex gap-2">
+                    <button id="btn-test-gas" class="flex-1 bg-amber-500 text-white px-4 py-2 rounded-lg font-bold hover:bg-amber-600 transition-colors shadow">
+                        <i class="fa-solid fa-satellite-dish mr-1"></i> 測試連線
+                    </button>
+                    <button id="btn-save-gas" class="flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-emerald-700 transition-colors shadow">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> 儲存設定
+                    </button>
+                </div>
             </div>
 
             <div class="mb-6">
@@ -118,6 +130,19 @@
         <!-- ================= 視圖 3: 新增/編輯案件表單 ================= -->
         <div id="view-form" class="hidden max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-slate-100 pb-20">
             <h2 class="text-lg font-bold mb-4 text-slate-700 border-b pb-2" id="form-title">新增訪視案件</h2>
+            
+            <!-- 🌟 新增：AI 申請書辨識快速匯入區 -->
+            <div class="mb-5 bg-purple-50 p-4 rounded-xl border border-purple-200 flex items-center justify-between shadow-sm">
+                <div>
+                    <h3 class="font-bold text-purple-800"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>AI 申請書自動填寫</h3>
+                    <p class="text-xs text-purple-600 mt-1">支援 PDF 或圖片檔，一鍵擷取個案基本資料</p>
+                </div>
+                <label id="label-ai-upload" class="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-purple-700 cursor-pointer transition-colors">
+                    <span class="btn-text"><i class="fa-solid fa-file-arrow-up mr-1"></i>上傳檔案</span>
+                    <input type="file" id="ai-upload" accept="application/pdf,image/*" class="hidden">
+                </label>
+            </div>
+
             <form id="case-form" class="space-y-4">
                 <input type="hidden" id="form-id">
                 
@@ -141,22 +166,46 @@
                     </div>
                 </div>
 
-                <!-- 單一個案登打區 -->
+                <!-- 🌟 更新：單一個案登打區 (擴充性別、生日、年齡、工作地等欄位) -->
                 <div id="group-single-client" class="bg-blue-50 p-3 rounded-lg border border-blue-100 space-y-3">
                     <h3 class="text-sm font-bold text-blue-800">單一個案資料</h3>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div class="col-span-2">
                             <label class="block text-xs font-medium text-slate-600 mb-1">個案姓名 *</label>
                             <input type="text" id="form-client-name" class="w-full p-2 rounded border border-slate-200">
                         </div>
-                        <div>
+                        <div class="col-span-1">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">性別</label>
+                            <select id="form-client-gender" class="w-full p-2 rounded border border-slate-200 bg-white">
+                                <option value="">選擇</option>
+                                <option value="男">男</option>
+                                <option value="女">女</option>
+                            </select>
+                        </div>
+                        <div class="col-span-1">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">年齡(自動)</label>
+                            <input type="number" id="form-client-age" class="w-full p-2 rounded border border-slate-200 bg-slate-100" readonly>
+                        </div>
+                        <div class="col-span-2">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">出生年月日</label>
+                            <input type="date" id="form-client-dob" class="w-full p-2 rounded border border-slate-200">
+                        </div>
+                        <div class="col-span-2">
                             <label class="block text-xs font-medium text-slate-600 mb-1">職稱</label>
                             <input type="text" id="form-client-title" class="w-full p-2 rounded border border-slate-200">
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-600 mb-1">障礙類別</label>
+                        <div class="col-span-4">
+                            <label class="block text-xs font-medium text-slate-600 mb-1">障礙類別 / 致障原因</label>
                             <input type="text" id="form-client-disability" placeholder="如:第二類(聽障)-重度" class="w-full p-2 rounded border border-slate-200">
                         </div>
+                    </div>
+                    <div class="mt-2">
+                        <label class="block text-xs font-medium text-slate-600 mb-1">實際工作地點</label>
+                        <input type="text" id="form-work-location" class="w-full p-2 rounded border border-slate-200" placeholder="若無填寫則預設同申請單位">
+                    </div>
+                    <div class="mt-2">
+                        <label class="block text-xs font-medium text-slate-600 mb-1">遭遇問題及期待改善事項 (將自動帶入評估報告中)</label>
+                        <textarea id="form-initial-problems" rows="3" class="w-full p-2 rounded border border-slate-200 text-sm" placeholder="上傳申請書後將自動擷取於此，也可手動輸入..."></textarea>
                     </div>
                 </div>
 
@@ -199,10 +248,21 @@
                 <div>
                     <span id="ws-category" class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-600 mb-1 inline-block font-bold">類別</span>
                     <h2 id="ws-company" class="text-lg font-bold text-slate-800">載入中...</h2>
-                    <p id="ws-client" class="text-sm text-slate-500">載入中...</p>
+                    <p id="ws-client" class="text-sm text-slate-500 font-medium">載入中...</p>
+                    <!-- 🌟 新增：工作地點顯示 -->
+                    <p id="ws-details" class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-location-dot"></i> 載入中...</p>
                 </div>
-                <div class="text-right text-xs text-slate-400">
-                    <div id="ws-visit-date">訪視日: -</div>
+                <!-- 🌟 新增：編輯與刪除案件的按鈕區 -->
+                <div class="text-right flex flex-col items-end gap-2">
+                    <div id="ws-visit-date" class="text-xs text-slate-400">訪視日: -</div>
+                    <div class="flex gap-2 mt-1">
+                        <button id="btn-edit-case" class="text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1 rounded text-xs font-bold border border-blue-200 shadow-sm transition-colors">
+                            <i class="fa-solid fa-pen"></i> 編輯案件
+                        </button>
+                        <button id="btn-delete-case" class="text-red-600 hover:text-red-800 bg-red-50 px-3 py-1 rounded text-xs font-bold border border-red-200 shadow-sm transition-colors">
+                            <i class="fa-solid fa-trash"></i> 刪除
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -352,28 +412,41 @@
         </div>
     </main>
 
-    <!-- 🌟 線上預覽視窗 (Modal) -->
-    <div id="preview-modal" class="hidden fixed inset-0 bg-slate-900 bg-opacity-95 z-50 flex flex-col no-print">
-        <div class="p-4 flex justify-between items-center text-white bg-slate-800 shadow-md">
-            <h3 id="preview-title" class="font-bold text-lg truncate pr-4">Google 雲端預覽</h3>
-            <button id="btn-close-preview" class="text-white hover:text-blue-300 text-2xl px-2">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-        <div class="flex-1 overflow-hidden flex justify-center items-center p-2 relative">
-            <div id="preview-loading" class="absolute text-white animate-pulse flex flex-col items-center">
-                <i class="fa-solid fa-spinner fa-spin text-4xl mb-2"></i>
-                <span class="text-sm mt-2">檔案載入中...</span>
+    <!-- 🌟 全新升級：懸浮預覽視窗 (可拖曳、可邊看邊打字) -->
+    <!-- 移除了遮罩背景 (backdrop)，並加上了 resize 與絕對定位 -->
+    <div id="preview-modal" class="hidden fixed top-20 right-4 w-80 md:w-[450px] h-[500px] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.3)] border border-slate-300 rounded-xl z-[100] flex flex-col overflow-hidden resize">
+        <!-- 頂部拖曳條 -->
+        <div id="preview-header" class="p-3 flex justify-between items-center text-white bg-slate-800 select-none">
+            <div class="flex items-center overflow-hidden">
+                <i class="fa-solid fa-up-down-left-right text-slate-400 mr-2 text-xs"></i>
+                <h3 id="preview-title" class="font-bold text-sm truncate pr-2">Google 雲端預覽</h3>
             </div>
-            <iframe id="preview-iframe" class="w-full h-full bg-white rounded-lg hidden shadow-lg" frameborder="0"></iframe>
-            <img id="preview-img" class="max-w-full max-h-full object-contain hidden rounded-lg shadow-lg" />
+            <div class="flex items-center gap-3 shrink-0">
+                <!-- 全螢幕/縮小 切換按鈕 -->
+                <button id="btn-fullscreen-preview" class="text-slate-300 hover:text-white">
+                    <i class="fa-solid fa-expand"></i>
+                </button>
+                <button id="btn-close-preview" class="text-white hover:text-red-400 text-xl px-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
         </div>
-        <div class="p-3 bg-slate-800 text-center flex justify-center gap-4">
-            <a id="preview-download-btn" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow transition-colors">
+        <!-- 內容區 -->
+        <div class="flex-1 overflow-auto flex justify-center items-center relative bg-slate-100">
+            <div id="preview-loading" class="absolute text-slate-500 animate-pulse flex flex-col items-center">
+                <i class="fa-solid fa-spinner fa-spin text-4xl mb-2"></i>
+                <span class="text-sm font-bold mt-2">檔案載入中...</span>
+            </div>
+            <iframe id="preview-iframe" class="w-full h-full bg-white hidden" frameborder="0"></iframe>
+            <img id="preview-img" class="w-full h-full object-contain hidden" />
+        </div>
+        <!-- 底部按鈕區 -->
+        <div class="p-3 bg-white border-t border-slate-200 text-center flex justify-center gap-4">
+            <a id="preview-download-btn" href="#" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow transition-colors">
                 <i class="fa-solid fa-download mr-1"></i> 下載檔案
             </a>
-            <a id="preview-external-btn" href="#" target="_blank" class="bg-slate-600 hover:bg-slate-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow transition-colors">
-                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> 新分頁開啟
+            <a id="preview-external-btn" href="#" target="_blank" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-4 py-2 rounded-lg text-sm font-bold transition-colors">
+                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> 另開視窗
             </a>
         </div>
     </div>
@@ -386,9 +459,19 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, serverTimestamp, query, orderBy, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getStorage } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // ==========================================
+        // Firebase 連線逾時偵測
+        // ==========================================
+        const connTimeout = setTimeout(() => {
+            const el = document.getElementById('auth-status');
+            if (el && el.innerText.includes('連線中')) {
+                alert("⚠️ 系統連線被阻擋或網路異常！\n\n常見原因：\n1. 您使用 Brave 或阻擋廣告的瀏覽器 (AdBlock) 封鎖了資料庫。\n2. 您的網域未加入 Firebase 的安全白名單。\n\n請關閉廣告阻擋後重新整理頁面！");
+            }
+        }, 12000);
 
         const firebaseConfig = {
             apiKey: "AIzaSyAmoPK2soGiJQvCli9IlFXqS6mQy6q2ScQ",
@@ -400,10 +483,18 @@
             measurementId: "G-J0LC1ECXH3"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const storage = getStorage(app);
+        let app, db, auth, storage;
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            storage = getStorage(app);
+            
+            document.getElementById('auth-status').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 連線資料庫...';
+            document.getElementById('auth-status').classList.replace('bg-slate-500', 'bg-blue-500');
+        } catch (initErr) {
+            alert("Firebase 模組載入失敗，請確認您的網路未阻擋 Google 服務。");
+        }
 
         let currentUser = null;
         let casesData = [];
@@ -411,7 +502,7 @@
         
         let settings = { 
             committee: [], 
-            gasUrl: 'https://script.google.com/macros/s/AKfycbyW0a1OtPZkao60R_5SS5RcBeDHGkEPLuoumvlfj9BQVuEWfk6b8WtwMSTotRcQ9UjBog/exec' 
+            gasUrl: 'https://script.google.com/macros/s/AKfycbxelfY8BWyg2ZWeO4UbnenSH8eLS20qojH5N-tvZgvj_fcgoLL-MJosD53NIdo03qPdFw/exec' 
         }; 
         let multiClients = []; 
 
@@ -465,6 +556,25 @@
             setTimeout(() => DOM.toast.classList.add('opacity-0'), 2500);
         }
 
+        // 🌟 新增：生日自動換算年齡邏輯
+        function updateAge() {
+            const dobVal = document.getElementById('form-client-dob').value;
+            if(dobVal) {
+                const dob = new Date(dobVal);
+                const today = new Date();
+                let age = today.getFullYear() - dob.getFullYear();
+                const m = today.getMonth() - dob.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                    age--;
+                }
+                document.getElementById('form-client-age').value = age > 0 ? age : 0;
+            } else {
+                document.getElementById('form-client-age').value = '';
+            }
+        }
+        document.getElementById('form-client-dob').addEventListener('change', updateAge);
+
+
         function showView(viewName, title = "訪視案件管理", showTabs = true, pushHistory = true) {
             Object.values(DOM.views).forEach(v => v.classList.add('hidden'));
             DOM.views[viewName].classList.remove('hidden');
@@ -485,7 +595,11 @@
             }
 
             if (pushHistory) {
-                history.pushState({ view: viewName, title: title, showTabs: showTabs }, title, `#${viewName}`);
+                try {
+                    history.pushState({ view: viewName, title: title, showTabs: showTabs }, title, `#${viewName}`);
+                } catch(e) {
+                    console.warn('History API 本地受限');
+                }
             }
         }
 
@@ -518,12 +632,16 @@
 
         async function loadSettings() {
             if(!currentUser) return;
-            const docRef = doc(db, 'users', currentUser.uid, 'settings', 'main');
-            const docSnap = await getDoc(docRef);
-            if(docSnap.exists()) {
-                const data = docSnap.data();
-                settings.committee = data.committee || [];
-                if(data.gasUrl) settings.gasUrl = data.gasUrl;
+            try {
+                const docRef = doc(db, 'users', currentUser.uid, 'settings', 'main');
+                const docSnap = await getDoc(docRef);
+                if(docSnap.exists()) {
+                    const data = docSnap.data();
+                    settings.committee = data.committee || [];
+                    if(data.gasUrl) settings.gasUrl = data.gasUrl;
+                }
+            } catch (err) {
+                console.warn("載入設定失敗(權限可能未開):", err);
             }
         }
 
@@ -587,9 +705,37 @@
             });
         }
 
+        document.getElementById('btn-test-gas').addEventListener('click', async () => {
+            const url = document.getElementById('setting-gas-input').value.trim();
+            if (!url) return alert("請先貼上網址！");
+            
+            const btn = document.getElementById('btn-test-gas');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 測試中...';
+            
+            try {
+                const res = await fetch(url, { method: 'GET', redirect: 'follow' });
+                const text = await res.text();
+                
+                try {
+                    const json = JSON.parse(text);
+                    if (json.success) {
+                        alert("✅ 連線大成功！\n您的 API 權限已完全開啟，可以正常上傳檔案了。");
+                    } else {
+                        alert("❌ 連線失敗 (內部錯誤)：\n" + text);
+                    }
+                } catch(e) {
+                    alert("❌ 測試失敗 (權限遭阻擋)！\n\nGoogle 伺服器要求必須登入才能使用此 API。\n\n【唯一解法】：\n1. 請改用「個人 Gmail」帳號建立 GAS。\n2. 確保部署時「誰可以存取」是設定為『所有人 (Anyone)』。");
+                }
+            } catch (err) {
+                alert("❌ 嚴重錯誤 (Failed to fetch)！\n\n您的連線被徹底阻擋。\n請確認您有進行『新增部署作業』，並且將存取權限設為『所有人』！");
+            } finally {
+                btn.innerHTML = '<i class="fa-solid fa-satellite-dish mr-1"></i> 測試連線';
+            }
+        });
+
+
         // ==========================================
-        // 🌟 核心防呆升級：攔截 Failed to fetch 錯誤並白話文教學
-        // 移除多餘 headers 以完全規避 CORS 預檢 (OPTIONS)
+        // Google Drive 上傳
         // ==========================================
         async function uploadToGoogleDrive(fileBlob, fileName) {
             if (!settings.gasUrl) {
@@ -608,8 +754,8 @@
                                 name: fileName,
                                 mimeType: fileBlob.type || 'application/octet-stream',
                                 data: base64data
-                            })
-                            // 這裡不放 headers，確保瀏覽器視為 Simple Request
+                            }),
+                            redirect: 'follow'
                         });
 
                         const resultText = await response.text();
@@ -622,15 +768,50 @@
                                 reject(new Error(result.error || "GAS 程式內部錯誤"));
                             }
                         } catch (jsonErr) {
-                            console.error("GAS 吐回內容:", resultText);
-                            reject(new Error("API 回傳格式錯誤！請確認 GAS 部署權限是否為『所有人』且完成『新增部署作業』。"));
+                            reject(new Error("API 回傳格式錯誤！權限可能遭阻擋，請至設定頁點擊『測試連線』檢查。"));
                         }
                     } catch (e) {
                         console.error("Fetch Error:", e);
-                        reject(new Error("連線遭 Google 擋下 (Failed to fetch)。\n\n👉 請檢查兩件事：\n1. 回 GAS 執行一次 testAuth 函數來「強制授權」。\n2. 授權後「新增部署作業」，並將「誰可以存取」設為『所有人』，最後將新網址貼回 APP 設定！"));
+                        reject(new Error("連線被 Google 擋下 (Failed to fetch)。\n檔案可能太大或權限未完全對外開放，請至設定頁點擊『測試連線』檢查。"));
                     }
                 };
                 reader.onerror = () => reject(new Error("本機檔案讀取失敗"));
+            });
+        }
+
+        async function compressImage(file, maxSizeMB = 1.5) {
+            if (!file.type.startsWith('image/')) return file;
+            
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        const maxDim = 1600;
+                        if (width > height && width > maxDim) {
+                            height *= maxDim / width;
+                            width = maxDim;
+                        } else if (height > maxDim) {
+                            width *= maxDim / height;
+                            height = maxDim;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        canvas.toBlob((blob) => {
+                            resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
+                        }, 'image/jpeg', 0.8);
+                    };
+                };
             });
         }
 
@@ -664,6 +845,108 @@
         function addWorkstationClient() { multiClients.push({name:'', age:'', title:''}); renderWorkstationClients(); }
         document.getElementById('btn-add-client-row').addEventListener('click', addWorkstationClient);
 
+        // 🌟 新增：Gemini AI 申請書辨識邏輯
+        async function analyzeDocumentWithAI(file) {
+            const apiKey = "AIzaSyDcr3EH_yPAd9kQO1Qi00d2q8QUP9YGnd8"; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const base64Data = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
+            });
+
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: "你是一個專業的資料擷取助理。請從這份職務再設計申請書(PDF或圖片)中擷取資訊並回傳 JSON 格式。\n包含以下欄位：\n- company: 服務單位或申請單位名稱\n- name: 個案姓名\n- gender: 性別(男或女)\n- dob: 出生年月日，請務必轉換為西元 YYYY-MM-DD 格式 (例如民國68年1月17日轉換為 1979-01-17)\n- title: 職稱\n- location: 實際工作地址\n- disability: 個人障礙情形與致障原因 (盡量合併成一句話)\n- problems: 遭遇問題及期待經由職務再設計改善事項 (濃縮重點即可)\n\n若無該欄位資訊請填空字串。必須回傳 JSON，不要包含其他文字說明。" },
+                        { inlineData: { mimeType: file.type, data: base64Data } }
+                    ]
+                }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            company: { type: "STRING" },
+                            name: { type: "STRING" },
+                            gender: { type: "STRING" },
+                            dob: { type: "STRING" },
+                            title: { type: "STRING" },
+                            location: { type: "STRING" },
+                            disability: { type: "STRING" },
+                            problems: { type: "STRING" }
+                        }
+                    }
+                }
+            };
+
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+                    const data = await res.json();
+                    return JSON.parse(data.candidates[0].content.parts[0].text);
+                } catch (err) {
+                    if (i === 4) throw err;
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+            }
+        }
+
+        document.getElementById('ai-upload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const label = document.getElementById('label-ai-upload');
+            const span = label.querySelector('.btn-text');
+            const originalText = span.textContent;
+            
+            span.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> AI 辨識中...';
+            label.classList.add('opacity-50', 'pointer-events-none');
+            
+            try {
+                const result = await analyzeDocumentWithAI(file);
+                
+                // 自動填入表單欄位
+                if(result.company) document.getElementById('form-company').value = result.company;
+                if(result.name) document.getElementById('form-client-name').value = result.name;
+                if(result.gender) {
+                    const select = document.getElementById('form-client-gender');
+                    if([...select.options].some(o => o.value === result.gender)) select.value = result.gender;
+                }
+                if(result.dob) {
+                    document.getElementById('form-client-dob').value = result.dob;
+                    updateAge(); 
+                }
+                if(result.title) document.getElementById('form-client-title').value = result.title;
+                if(result.location) document.getElementById('form-work-location').value = result.location;
+                if(result.disability) document.getElementById('form-client-disability').value = result.disability;
+                if(result.problems) document.getElementById('form-initial-problems').value = result.problems;
+                
+                // 自動將類型切換為身心障礙者
+                const radio = document.querySelector('input[name="form-category"][value="身心障礙者"]');
+                if(radio) { 
+                    radio.checked = true; 
+                    radio.dispatchEvent(new Event('change')); 
+                }
+                
+                showToast("✨ AI 已成功為您填寫表單！");
+            } catch (err) {
+                console.error("AI 錯誤:", err);
+                alert("AI 辨識失敗，請檢查網路連線或稍後再試。");
+            } finally {
+                span.innerHTML = originalText;
+                label.classList.remove('opacity-50', 'pointer-events-none');
+                e.target.value = '';
+            }
+        });
+
         DOM.btnNewCase.addEventListener('click', () => {
             DOM.form.reset();
             document.getElementById('form-id').value = '';
@@ -696,20 +979,33 @@
                 data.clientName = data.clients.length > 0 ? `${data.clients[0].name} 等 ${data.clients.length} 人` : '未命名工作站';
             } else {
                 data.clientName = document.getElementById('form-client-name').value;
+                data.clientGender = document.getElementById('form-client-gender').value;
+                data.clientDob = document.getElementById('form-client-dob').value;
+                data.clientAge = document.getElementById('form-client-age').value;
                 data.clientTitle = document.getElementById('form-client-title').value;
                 data.disability = document.getElementById('form-client-disability').value;
+                data.workLocation = document.getElementById('form-work-location').value;
+                data.initialProblems = document.getElementById('form-initial-problems').value;
                 data.clients = [];
             }
 
             const casesRef = collection(db, 'users', currentUser.uid, 'cases');
             if (caseId) {
                 await updateDoc(doc(casesRef, caseId), data);
-                showToast("更新成功");
+                showToast("基本資料更新成功");
             } else {
                 data.createdAt = serverTimestamp();
                 data.photos = []; data.audios = []; data.files = []; data.checklist = {};
                 data.env = { lux: '', noise: '', height: '', weight: '' };
-                data.report = { status: "", limits: "", analysis: "", strategy: "" };
+                
+                // 🌟 新增時，自動將「遭遇問題」帶入評估報告中作為草稿
+                data.report = { 
+                    status: data.initialProblems || "", 
+                    limits: "", 
+                    analysis: data.initialProblems ? "申請書反映問題：\n" + data.initialProblems : "", 
+                    strategy: "" 
+                };
+                
                 await addDoc(casesRef, data);
                 showToast("新增成功");
             }
@@ -719,8 +1015,11 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('auth-status').innerHTML = '<i class="fa-solid fa-cloud-check text-green-200"></i> 已連線';
+                document.getElementById('auth-status').innerHTML = '<i class="fa-solid fa-cloud-check"></i> 已連線';
                 document.getElementById('auth-status').classList.replace('bg-blue-500', 'bg-green-600');
+                document.getElementById('auth-status').classList.replace('bg-slate-500', 'bg-green-600');
+                document.getElementById('auth-status').classList.replace('bg-red-600', 'bg-green-600');
+                
                 await loadSettings();
                 renderCommitteeCheckboxes();
                 loadCases();
@@ -737,6 +1036,9 @@
                 snapshot.forEach(doc => casesData.push({ id: doc.id, ...doc.data() }));
                 renderCaseList();
                 if(!DOM.views.dashboard.classList.contains('hidden')) updateDashboard();
+            }, (error) => {
+                console.error("Firestore Error:", error);
+                DOM.casesContainer.innerHTML = `<div class="text-center text-red-500 py-10">資料庫讀取失敗<br><span class="text-sm">${error.message}</span></div>`;
             });
         }
 
@@ -755,7 +1057,7 @@
 
             filtered.forEach(item => {
                 const el = document.createElement('div');
-                el.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-100 hover:shadow-md cursor-pointer";
+                el.className = "bg-white p-4 rounded-xl shadow-sm border border-slate-100 hover:shadow-md cursor-pointer relative group transition-all";
                 let catColor = (item.category === '中高齡及高齡者') ? 'bg-amber-100 text-amber-700' : 
                                (item.category === '身心障礙者') ? 'bg-emerald-100 text-emerald-700' : 
                                (item.category === '勞工就業通') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700';
@@ -765,12 +1067,15 @@
                 
                 el.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-bold text-slate-800 text-lg">${item.company || '未命名企業'}</h3>
-                        <span class="text-xs ${catColor} px-2 py-1 rounded font-medium">${item.category || '未分類'}</span>
+                        <h3 class="font-bold text-slate-800 text-lg pr-4">${item.company || '未命名企業'}</h3>
+                        <span class="text-xs ${catColor} px-2 py-1 rounded font-medium whitespace-nowrap">${item.category || '未分類'}</span>
                     </div>
                     <div class="flex items-center text-sm text-slate-500 gap-3">
                         <span class="truncate max-w-[120px]"><i class="fa-solid fa-users text-slate-400 mr-1"></i> ${clientDisplayName}</span>
                         <span><i class="fa-solid fa-calendar text-slate-400 mr-1"></i> ${dateDisplayName}</span>
+                    </div>
+                    <div class="absolute top-1/2 right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500">
+                        <i class="fa-solid fa-chevron-right text-xl"></i>
                     </div>
                 `;
                 el.addEventListener('click', () => openWorkspace(item.id));
@@ -817,18 +1122,27 @@
             });
         });
 
+        // ==========================================
+        // 開啟工作區 (讀取資料)
+        // ==========================================
         function openWorkspace(id) {
             try {
                 currentEditingCaseId = id;
                 const c = casesData.find(x => x.id === id);
+                if (!c) return;
                 
                 document.getElementById('ws-category').textContent = c.category || '未分類';
                 document.getElementById('ws-company').textContent = c.company || '未命名企業';
                 
                 const displayName = c.clientName || c.client || '未命名';
                 const displayTitle = c.clientTitle ? '('+c.clientTitle+')' : (c.jobTitle ? '('+c.jobTitle+')' : '');
-                document.getElementById('ws-client').textContent = `${displayName} ${displayTitle}`;
+                const genderAge = (c.clientGender || c.clientAge) ? ` | ${c.clientGender || ''} ${c.clientAge ? c.clientAge+'歲' : ''}` : '';
+                
+                document.getElementById('ws-client').textContent = `${displayName} ${displayTitle}${genderAge}`;
                 document.getElementById('ws-visit-date').textContent = `初訪日: ${c.visitDate || c.date || '-'}`;
+                
+                // 更新工作地點顯示
+                document.getElementById('ws-details').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i> ${c.workLocation || c.company || '未填寫工作地點'}`;
                 
                 const rpt = c.report || {};
                 document.getElementById('ws-status-text').value = rpt.status || c.notes || '';
@@ -865,6 +1179,73 @@
             }
         }
 
+        // ==========================================
+        // 🌟 新增：編輯與刪除案件邏輯
+        // ==========================================
+        
+        // 編輯基本資料
+        document.getElementById('btn-edit-case').addEventListener('click', () => {
+            const c = casesData.find(x => x.id === currentEditingCaseId);
+            if (!c) return;
+
+            DOM.form.reset();
+            document.getElementById('form-id').value = c.id;
+            
+            // 觸發單選按鈕切換 UI
+            const radio = document.querySelector(`input[name="form-category"][value="${c.category || '其他'}"]`);
+            if(radio) {
+                radio.checked = true;
+                radio.dispatchEvent(new Event('change'));
+            }
+
+            document.getElementById('form-company').value = c.company || '';
+            document.getElementById('form-phone').value = c.phone || '';
+            document.getElementById('form-intake-date').value = c.intakeDate || '';
+            document.getElementById('form-visit-date').value = c.visitDate || c.date || '';
+
+            if (c.category === '中高齡及高齡者') {
+                multiClients = c.clients || [];
+                if(multiClients.length === 0) addWorkstationClient();
+                renderWorkstationClients();
+            } else {
+                document.getElementById('form-client-name').value = c.clientName || c.client || '';
+                document.getElementById('form-client-gender').value = c.clientGender || '';
+                document.getElementById('form-client-dob').value = c.clientDob || '';
+                document.getElementById('form-client-age').value = c.clientAge || '';
+                document.getElementById('form-client-title').value = c.clientTitle || c.jobTitle || '';
+                document.getElementById('form-client-disability').value = c.disability || '';
+                document.getElementById('form-work-location').value = c.workLocation || '';
+                document.getElementById('form-initial-problems').value = c.initialProblems || '';
+            }
+
+            const visitorArr = c.visitors ? c.visitors.split('、') : [];
+            document.querySelectorAll('input[name="chk-visitor"]').forEach(cb => {
+                cb.checked = visitorArr.includes(cb.value);
+            });
+
+            showView('form', '編輯訪視案件', false);
+        });
+
+        // 刪除案件
+        document.getElementById('btn-delete-case').addEventListener('click', async () => {
+            if (!currentEditingCaseId) return;
+            const confirmDelete = confirm("⚠️ 警告：您確定要永久刪除此案件嗎？\n刪除後資料將無法復原！");
+            
+            if (confirmDelete) {
+                try {
+                    await deleteDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId));
+                    showToast("案件已成功刪除");
+                    showView('list', '訪視案件管理', true);
+                    currentEditingCaseId = null;
+                } catch (e) {
+                    console.error("Delete Error:", e);
+                    alert("刪除失敗：" + e.message);
+                }
+            }
+        });
+
+
+        // 儲存文字與檢核表
         document.querySelectorAll('.btn-save-ws').forEach(btn => {
             btn.addEventListener('click', async () => {
                 if (!currentEditingCaseId) return;
@@ -897,15 +1278,19 @@
         });
 
         // ==========================================
-        // 預覽視窗 (Modal)
+        // 🌟 全新升級：懸浮預覽視窗 (PiP 模式)
         // ==========================================
         const modal = document.getElementById('preview-modal');
+        const header = document.getElementById('preview-header');
         const iframe = document.getElementById('preview-iframe');
         const img = document.getElementById('preview-img');
         const title = document.getElementById('preview-title');
         const dlBtn = document.getElementById('preview-download-btn');
         const extBtn = document.getElementById('preview-external-btn');
         const loading = document.getElementById('preview-loading');
+        const btnFullScreen = document.getElementById('btn-fullscreen-preview');
+        
+        let isFullScreen = false;
 
         window.openPreview = (previewUrl, downloadUrl, type, name = "檔案預覽") => {
             modal.classList.remove('hidden');
@@ -939,12 +1324,72 @@
         }
         document.getElementById('btn-close-preview').addEventListener('click', closePreview);
 
+        // 全螢幕切換邏輯
+        btnFullScreen.addEventListener('click', () => {
+            isFullScreen = !isFullScreen;
+            if (isFullScreen) {
+                btnFullScreen.innerHTML = '<i class="fa-solid fa-compress"></i>';
+                // 擴展為全螢幕，覆蓋 Tailwind 樣式
+                modal.style.left = '0px';
+                modal.style.top = '0px';
+                modal.style.width = '100vw';
+                modal.style.height = '100vh';
+                modal.style.borderRadius = '0';
+            } else {
+                btnFullScreen.innerHTML = '<i class="fa-solid fa-expand"></i>';
+                // 恢復為懸浮視窗 (移除 inline styles 讓 Tailwind 重新接管，或給定預設大小)
+                modal.style.left = '';
+                modal.style.top = '80px';
+                modal.style.right = '16px';
+                modal.style.width = '';
+                modal.style.height = '500px';
+                modal.style.borderRadius = '0.75rem';
+            }
+        });
+
+        // 拖曳懸浮視窗邏輯
+        let isDragging = false, startX, startY, startLeft, startTop;
+
+        const dragStart = (e) => {
+            if (isFullScreen) return; // 全螢幕下不可拖曳
+            isDragging = true;
+            startX = e.clientX || e.touches[0].clientX;
+            startY = e.clientY || e.touches[0].clientY;
+            startLeft = modal.offsetLeft;
+            startTop = modal.offsetTop;
+            document.body.style.userSelect = 'none'; // 避免拖曳時反白文字
+        };
+
+        const dragMove = (e) => {
+            if (!isDragging) return;
+            e.preventDefault(); // 防止滾動
+            const x = e.clientX || (e.touches ? e.touches[0].clientX : startX);
+            const y = e.clientY || (e.touches ? e.touches[0].clientY : startY);
+            
+            modal.style.left = startLeft + (x - startX) + 'px';
+            modal.style.top = startTop + (y - startY) + 'px';
+            // 解除右側與底部的依附，避免衝突
+            modal.style.right = 'auto';
+            modal.style.bottom = 'auto';
+        };
+
+        const dragEnd = () => {
+            isDragging = false;
+            document.body.style.userSelect = '';
+        };
+
+        header.addEventListener('mousedown', dragStart);
+        window.addEventListener('mousemove', dragMove);
+        window.addEventListener('mouseup', dragEnd);
+
+        header.addEventListener('touchstart', dragStart, {passive: false});
+        window.addEventListener('touchmove', dragMove, {passive: false});
+        window.addEventListener('touchend', dragEnd);
+
 
         // ==========================================
-        // 檔案上傳區
+        // 檔案上傳區 
         // ==========================================
-        
-        // --- 1. 照片上傳 ---
         document.getElementById('photo-upload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file || !currentEditingCaseId) return;
@@ -953,11 +1398,13 @@
             const span = label.querySelector('.btn-text');
             const originalText = span.textContent;
             
-            span.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理上傳中...';
+            span.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 壓縮並上傳中...';
             label.classList.add('opacity-50', 'pointer-events-none');
             
             try {
-                const result = await uploadToGoogleDrive(file, `${Date.now()}_${file.name}`);
+                const compressedFile = await compressImage(file);
+                const result = await uploadToGoogleDrive(compressedFile, `${Date.now()}_${file.name}`);
+                
                 const c = casesData.find(x => x.id === currentEditingCaseId);
                 const newPhotos = [...(c.photos || []), { 
                     previewUrl: result.previewUrl, 
@@ -1002,7 +1449,6 @@
             `}).join('');
         }
 
-        // --- 2. 檔案與 PDF 上傳 ---
         document.getElementById('file-upload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file || !currentEditingCaseId) return;
@@ -1070,7 +1516,6 @@
             `}).join('');
         }
 
-        // --- 3. 錄音上傳 ---
         const btnRecord = document.getElementById('btn-record-audio');
         let mediaRecorder; let audioChunks = []; let isRecording = false;
 
@@ -1142,7 +1587,6 @@
             `}).join('');
         }
 
-        // --- 4. 畫布上傳 ---
         const canvas = document.getElementById('drawing-board');
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         let canvasPages = []; let currentCanvasIdx = 0; let isDrawing = false;
@@ -1290,7 +1734,11 @@
             reader.readAsArrayBuffer(file);
         });
 
-        history.replaceState({ view: 'list', title: '訪視案件管理', showTabs: true }, '', '#list');
+        try {
+            history.replaceState({ view: 'list', title: '訪視案件管理', showTabs: true }, '', '#list');
+        } catch(e) {
+            console.warn("本機執行忽略 History API");
+        }
 
     </script>
 </body>
