@@ -477,24 +477,37 @@
                         </div>
                     </div>
 
-                    <!-- 🎙️ 錄音與手動 AI 轉譯 (折疊展開) -->
+                    <!-- 🎙️ 錄音與 AI 轉譯 (升級版：支援上傳與可編輯) -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-5 md:p-6 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition-colors" onclick="document.getElementById('section-audio-content').classList.toggle('hidden'); document.getElementById('icon-audio-toggle').classList.toggle('rotate-180');">
                             <div>
-                                <h3 class="font-bold text-slate-700 text-lg md:text-xl"><i class="fa-solid fa-microphone text-blue-500 mr-2"></i>訪談錄音</h3>
+                                <h3 class="font-bold text-slate-700 text-lg md:text-xl"><i class="fa-solid fa-microphone text-blue-500 mr-2"></i>訪談錄音與 AI 逐字稿</h3>
                             </div>
                             <i id="icon-audio-toggle" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
                         </div>
                         <div id="section-audio-content" class="hidden p-5 md:p-6 border-t border-slate-100">
-                            <div class="flex justify-between items-center mb-5">
-                                <p class="text-xs text-slate-500 mt-1">錄音完成後可手動點擊按鈕產生逐字稿</p>
-                                <button id="btn-record-audio" class="bg-red-50 text-red-600 hover:bg-red-100 px-5 py-3 rounded-xl text-base font-bold transition-transform active:scale-95 shadow-sm border border-red-200">
-                                    <i class="fa-solid fa-circle mr-2 text-sm"></i> <span class="btn-text">開始錄音</span>
-                                </button>
+                            
+                            <!-- 新增：多功能錄音與上傳操作區 -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <div>
+                                    <p class="text-sm font-bold text-slate-700 mb-2">選項 1：網頁直接錄音</p>
+                                    <button id="btn-record-audio" class="w-full bg-red-50 text-red-600 hover:bg-red-100 px-4 py-3 rounded-xl text-base font-bold transition-transform active:scale-95 shadow-sm border border-red-200 flex justify-center items-center">
+                                        <i class="fa-solid fa-circle mr-2 text-sm"></i> <span class="btn-text">開始錄音 (結束後上傳)</span>
+                                    </button>
+                                    <p id="recording-status" class="text-sm text-red-600 mt-2 hidden animate-pulse font-bold text-center">● 錄音中... (點擊上方按鈕停止)</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-700 mb-2">選項 2：上傳既有音檔給 AI 辨識</p>
+                                    <label class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-xl text-base font-bold transition-transform active:scale-95 shadow-sm flex justify-center items-center cursor-pointer">
+                                        <i class="fa-solid fa-cloud-arrow-up mr-2 text-sm"></i> <span id="text-upload-audio">上傳音檔並 AI 轉文字</span>
+                                        <input type="file" id="audio-upload-input" accept="audio/*,video/mp4" class="hidden">
+                                    </label>
+                                    <p class="text-xs text-slate-500 mt-2 text-center">支援 mp3, m4a, wav (建議小於 15MB)</p>
+                                </div>
                             </div>
-                            <p id="recording-status" class="text-base text-red-600 mb-4 hidden animate-pulse font-bold bg-red-50 p-3 rounded-lg border border-red-200 text-center">● 錄音中... (點擊右上方按鈕停止)</p>
+
                             <div id="audios-container" class="space-y-4">
-                                <p class="text-sm text-slate-400">尚無錄音。</p>
+                                <p class="text-sm text-slate-400">尚無錄音紀錄。</p>
                             </div>
                         </div>
                     </div>
@@ -2156,7 +2169,7 @@
 
             const blob = audioBlobCache[fileName];
             if (!blob) {
-                alert("⚠️ 安全限制：您只能對「剛剛錄製」的音檔執行 AI 轉譯。\n若是過去的錄音或網頁已重新整理，為保護隱私與節省流量，請重新錄製。");
+                alert("⚠️ 安全限制：您只能對「剛剛錄製」的音檔執行 AI 轉譯。\n如果網頁已重新整理，請使用上方的「上傳音檔並 AI 轉文字」功能，將您手機/電腦裡的錄音檔直接上傳給 AI 辨識。");
                 return;
             }
 
@@ -2179,6 +2192,63 @@
             }
         };
 
+        // 🌟 新增：處理使用者直接上傳音檔並轉文字的邏輯
+        document.getElementById('audio-upload-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !currentEditingCaseId) return;
+
+            const labelText = document.getElementById('text-upload-audio');
+            const originalText = labelText.innerText;
+            labelText.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理與辨識中...';
+            e.target.parentElement.classList.add('opacity-50', 'pointer-events-none');
+
+            try {
+                // 1. 先送給 AI 辨識取得文字
+                showToast("正在傳送音檔給 AI 進行逐字稿辨識...");
+                const transcript = await transcribeAudioWithAI(file);
+                
+                // 2. 辨識成功後，上傳原音檔至 Google Drive (備份)
+                showToast("辨識完成！正在將音檔備份至雲端...");
+                const fileName = `upload_${Date.now()}_${file.name}`;
+                const result = await uploadToGoogleDrive(file, fileName);
+
+                // 3. 存入 Firebase
+                const c = casesData.find(x => x.id === currentEditingCaseId);
+                const newAudios = [...(c.audios || []), { 
+                    name: fileName,
+                    displayName: file.name,
+                    previewUrl: result.previewUrl,
+                    downloadUrl: result.downloadUrl,
+                    transcript: transcript
+                }];
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
+                renderAudios(newAudios);
+                showToast("✅ 上傳與 AI 逐字稿生成完畢！");
+            } catch (err) {
+                alert("音檔處理失敗：" + err.message + "\n(若是檔案太大，建議先裁切，或確保 API 金鑰正確)");
+            } finally {
+                labelText.innerText = originalText;
+                e.target.parentElement.classList.remove('opacity-50', 'pointer-events-none');
+                e.target.value = ''; // 重置 input
+            }
+        });
+
+        // 🌟 新增：當使用者編輯逐字稿時自動存檔
+        window.updateTranscript = async (fileName, newText) => {
+            if (!currentEditingCaseId) return;
+            try {
+                const c = casesData.find(x => x.id === currentEditingCaseId);
+                const newAudios = c.audios.map(a => {
+                    if (a.name === fileName) a.transcript = newText;
+                    return a;
+                });
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
+                showToast("✍️ 逐字稿已自動儲存");
+            } catch(e) {
+                console.error("儲存逐字稿失敗", e);
+            }
+        };
+
         window.copyTranscript = (text) => {
             navigator.clipboard.writeText(text).then(() => {
                 showToast("逐字稿已複製，可貼上至報告區塊！");
@@ -2196,38 +2266,44 @@
                 
                 let transcriptSection = '';
                 if (audio.transcript) {
+                    // 🌟 修改：將靜態文字改為可編輯的 textarea
                     transcriptSection = `
                         <div class="mt-3 p-4 bg-white rounded-xl border border-purple-200 shadow-inner">
-                            <div class="flex justify-between items-center mb-3 border-b border-purple-100 pb-2">
-                                <span class="text-base font-bold text-purple-700"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 逐字稿</span>
-                                <button onclick="window.copyTranscript(\`${audio.transcript.replace(/`/g, "'")}\`)" class="text-sm bg-purple-100 text-purple-700 hover:bg-purple-200 px-4 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-copy mr-1"></i> 複製內容</button>
+                            <div class="flex justify-between items-center mb-2 border-b border-purple-100 pb-2">
+                                <span class="text-sm font-bold text-purple-700"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 逐字稿 (可直接點擊修改)</span>
+                                <button onclick="window.copyTranscript(document.getElementById('ts-${index}').value)" class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-3 py-1.5 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-copy mr-1"></i> 複製</button>
                             </div>
-                            <p class="text-base text-slate-700 whitespace-pre-wrap leading-relaxed">${audio.transcript}</p>
+                            <textarea id="ts-${index}" onchange="window.updateTranscript('${audio.name}', this.value)" class="auto-resize w-full p-2 text-base text-slate-700 bg-transparent focus:bg-slate-50 border border-transparent focus:border-purple-300 rounded-lg outline-none resize-none leading-relaxed transition-colors">${audio.transcript}</textarea>
                         </div>
                     `;
                 } else {
                     transcriptSection = `
                         <div class="mt-2 text-right">
                             <button id="${safeBtnId}" onclick="window.startTranscription('${audio.name}')" class="text-sm bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-sm">
-                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 產生逐字稿
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 針對此錄音產生逐字稿
                             </button>
                         </div>
                     `;
                 }
 
+                // 🌟 修改：加入提示，告知 Google Drive 音檔可能需點擊下載圖示播放
                 return `
                 <div class="bg-slate-50 p-5 border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm relative group">
                     <div class="flex justify-between items-center">
-                        <span class="text-base md:text-lg text-slate-700 font-bold"><i class="fa-solid fa-headphones text-blue-500 mr-2"></i>${audio.displayName || audio.name}</span>
-                        <div class="flex gap-2">
+                        <span class="text-base md:text-lg text-slate-700 font-bold truncate pr-2"><i class="fa-solid fa-headphones text-blue-500 mr-2"></i>${audio.displayName || audio.name}</span>
+                        <div class="flex gap-2 shrink-0">
                             <!-- 🗑️ 刪除按鈕 -->
                             <button onclick="window.deleteMedia('audios', ${index})" class="text-red-500 hover:text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors"><i class="fa-solid fa-trash"></i></button>
-                            <a href="${dUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-800 text-sm bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg font-bold transition-colors"><i class="fa-solid fa-download"></i></a>
+                            <a href="${dUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-800 text-sm bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg font-bold transition-colors flex items-center" title="另開視窗播放/下載"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> 下載</a>
                         </div>
                     </div>
+                    <p class="text-xs text-slate-400">若下方播放器無法播放，請點擊右上角綠色按鈕開啟音檔。</p>
                     <audio controls src="${dUrl}" class="w-full h-12 mt-1"></audio>
                     ${transcriptSection}
                 </div>`}).join('');
+                
+            // 觸發重新計算高度
+            setTimeout(() => triggerAutoResize(), 100);
         }
 
         // ==========================================
