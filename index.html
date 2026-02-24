@@ -173,8 +173,8 @@
                         <i class="fa-solid fa-floppy-disk mr-1"></i> 儲存 AI 金鑰
                     </button>
                     
-                    <h3 class="font-bold text-lg text-purple-800 mb-2">AI 潤飾風格與提示詞設定</h3>
-                    <p class="text-sm text-slate-500 mb-3">此設定將套用於「評估撰寫」與「成果報告」的 AI 潤飾功能，您可以自訂語氣或格式要求。</p>
+                    <h3 class="font-bold text-lg text-purple-800 mb-2">全域 AI 潤飾語氣 (統一風格設定)</h3>
+                    <p class="text-sm text-slate-500 mb-3">此設定將套用於所有段落的 AI 潤飾，確保整份報告的「風格語氣統一」。系統會自動將此語氣結合各段落內容產生專屬提示詞。</p>
                     <textarea id="setting-ai-prompt" rows="3" class="auto-resize w-full p-3 border border-slate-200 rounded-lg text-base mb-3 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-500"></textarea>
                     <button id="btn-save-prompt" class="w-full bg-purple-600 text-white px-4 py-3 md:text-lg rounded-lg font-bold hover:bg-purple-700 shadow">
                         <i class="fa-solid fa-floppy-disk mr-1"></i> 儲存潤飾設定
@@ -664,28 +664,40 @@
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center border-b-2 border-blue-100 pb-3 mb-4">
                             <h3 class="font-bold text-xl text-blue-800">一、 個案之就業狀況</h3>
-                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-status-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            <div class="flex gap-2">
+                                <button class="btn-copy-draft text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-status-text"><i class="fa-regular fa-copy mr-1"></i> 複製草稿</button>
+                                <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-status-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            </div>
                         </div>
                         <textarea id="ws-status-text" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="工作時間、主要工作內容、操作流程..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center border-b-2 border-blue-100 pb-3 mb-4">
                             <h3 class="font-bold text-xl text-blue-800">二、 個案之生理限制</h3>
-                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-limits-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            <div class="flex gap-2">
+                                <button class="btn-copy-draft text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-limits-text"><i class="fa-regular fa-copy mr-1"></i> 複製草稿</button>
+                                <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-limits-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            </div>
                         </div>
                         <textarea id="ws-limits-text" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="聽力/視力數據、中高齡體能退化情形..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center border-b-2 border-blue-100 pb-3 mb-4">
                             <h3 class="font-bold text-xl text-blue-800">三、 個案就業問題診斷與分析</h3>
-                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-analysis-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            <div class="flex gap-2">
+                                <button class="btn-copy-draft text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-analysis-text"><i class="fa-regular fa-copy mr-1"></i> 複製草稿</button>
+                                <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-analysis-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            </div>
                         </div>
                         <textarea id="ws-analysis-text" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="描述生理限制與工作環境衝突所導致的困難..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center border-b-2 border-blue-100 pb-3 mb-4">
                             <h3 class="font-bold text-xl text-blue-800">四、 改善方式、內容及輔具建議</h3>
-                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-strategy-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            <div class="flex gap-2">
+                                <button class="btn-copy-draft text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-strategy-text"><i class="fa-regular fa-copy mr-1"></i> 複製草稿</button>
+                                <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-strategy-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            </div>
                         </div>
                         <textarea id="ws-strategy-text" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="預計提供的輔具規格、人力協助時數規劃..."></textarea>
                     </div>
@@ -704,21 +716,30 @@
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center border-b-2 border-emerald-100 pb-3 mb-4">
                             <h3 class="font-bold text-xl text-emerald-800">五、 審查會決議</h3>
-                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-resolution"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            <div class="flex gap-2">
+                                <button class="btn-copy-draft text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-resolution"><i class="fa-regular fa-copy mr-1"></i> 複製草稿</button>
+                                <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-resolution"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            </div>
                         </div>
                         <textarea id="ws-outcome-resolution" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="例如：申請項目、申請金額、核准金額、是否回收..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center border-b-2 border-emerald-100 pb-3 mb-4">
                             <h3 class="font-bold text-xl text-emerald-800">六、 輔具試用、訓練及驗收</h3>
-                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-acceptance"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            <div class="flex gap-2">
+                                <button class="btn-copy-draft text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-acceptance"><i class="fa-regular fa-copy mr-1"></i> 複製草稿</button>
+                                <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-acceptance"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            </div>
                         </div>
                         <textarea id="ws-outcome-acceptance" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="記錄輔具試用狀況、教育訓練或驗收期程..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center border-b-2 border-emerald-100 pb-3 mb-4">
                             <h3 class="font-bold text-xl text-emerald-800">七、 職務再設計前後效益評估</h3>
-                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-benefit"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            <div class="flex gap-2">
+                                <button class="btn-copy-draft text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-benefit"><i class="fa-regular fa-copy mr-1"></i> 複製草稿</button>
+                                <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-benefit"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                            </div>
                         </div>
                         <textarea id="ws-outcome-benefit" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="描述解決之困難、工作便利性評分 (如：改善前0分，改善後10分)..."></textarea>
                     </div>
@@ -1611,12 +1632,18 @@
                 e.currentTarget.classList.add('opacity-50', 'pointer-events-none');
 
                 try {
-                    const promptStyle = settings.aiPromptStyle || '請將以下草稿潤飾成正式的職務再設計評估報告段落。';
+                    // 抓取目前所屬的段落標題，讓 AI 針對該段落特性撰寫
+                    const sectionTitle = e.currentTarget.closest('.bg-white').querySelector('h3').innerText;
+                    const toneSetting = settings.aiPromptStyle || '專業、客觀且具同理心';
+                    
+                    const systemPrompt = `你是一位專業的職務再設計評估委員。請以【${toneSetting}】的風格與語氣，將以下【${sectionTitle}】的現場紀錄草稿，潤飾成通順、結構完整的正式評估報告段落。請直接回傳潤飾後的純文字，不要包含任何開場白、結語、引言或 HTML 標籤。`;
+
                     const payload = {
-                        contents: [{ role: "user", parts: [{ text: `${promptStyle}\n\n待潤飾內容：\n${originalText}` }] }]
+                        contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n待潤飾草稿內容：\n${originalText}` }] }]
                     };
 
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    // 升級至 gemini-2.0-flash 模型以提高穩定度與品質
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -1630,11 +1657,39 @@
                     autoResizeTextarea(textarea);
                     showToast("✨ AI 潤飾完成！您可以繼續手動修改。");
                 } catch (err) {
-                    alert("AI 潤飾失敗：" + err.message);
+                    alert("AI 潤飾失敗：" + err.message + "\n(請確認金鑰是否正確，或嘗試使用一鍵複製功能至網頁版處理)");
                 } finally {
                     e.currentTarget.innerHTML = originalBtnHtml;
                     e.currentTarget.classList.remove('opacity-50', 'pointer-events-none');
                 }
+            });
+        });
+
+        // 🌟 新增：一鍵複製草稿與提示詞功能
+        document.querySelectorAll('.btn-copy-draft').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = e.currentTarget.dataset.target;
+                const textarea = document.getElementById(targetId);
+                const originalText = textarea.value.trim();
+                
+                if (!originalText) {
+                    alert("目前沒有內容可以複製唷！請先輸入一些草稿。");
+                    return;
+                }
+
+                // 抓取段落標題與全域語氣
+                const sectionTitle = e.currentTarget.closest('.bg-white').querySelector('h3').innerText;
+                const toneSetting = settings.aiPromptStyle || '專業、客觀且具同理心';
+                
+                // 自動組裝成優質的 Gemini/ChatGPT 提示詞
+                const promptForManual = `你是一位專業的職務再設計評估委員。請以【${toneSetting}】的風格與語氣，將以下【${sectionTitle}】的現場紀錄草稿，潤飾成通順、結構完整的正式評估報告段落。請直接回傳潤飾後的純文字即可：\n\n${originalText}`;
+                
+                // 寫入剪貼簿
+                navigator.clipboard.writeText(promptForManual).then(() => {
+                    showToast("✅ 已複製專屬提示詞與草稿！請直接貼上至您的 Gemini 小助手。");
+                }).catch(err => {
+                    alert("複製失敗，請手動圈選文字複製：" + err);
+                });
             });
         });
 
