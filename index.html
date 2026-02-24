@@ -1965,6 +1965,7 @@
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
         let canvasPages = []; let currentCanvasIdx = 0; let isDrawing = false;
         let drawColor = '#0f172a'; let drawSize = 3; let isEraser = false;
+        let isTempEraser = false; // 新增：用於暫存 Apple Pencil 橡皮擦狀態
 
         // 聽覺需求評估表相關函式
         document.getElementById('btn-toggle-hearing').addEventListener('click', () => {
@@ -2012,8 +2013,10 @@
         });
 
         function initCanvasSize() {
-            const rect = canvas.parentElement.getBoundingClientRect();
-            canvas.width = rect.width; canvas.height = window.innerWidth < 768 ? 400 : 500; fillWhite();
+            const rect = canvas.getBoundingClientRect(); // 修正：精準取得畫布自身的尺寸
+            canvas.width = rect.width; 
+            canvas.height = rect.height; // 動態抓取高度，徹底解決筆尖偏移與比例問題
+            fillWhite();
         }
         function fillWhite() { ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
         function loadCanvasPage(idx) {
@@ -2047,23 +2050,59 @@
         document.getElementById('btn-prev-page').addEventListener('click', () => { if(currentCanvasIdx > 0) { saveCanvasPage(); loadCanvasPage(currentCanvasIdx - 1); } });
         document.getElementById('btn-next-page').addEventListener('click', () => { if(currentCanvasIdx < canvasPages.length - 1) { saveCanvasPage(); loadCanvasPage(currentCanvasIdx + 1); } });
 
-        const startPos = (e) => { isDrawing = true; draw(e); };
-        const endPos = () => { isDrawing = false; ctx.beginPath(); };
+        const startPos = (e) => { 
+            isDrawing = true; 
+            
+            // 偵測 Apple Pencil 等數位筆的側敲/橡皮擦按鍵 (通常 button 為 5 或 buttons 包含 32)
+            if (e.pointerType === 'pen' && (e.button === 5 || (e.buttons & 32))) {
+                isTempEraser = true;
+            } else {
+                isTempEraser = false;
+            }
+            draw(e); 
+        };
+        const endPos = () => { 
+            isDrawing = false; 
+            isTempEraser = false;
+            ctx.beginPath(); 
+        };
         const draw = (e) => {
             if (!isDrawing) return;
-            e.preventDefault(); 
+            if (e.cancelable) e.preventDefault(); 
+            
             const rect = canvas.getBoundingClientRect();
-            let clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            let clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            ctx.lineWidth = drawSize; ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.strokeStyle = isEraser ? "#ffffff" : drawColor;
-            ctx.lineTo(clientX - rect.left, clientY - rect.top); ctx.stroke(); ctx.beginPath(); ctx.moveTo(clientX - rect.left, clientY - rect.top);
+            
+            // 加入縮放比例計算，確保 CSS 尺寸與內部解析度完全對齊 (防跑位)
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            // 改用 PointerEvent 的 clientX / clientY
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            let x = (clientX - rect.left) * scaleX;
+            let y = (clientY - rect.top) * scaleY;
+            
+            const useEraser = isEraser || isTempEraser;
+
+            // 橡皮擦範圍自動放大 (設為筆觸大小的 8 倍)
+            ctx.lineWidth = useEraser ? (drawSize * 8) : drawSize; 
+            ctx.lineCap = "round"; 
+            ctx.lineJoin = "round"; 
+            ctx.strokeStyle = useEraser ? "#ffffff" : drawColor;
+            
+            ctx.lineTo(x, y); 
+            ctx.stroke(); 
+            ctx.beginPath(); 
+            ctx.moveTo(x, y);
         };
 
-        canvas.addEventListener('mousedown', startPos); canvas.addEventListener('mouseup', endPos);
-        canvas.addEventListener('mousemove', draw); canvas.addEventListener('mouseout', endPos);
-        canvas.addEventListener('touchstart', startPos, {passive: false});
-        canvas.addEventListener('touchend', endPos);
-        canvas.addEventListener('touchmove', draw, {passive: false});
+        // 將滑鼠與觸控事件全部升級為現代 Pointer Events (完美支援 Apple Pencil)
+        canvas.addEventListener('pointerdown', startPos); 
+        canvas.addEventListener('pointerup', endPos);
+        canvas.addEventListener('pointermove', draw, {passive: false}); 
+        canvas.addEventListener('pointerout', endPos);
+        canvas.addEventListener('pointercancel', endPos);
 
         document.getElementById('btn-save-canvas').addEventListener('click', async () => {
             if (!currentEditingCaseId || !currentUser) return;
@@ -2088,8 +2127,8 @@
                 const newPhotos = [...(c.photos || []), ...uploadedData];
                 await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { photos: newPhotos });
                 renderPhotos(newPhotos);
-                showToast("手寫圖雲端上傳完成！");
-                canvasPages = ['']; loadCanvasPage(0);
+                showToast("手寫圖雲端上傳完成！(已為您保留畫面)");
+                // 備註：已經移除清空畫布的程式碼，現在上傳完會保留您的心血
             } catch (err) { alert(err.message); } 
             finally { btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i> 儲存畫布'; btn.classList.remove('opacity-50', 'pointer-events-none'); }
         });
