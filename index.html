@@ -169,8 +169,15 @@
                 <div class="mb-8">
                     <h3 class="font-bold text-lg text-purple-800 mb-2">Gemini AI 金鑰設定</h3>
                     <input type="text" id="setting-gemini-input" value="AIzaSyDcr3EH_yPAd9kQO1Qi00d2q8QUP9YGnd8" class="w-full p-3 border border-slate-200 rounded-lg text-base md:text-lg mb-3 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-500">
-                    <button id="btn-save-gemini" class="w-full bg-purple-600 text-white px-4 py-3 md:text-lg rounded-lg font-bold hover:bg-purple-700 shadow">
+                    <button id="btn-save-gemini" class="w-full bg-purple-600 text-white px-4 py-3 md:text-lg rounded-lg font-bold hover:bg-purple-700 shadow mb-6">
                         <i class="fa-solid fa-floppy-disk mr-1"></i> 儲存 AI 金鑰
+                    </button>
+                    
+                    <h3 class="font-bold text-lg text-purple-800 mb-2">AI 潤飾風格與提示詞設定</h3>
+                    <p class="text-sm text-slate-500 mb-3">此設定將套用於「評估撰寫」與「成果報告」的 AI 潤飾功能，您可以自訂語氣或格式要求。</p>
+                    <textarea id="setting-ai-prompt" rows="3" class="auto-resize w-full p-3 border border-slate-200 rounded-lg text-base mb-3 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-500"></textarea>
+                    <button id="btn-save-prompt" class="w-full bg-purple-600 text-white px-4 py-3 md:text-lg rounded-lg font-bold hover:bg-purple-700 shadow">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> 儲存潤飾設定
                     </button>
                 </div>
 
@@ -655,47 +662,78 @@
                 <!-- 頁籤 3: 評估撰寫 -->
                 <div id="tab-text" class="ws-tab-content hidden max-w-4xl mx-auto w-full space-y-6">
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-xl text-blue-800 border-b-2 border-blue-100 pb-3 mb-4">一、 個案之就業狀況</h3>
+                        <div class="flex justify-between items-center border-b-2 border-blue-100 pb-3 mb-4">
+                            <h3 class="font-bold text-xl text-blue-800">一、 個案之就業狀況</h3>
+                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-status-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                        </div>
                         <textarea id="ws-status-text" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="工作時間、主要工作內容、操作流程..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-xl text-blue-800 border-b-2 border-blue-100 pb-3 mb-4">二、 個案之生理限制</h3>
+                        <div class="flex justify-between items-center border-b-2 border-blue-100 pb-3 mb-4">
+                            <h3 class="font-bold text-xl text-blue-800">二、 個案之生理限制</h3>
+                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-limits-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                        </div>
                         <textarea id="ws-limits-text" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="聽力/視力數據、中高齡體能退化情形..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-xl text-blue-800 border-b-2 border-blue-100 pb-3 mb-4">三、 個案就業問題診斷與分析</h3>
+                        <div class="flex justify-between items-center border-b-2 border-blue-100 pb-3 mb-4">
+                            <h3 class="font-bold text-xl text-blue-800">三、 個案就業問題診斷與分析</h3>
+                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-analysis-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                        </div>
                         <textarea id="ws-analysis-text" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="描述生理限制與工作環境衝突所導致的困難..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-xl text-blue-800 border-b-2 border-blue-100 pb-3 mb-4">四、 改善方式、內容及輔具建議</h3>
+                        <div class="flex justify-between items-center border-b-2 border-blue-100 pb-3 mb-4">
+                            <h3 class="font-bold text-xl text-blue-800">四、 改善方式、內容及輔具建議</h3>
+                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-strategy-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                        </div>
                         <textarea id="ws-strategy-text" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="預計提供的輔具規格、人力協助時數規劃..."></textarea>
                     </div>
-                    <button class="btn-save-ws w-full bg-slate-800 text-white py-4 md:py-5 rounded-xl shadow-xl font-bold text-xl hover:bg-slate-700 transition-transform active:scale-[0.98]">
-                        <i class="fa-solid fa-floppy-disk mr-2"></i>儲存評估撰寫紀錄
-                    </button>
+                    <div class="flex gap-3">
+                        <button class="btn-save-ws flex-1 bg-slate-800 text-white py-4 md:py-5 rounded-xl shadow-xl font-bold text-xl hover:bg-slate-700 transition-transform active:scale-[0.98]">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i>儲存紀錄
+                        </button>
+                        <button onclick="window.exportCaseToExcel()" class="bg-green-600 text-white py-4 md:py-5 px-6 rounded-xl shadow-xl font-bold text-xl hover:bg-green-700 transition-transform active:scale-[0.98] whitespace-nowrap">
+                            <i class="fa-solid fa-file-excel mr-2"></i>下載 Excel
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 頁籤 4: 改善成果報告 -->
                 <div id="tab-outcome" class="ws-tab-content hidden max-w-4xl mx-auto w-full space-y-6">
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-xl text-emerald-800 border-b-2 border-emerald-100 pb-3 mb-4">五、 審查會決議</h3>
+                        <div class="flex justify-between items-center border-b-2 border-emerald-100 pb-3 mb-4">
+                            <h3 class="font-bold text-xl text-emerald-800">五、 審查會決議</h3>
+                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-resolution"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                        </div>
                         <textarea id="ws-outcome-resolution" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="例如：申請項目、申請金額、核准金額、是否回收..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-xl text-emerald-800 border-b-2 border-emerald-100 pb-3 mb-4">六、 輔具試用、訓練及驗收</h3>
+                        <div class="flex justify-between items-center border-b-2 border-emerald-100 pb-3 mb-4">
+                            <h3 class="font-bold text-xl text-emerald-800">六、 輔具試用、訓練及驗收</h3>
+                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-acceptance"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                        </div>
                         <textarea id="ws-outcome-acceptance" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="記錄輔具試用狀況、教育訓練或驗收期程..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-xl text-emerald-800 border-b-2 border-emerald-100 pb-3 mb-4">七、 職務再設計前後效益評估</h3>
+                        <div class="flex justify-between items-center border-b-2 border-emerald-100 pb-3 mb-4">
+                            <h3 class="font-bold text-xl text-emerald-800">七、 職務再設計前後效益評估</h3>
+                            <button class="btn-ai-refine text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors shadow-sm" data-target="ws-outcome-benefit"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 潤飾</button>
+                        </div>
                         <textarea id="ws-outcome-benefit" class="auto-resize w-full p-5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-lg leading-relaxed bg-slate-50 focus:bg-white" placeholder="描述解決之困難、工作便利性評分 (如：改善前0分，改善後10分)..."></textarea>
                     </div>
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                         <h3 class="font-bold text-xl text-emerald-800 border-b-2 border-emerald-100 pb-3 mb-4">八、 結案日期</h3>
                         <input type="date" id="ws-outcome-date" class="w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-xl bg-slate-50 focus:bg-white">
                     </div>
-                    <button class="btn-save-ws w-full bg-slate-800 text-white py-4 md:py-5 rounded-xl shadow-xl font-bold text-xl hover:bg-slate-700 transition-transform active:scale-[0.98]">
-                        <i class="fa-solid fa-flag-checkered mr-2"></i>儲存成果報告
-                    </button>
+                    <div class="flex gap-3">
+                        <button class="btn-save-ws flex-1 bg-slate-800 text-white py-4 md:py-5 rounded-xl shadow-xl font-bold text-xl hover:bg-slate-700 transition-transform active:scale-[0.98]">
+                            <i class="fa-solid fa-flag-checkered mr-2"></i>儲存成果報告
+                        </button>
+                        <button onclick="window.exportCaseToExcel()" class="bg-green-600 text-white py-4 md:py-5 px-6 rounded-xl shadow-xl font-bold text-xl hover:bg-green-700 transition-transform active:scale-[0.98] whitespace-nowrap">
+                            <i class="fa-solid fa-file-excel mr-2"></i>下載 Excel
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -810,6 +848,7 @@
             committee: [], 
             gasUrl: 'https://script.google.com/macros/s/AKfycbxelfY8BWyg2ZWeO4UbnenSH8eLS20qojH5N-tvZgvj_fcgoLL-MJosD53NIdo03qPdFw/exec',
             geminiApiKey: 'AIzaSyDcr3EH_yPAd9kQO1Qi00d2q8QUP9YGnd8',
+            aiPromptStyle: '請用專業、客觀且具同理心的口吻，將以下草稿潤飾成正式的職務再設計評估報告段落。請修正錯字並讓語句通順，不需加入額外的引言或結語，直接給出潤飾後的純文字內容即可。',
             checklists: {
                 "中高齡/人因工程": [
                     "頻繁彎腰或過度伸展手臂作業？",
@@ -935,6 +974,7 @@
             renderCommitteeList();
             document.getElementById('setting-gas-input').value = settings.gasUrl || '';
             document.getElementById('setting-gemini-input').value = settings.geminiApiKey || '';
+            document.getElementById('setting-ai-prompt').value = settings.aiPromptStyle || '';
             document.getElementById('setting-check-ergo').value = (settings.checklists["中高齡/人因工程"] || []).join('\n');
             document.getElementById('setting-check-dis').value = (settings.checklists["身障/感官與無障礙"] || []).join('\n');
             showView('settings', '系統設定', false);
@@ -951,6 +991,7 @@
                     settings.committee = data.committee || [];
                     if(data.gasUrl) settings.gasUrl = data.gasUrl;
                     if(data.geminiApiKey) settings.geminiApiKey = data.geminiApiKey;
+                    if(data.aiPromptStyle) settings.aiPromptStyle = data.aiPromptStyle;
                     if(data.checklists) settings.checklists = data.checklists;
                 }
             } catch (err) { console.warn("載入設定失敗:", err); }
@@ -990,6 +1031,11 @@
             if(key) { settings.geminiApiKey = key; saveSettings(); showToast("Gemini API 金鑰已儲存"); }
         });
         
+        document.getElementById('btn-save-prompt').addEventListener('click', () => {
+            const prompt = document.getElementById('setting-ai-prompt').value.trim();
+            if(prompt) { settings.aiPromptStyle = prompt; saveSettings(); showToast("AI 潤飾設定已儲存"); }
+        });
+
         document.getElementById('btn-save-checklists').addEventListener('click', () => {
             const ergoLines = document.getElementById('setting-check-ergo').value.split('\n').map(s=>s.trim()).filter(s=>s);
             const disLines = document.getElementById('setting-check-dis').value.split('\n').map(s=>s.trim()).filter(s=>s);
@@ -1539,6 +1585,108 @@
                 triggerAutoResize();
             });
         });
+
+        // ==========================================
+        // 🌟 新增：AI 潤飾功能與匯出 Excel 功能
+        // ==========================================
+        document.querySelectorAll('.btn-ai-refine').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const targetId = e.currentTarget.dataset.target;
+                const textarea = document.getElementById(targetId);
+                const originalText = textarea.value.trim();
+                
+                if (!originalText) {
+                    alert("請先輸入一些草稿內容，再使用 AI 潤飾功能。");
+                    return;
+                }
+
+                const apiKey = settings.geminiApiKey;
+                if (!apiKey) {
+                    alert("請先至右上角「系統設定」填寫 Gemini API 金鑰！");
+                    return;
+                }
+
+                const originalBtnHtml = e.currentTarget.innerHTML;
+                e.currentTarget.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 潤飾中...';
+                e.currentTarget.classList.add('opacity-50', 'pointer-events-none');
+
+                try {
+                    const promptStyle = settings.aiPromptStyle || '請將以下草稿潤飾成正式的職務再設計評估報告段落。';
+                    const payload = {
+                        contents: [{ role: "user", parts: [{ text: `${promptStyle}\n\n待潤飾內容：\n${originalText}` }] }]
+                    };
+
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) throw new Error(`Google API 錯誤 (${res.status})`);
+                    const data = await res.json();
+                    const refinedText = data.candidates[0].content.parts[0].text.trim();
+                    
+                    textarea.value = refinedText;
+                    autoResizeTextarea(textarea);
+                    showToast("✨ AI 潤飾完成！您可以繼續手動修改。");
+                } catch (err) {
+                    alert("AI 潤飾失敗：" + err.message);
+                } finally {
+                    e.currentTarget.innerHTML = originalBtnHtml;
+                    e.currentTarget.classList.remove('opacity-50', 'pointer-events-none');
+                }
+            });
+        });
+
+        window.exportCaseToExcel = () => {
+            if (!currentEditingCaseId) return;
+            const c = casesData.find(x => x.id === currentEditingCaseId);
+            if (!c) return;
+
+            const rpt = c.report || {};
+            const outcome = c.outcome || {};
+            
+            // 抓取畫面上最新的資料 (可能尚未按下儲存)
+            const d_status = document.getElementById('ws-status-text').value;
+            const d_limits = document.getElementById('ws-limits-text').value;
+            const d_analysis = document.getElementById('ws-analysis-text').value;
+            const d_strategy = document.getElementById('ws-strategy-text').value;
+            const d_resolution = document.getElementById('ws-outcome-resolution').value;
+            const d_acceptance = document.getElementById('ws-outcome-acceptance').value;
+            const d_benefit = document.getElementById('ws-outcome-benefit').value;
+            const d_date = document.getElementById('ws-outcome-date').value;
+
+            const excelData = [
+                { 項目: "📌 基本資料", 內容: "" },
+                { 項目: "申請單位", 內容: c.company || "" },
+                { 項目: "個案姓名", 內容: c.clientName || "" },
+                { 項目: "障礙類別/狀況", 內容: c.disability ? `${c.disability} (${c.disabilityCause||''})` : "無" },
+                { 項目: "接案日期", 內容: c.intakeDate || "" },
+                { 項目: "初訪日期", 內容: c.visitDate || c.date || "" },
+                { 項目: "", 內容: "" },
+                { 項目: "📝 評估撰寫", 內容: "" },
+                { 項目: "一、個案之就業狀況", 內容: d_status || rpt.status || "" },
+                { 項目: "二、個案之生理限制", 內容: d_limits || rpt.limits || "" },
+                { 項目: "三、個案就業問題診斷與分析", 內容: d_analysis || rpt.analysis || "" },
+                { 項目: "四、改善方式、內容及輔具建議", 內容: d_strategy || rpt.strategy || "" },
+                { 項目: "", 內容: "" },
+                { 項目: "🏆 改善成果報告", 內容: "" },
+                { 項目: "五、審查會決議", 內容: d_resolution || outcome.resolution || "" },
+                { 項目: "六、輔具試用、訓練及驗收", 內容: d_acceptance || outcome.acceptance || "" },
+                { 項目: "七、職務再設計前後效益評估", 內容: d_benefit || outcome.benefit || "" },
+                { 項目: "八、結案日期", 內容: d_date || outcome.closeDate || "" }
+            ];
+
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            ws['!cols'] = [{ wch: 30 }, { wch: 80 }]; // 調整欄寬
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "訪視評估與成果報告");
+            
+            const fileName = `${c.company || '未命名企業'}_${c.clientName || '未命名個案'}_訪視報告.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        };
+
 
         function renderWorkstationClients() {
             const container = document.getElementById('multi-client-container');
