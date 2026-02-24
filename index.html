@@ -1333,7 +1333,7 @@
         });
 
         // ==========================================
-        // 開啟工作區
+        // 開啟工作區 (強化防呆機制與詳細錯誤報告)
         // ==========================================
         function openWorkspace(id) {
             try {
@@ -1374,7 +1374,8 @@
 
                 const chkContainer = document.getElementById('checklist-container');
                 chkContainer.innerHTML = '';
-                for (const [category, items] of Object.entries(settings.checklists)) {
+                const safeChecklists = settings.checklists || {}; // 防呆：確保不為空
+                for (const [category, items] of Object.entries(safeChecklists)) {
                     let html = `<div class="mb-6"><h4 class="text-lg font-bold text-blue-800 bg-blue-100 p-3 rounded-xl mb-4 shadow-sm">${category}</h4><div class="space-y-3">`;
                     items.forEach(item => {
                         const safeKey = item.replace(/[.#$/[\]]/g, '_');
@@ -1403,7 +1404,10 @@
                 if (window.calculateHearingScore) window.calculateHearingScore();
 
                 const hearingSection = document.getElementById('hearing-assessment-section');
-                const isHearingDisabled = c.disability && (c.disability.includes('聽') || c.disability.includes('聾'));
+                // 防呆：強制轉為字串再做 includes 判斷，避免 Excel 匯入的資料是數字型態時報錯
+                const safeDisabilityStr = String(c.disability || '');
+                const isHearingDisabled = safeDisabilityStr.includes('聽') || safeDisabilityStr.includes('聾');
+                
                 if (isHearingDisabled || hearing.ind1 || hearing.ind2) {
                     hearingSection.classList.remove('hidden');
                 } else {
@@ -1412,11 +1416,13 @@
 
                 pendingPhotosQueue = [];
                 renderPendingPhotos();
-                renderPhotos(c.photos || []);
-                renderFiles(c.files || []); 
-                renderAudios(c.audios || []);
+                renderPhotos(Array.isArray(c.photos) ? c.photos : []);
+                renderFiles(Array.isArray(c.files) ? c.files : []); 
+                renderAudios(Array.isArray(c.audios) ? c.audios : []);
 
                 canvasPages = ['']; currentCanvasIdx = 0; isEraser = false; drawColor = '#0f172a'; drawSize = 3;
+                if (typeof isTempEraser !== 'undefined') isTempEraser = false; // 防呆：重置 Apple Pencil 狀態
+                
                 document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('tool-active'));
                 document.querySelector('.color-btn[data-color="#0f172a"]').classList.add('tool-active');
                 document.getElementById('btn-eraser').classList.remove('tool-active');
@@ -1425,7 +1431,11 @@
                 showView('workspace', '現場紀錄與評估', false);
                 document.querySelector('[data-target="tab-media"]').click();
                 triggerAutoResize(); 
-            } catch (err) { alert("開啟案件時發生錯誤。"); }
+            } catch (err) { 
+                console.error("開啟案件發生錯誤細節：", err);
+                // 顯示精確的錯誤訊息方便排解
+                alert(`開啟案件時發生錯誤，請截圖告知開發者：\n${err.name}: ${err.message}`); 
+            }
         }
 
         document.getElementById('btn-edit-case').addEventListener('click', () => {
@@ -1853,7 +1863,149 @@
         }
 
         // ==========================================
-        // 🌟 新版：錄音與手動 AI 轉譯分離
+        // 🌟 新版：錄音與手動 AI 轉譯分離 (恢復遺失的區塊)
+        // ==========================================
+        const btnRecord = document.getElementById('btn-record-audio');
+        let mediaRecorder; let audioChunks = []; let isRecording = false;
+
+        btnRecord.addEventListener('click', async () => {
+            if (isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> <span class="btn-text">開始錄音</span>';
+                btnRecord.classList.replace('bg-slate-100', 'bg-red-50');
+                btnRecord.classList.replace('text-slate-600', 'text-red-600');
+                document.getElementById('recording-status').classList.add('hidden');
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
+                    mediaRecorder.onstop = async () => {
+                        btnRecord.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 錄音存檔上傳中...';
+                        btnRecord.classList.add('opacity-50', 'pointer-events-none');
+                        
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const fileName = `audio_${Date.now()}.webm`;
+                        
+                        // 將 blob 存入記憶體快取，供稍後手動 AI 轉譯使用
+                        audioBlobCache[fileName] = audioBlob;
+                        
+                        try {
+                            // 僅上傳不轉譯
+                            const result = await uploadToGoogleDrive(audioBlob, fileName);
+                            
+                            const c = casesData.find(x => x.id === currentEditingCaseId);
+                            const newAudios = [...(c.audios || []), { 
+                                name: fileName,
+                                displayName: new Date().toLocaleString(),
+                                previewUrl: result.previewUrl,
+                                downloadUrl: result.downloadUrl,
+                                transcript: '' // 預設為空
+                            }];
+                            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
+                            renderAudios(newAudios);
+                            showToast("錄音已安全上傳至雲端！");
+                        } catch(err) { 
+                            alert("錄音存檔失敗：" + err.message);
+                        } finally {
+                            btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> <span class="btn-text">開始錄音</span>';
+                            btnRecord.classList.remove('opacity-50', 'pointer-events-none');
+                        }
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btnRecord.innerHTML = '<i class="fa-solid fa-stop mr-2"></i> 停止錄音';
+                    btnRecord.classList.replace('bg-red-50', 'bg-slate-100');
+                    btnRecord.classList.replace('text-red-600', 'text-slate-600');
+                    document.getElementById('recording-status').classList.remove('hidden');
+                } catch (err) { alert("無法存取麥克風，請檢查瀏覽器權限設定"); }
+            }
+        });
+
+        // 手動觸發 AI 轉文字
+        window.startTranscription = async (fileName) => {
+            const btnId = 'btn-transcribe-' + fileName.replace(/[^a-zA-Z0-9]/g, '');
+            const btn = document.getElementById(btnId);
+
+            const blob = audioBlobCache[fileName];
+            if (!blob) {
+                alert("⚠️ 安全限制：您只能對「剛剛錄製」的音檔執行 AI 轉譯。\n若是過去的錄音或網頁已重新整理，為保護隱私與節省流量，請重新錄製。");
+                return;
+            }
+
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> AI 轉譯中...';
+            btn.classList.add('opacity-50', 'pointer-events-none');
+
+            try {
+                const transcript = await transcribeAudioWithAI(blob);
+                const c = casesData.find(x => x.id === currentEditingCaseId);
+                const newAudios = c.audios.map(a => {
+                    if (a.name === fileName) a.transcript = transcript;
+                    return a;
+                });
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
+                showToast("✅ 逐字稿生成成功！");
+            } catch(e) {
+                alert("轉譯失敗: " + e.message);
+                btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 重新轉譯';
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        };
+
+        window.copyTranscript = (text) => {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("逐字稿已複製，可貼上至報告區塊！");
+            }).catch(err => alert("複製失敗"));
+        };
+
+        function renderAudios(audiosArr) {
+            const container = document.getElementById('audios-container');
+            if (audiosArr.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400">尚無錄音。</p>'; return;
+            }
+            container.innerHTML = audiosArr.map((audio, index) => {
+                const dUrl = audio.downloadUrl || audio.url;
+                const safeBtnId = 'btn-transcribe-' + audio.name.replace(/[^a-zA-Z0-9]/g, '');
+                
+                let transcriptSection = '';
+                if (audio.transcript) {
+                    transcriptSection = `
+                        <div class="mt-3 p-4 bg-white rounded-xl border border-purple-200 shadow-inner">
+                            <div class="flex justify-between items-center mb-3 border-b border-purple-100 pb-2">
+                                <span class="text-base font-bold text-purple-700"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 逐字稿</span>
+                                <button onclick="window.copyTranscript(\`${audio.transcript.replace(/`/g, "'")}\`)" class="text-sm bg-purple-100 text-purple-700 hover:bg-purple-200 px-4 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-copy mr-1"></i> 複製內容</button>
+                            </div>
+                            <p class="text-base text-slate-700 whitespace-pre-wrap leading-relaxed">${audio.transcript}</p>
+                        </div>
+                    `;
+                } else {
+                    transcriptSection = `
+                        <div class="mt-2 text-right">
+                            <button id="${safeBtnId}" onclick="window.startTranscription('${audio.name}')" class="text-sm bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-sm">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 產生逐字稿
+                            </button>
+                        </div>
+                    `;
+                }
+
+                return `
+                <div class="bg-slate-50 p-5 border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm relative group">
+                    <div class="flex justify-between items-center">
+                        <span class="text-base md:text-lg text-slate-700 font-bold"><i class="fa-solid fa-headphones text-blue-500 mr-2"></i>${audio.displayName || audio.name}</span>
+                        <div class="flex gap-2">
+                            <!-- 🗑️ 刪除按鈕 -->
+                            <button onclick="window.deleteMedia('audios', ${index})" class="text-red-500 hover:text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors"><i class="fa-solid fa-trash"></i></button>
+                            <a href="${dUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-800 text-sm bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg font-bold transition-colors"><i class="fa-solid fa-download"></i></a>
+                        </div>
+                    </div>
+                    <audio controls src="${dUrl}" class="w-full h-12 mt-1"></audio>
+                    ${transcriptSection}
+                </div>`}).join('');
+        }
+
         // ==========================================
         // 🌟 AI 正式報告生成與 Word 匯出邏輯
         // ==========================================
