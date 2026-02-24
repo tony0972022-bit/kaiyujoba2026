@@ -1110,6 +1110,46 @@
         // ==========================================
         // 雲端上傳與 AI 引擎
         // ==========================================
+        async function fetchGeminiWithFallback(apiKey, payload) {
+            const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+            let lastError = null;
+
+            for (const model of models) {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const status = res.status;
+                        // 觸發備援的錯誤碼：404(找不到模型), 429(配額限制), 500/503(伺服器錯誤)
+                        if ([404, 429, 500, 503].includes(status)) {
+                            lastError = new Error(`模型 ${model} 暫時無法使用 (${status})`);
+                            console.warn(`[Auto-Fallback] ${model} 失敗 (${status})，嘗試切換下一個模型...`);
+                            continue; // 嘗試下一個模型
+                        }
+                        // 其他錯誤 (如 400 參數錯誤, 401 權限錯誤) 則直接拋出
+                        const errData = await res.text();
+                        throw new Error(`API 請求失敗 (${status}): ${errData}`);
+                    }
+                    
+                    return await res.json(); // 成功即返回
+                } catch (err) {
+                    // 網路連線錯誤 (Failed to fetch) 也觸發備援
+                    if (err.name === 'TypeError' || err.message.includes('Failed to fetch') || err.message.includes('暫時無法使用')) {
+                        lastError = err;
+                        console.warn(`[Auto-Fallback] ${model} 發生連線錯誤: ${err.message}，嘗試下一個模型...`);
+                        continue;
+                    }
+                    throw err; // 非預期錯誤直接中斷拋出
+                }
+            }
+            throw new Error("所有 AI 模型皆嘗試失敗，請稍後再試或檢查網路狀態。\n最後錯誤: " + (lastError?.message || "未知"));
+        }
+
         async function uploadToGoogleDrive(fileBlob, fileName) {
             if (!settings.gasUrl) throw new Error("請先至右上角設定 GAS URL");
             return new Promise((resolve, reject) => {
@@ -1161,7 +1201,6 @@
             const apiKey = settings.geminiApiKey; 
             if (!apiKey) throw new Error("未設定 Gemini API 金鑰");
             
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
             const base64Data = await new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result.split(',')[1]);
@@ -1178,9 +1217,7 @@
                 }]
             };
 
-            const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
-            const data = await res.json();
+            const data = await fetchGeminiWithFallback(apiKey, payload);
             return data.candidates[0].content.parts[0].text.trim();
         }
 
@@ -1642,15 +1679,7 @@
                         contents: [{ role: "user", parts: [{ text: `${systemPrompt}\n\n待潤飾草稿內容：\n${originalText}` }] }]
                     };
 
-                    // 升級至 gemini-2.0-flash 模型以提高穩定度與品質
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (!res.ok) throw new Error(`Google API 錯誤 (${res.status})`);
-                    const data = await res.json();
+                    const data = await fetchGeminiWithFallback(apiKey, payload);
                     const refinedText = data.candidates[0].content.parts[0].text.trim();
                     
                     textarea.value = refinedText;
@@ -1778,16 +1807,8 @@
                 ]}],
                 generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { company: { type: "STRING" }, name: { type: "STRING" }, gender: { type: "STRING" }, dob: { type: "STRING" }, title: { type: "STRING" }, location: { type: "STRING" }, disability: { type: "STRING" }, cause: { type: "STRING" }, condition: { type: "STRING" }, problems: { type: "STRING" } } } }
             };
-            const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-latest', 'gemini-1.5-flash'];
-            for (const model of models) {
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!res.ok) { if (res.status === 404) continue; throw new Error(`Google API 錯誤 (${res.status})`); }
-                    const data = await res.json();
-                    return JSON.parse(data.candidates[0].content.parts[0].text);
-                } catch (err) { if (err.message.includes('404')) continue; throw err; }
-            }
-            throw new Error("無法存取相容的 AI 模型，請檢查 API 金鑰。");
+            const data = await fetchGeminiWithFallback(apiKey, payload);
+            return JSON.parse(data.candidates[0].content.parts[0].text);
         }
 
         document.getElementById('ai-upload').addEventListener('change', async (e) => {
@@ -2261,9 +2282,7 @@ ${rawDraft}
             };
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!res.ok) throw new Error(`API 錯誤 (${res.status})`);
-                const data = await res.json();
+                const data = await fetchGeminiWithFallback(apiKey, payload);
                 const aiResult = JSON.parse(data.candidates[0].content.parts[0].text);
                 
                 // 將 AI 生成的內容注入 HTML 模板
