@@ -362,6 +362,10 @@
                     <button class="ws-tab-btn flex items-center p-3 rounded-xl text-slate-600 hover:bg-white font-bold border border-transparent hover:border-slate-200 transition-colors" data-target="tab-outcome">
                         <i class="fa-solid fa-flag-checkered w-6 text-center"></i> 成果報告
                     </button>
+                    <!-- 🌟 新增：產生正式報告按鈕 -->
+                    <button onclick="window.openReportModal()" class="mt-2 flex items-center justify-center p-3 rounded-xl bg-slate-800 text-white hover:bg-slate-700 font-bold shadow-md transition-colors">
+                        <i class="fa-solid fa-file-word mr-2 text-xl"></i> 產生正式評估報告
+                    </button>
                 </div>
 
                 <!-- 3. 雲端文件與檔案 (常駐左下角) -->
@@ -728,6 +732,40 @@
             <a id="preview-external-btn" href="#" target="_blank" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-6 py-3 rounded-xl text-base font-bold transition-colors">
                 <i class="fa-solid fa-arrow-up-right-from-square mr-2"></i> 另開視窗
             </a>
+        </div>
+    </div>
+
+    <!-- 🌟 正式報告生成視窗 (Word Export Modal) -->
+    <div id="report-modal" class="hidden fixed inset-0 bg-slate-900/60 z-[200] flex justify-center items-center p-2 md:p-6 backdrop-blur-sm transition-opacity">
+        <div class="bg-slate-100 w-full max-w-6xl h-[95vh] rounded-2xl flex flex-col shadow-2xl overflow-hidden border border-slate-300">
+            <!-- Header -->
+            <div class="p-4 md:p-5 bg-white border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 shrink-0">
+                <h2 class="text-xl font-black text-slate-800 flex items-center">
+                    <i class="fa-solid fa-file-word text-blue-600 mr-2 text-2xl"></i> 正式評估報告與匯出
+                </h2>
+                <div class="flex gap-3">
+                    <button id="btn-ai-write-report" onclick="window.generateAIReport()" class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center shadow transition-transform active:scale-95 text-sm md:text-base">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> <span id="text-ai-report-btn">AI 智能撰寫/潤飾</span>
+                    </button>
+                    <button onclick="window.downloadWordReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold flex items-center shadow transition-transform active:scale-95 text-sm md:text-base">
+                        <i class="fa-solid fa-download mr-2"></i> 下載為 Word
+                    </button>
+                    <button onclick="document.getElementById('report-modal').classList.add('hidden')" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2.5 rounded-xl font-bold transition-colors">
+                        關閉
+                    </button>
+                </div>
+            </div>
+            <!-- 提示列 -->
+            <div class="bg-blue-50 text-blue-800 text-sm px-6 py-2 border-b border-blue-100 shrink-0 font-medium">
+                <i class="fa-solid fa-circle-info mr-1"></i> 您可以在下方白紙區域直接點擊修改文字。確認無誤後點擊右上方「下載為 Word」。
+            </div>
+            <!-- 編輯區 -->
+            <div class="flex-1 overflow-auto p-4 md:p-8 bg-slate-200 flex justify-center">
+                <!-- Word 模擬畫布 -->
+                <div id="report-editor" contenteditable="true" class="bg-white w-full max-w-[850px] min-h-[1100px] shadow-xl p-8 md:p-14 outline-none text-[12pt] leading-loose font-serif cursor-text">
+                    <!-- 內容由 JS 動態注入 -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1817,146 +1855,293 @@
         // ==========================================
         // 🌟 新版：錄音與手動 AI 轉譯分離
         // ==========================================
-        const btnRecord = document.getElementById('btn-record-audio');
-        let mediaRecorder; let audioChunks = []; let isRecording = false;
+        // 🌟 AI 正式報告生成與 Word 匯出邏輯
+        // ==========================================
+        window.openReportModal = () => {
+            if (!currentEditingCaseId) return alert("請先開啟並儲存案件！");
+            const c = casesData.find(x => x.id === currentEditingCaseId);
+            if (!c) return;
 
-        btnRecord.addEventListener('click', async () => {
-            if (isRecording) {
-                mediaRecorder.stop();
-                isRecording = false;
-                btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> <span class="btn-text">開始錄音</span>';
-                btnRecord.classList.replace('bg-slate-100', 'bg-red-50');
-                btnRecord.classList.replace('text-slate-600', 'text-red-600');
-                document.getElementById('recording-status').classList.add('hidden');
-            } else {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
-                    mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
-                    mediaRecorder.onstop = async () => {
-                        btnRecord.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 錄音存檔上傳中...';
-                        btnRecord.classList.add('opacity-50', 'pointer-events-none');
-                        
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        const fileName = `audio_${Date.now()}.webm`;
-                        
-                        // 將 blob 存入記憶體快取，供稍後手動 AI 轉譯使用
-                        audioBlobCache[fileName] = audioBlob;
-                        
-                        try {
-                            // 僅上傳不轉譯
-                            const result = await uploadToGoogleDrive(audioBlob, fileName);
-                            
-                            const c = casesData.find(x => x.id === currentEditingCaseId);
-                            const newAudios = [...(c.audios || []), { 
-                                name: fileName,
-                                displayName: new Date().toLocaleString(),
-                                previewUrl: result.previewUrl,
-                                downloadUrl: result.downloadUrl,
-                                transcript: '' // 預設為空
-                            }];
-                            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
-                            renderAudios(newAudios);
-                            showToast("錄音已安全上傳至雲端！");
-                        } catch(err) { 
-                            alert("錄音存檔失敗：" + err.message);
-                        } finally {
-                            btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> <span class="btn-text">開始錄音</span>';
-                            btnRecord.classList.remove('opacity-50', 'pointer-events-none');
-                        }
-                        stream.getTracks().forEach(track => track.stop());
-                    };
-                    mediaRecorder.start();
-                    isRecording = true;
-                    btnRecord.innerHTML = '<i class="fa-solid fa-stop mr-2"></i> 停止錄音';
-                    btnRecord.classList.replace('bg-red-50', 'bg-slate-100');
-                    btnRecord.classList.replace('text-red-600', 'text-slate-600');
-                    document.getElementById('recording-status').classList.remove('hidden');
-                } catch (err) { alert("無法存取麥克風，請檢查瀏覽器權限設定"); }
-            }
-        });
+            const editor = document.getElementById('report-editor');
+            editor.innerHTML = buildReportHTML(c, null); // 初始載入草稿狀態
+            document.getElementById('report-modal').classList.remove('hidden');
+        };
 
-        // 手動觸發 AI 轉文字
-        window.startTranscription = async (fileName) => {
-            const btnId = 'btn-transcribe-' + fileName.replace(/[^a-zA-Z0-9]/g, '');
-            const btn = document.getElementById(btnId);
+        window.generateAIReport = async () => {
+            const apiKey = settings.geminiApiKey; 
+            if (!apiKey) return alert("請先至設定填寫 Gemini API 金鑰！");
+            
+            const c = casesData.find(x => x.id === currentEditingCaseId);
+            if (!c) return;
 
-            const blob = audioBlobCache[fileName];
-            if (!blob) {
-                alert("⚠️ 安全限制：您只能對「剛剛錄製」的音檔執行 AI 轉譯。\n若是過去的錄音或網頁已重新整理，為保護隱私與節省流量，請重新錄製。");
-                return;
-            }
-
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> AI 轉譯中...';
+            const btn = document.getElementById('btn-ai-write-report');
+            const btnText = document.getElementById('text-ai-report-btn');
             btn.classList.add('opacity-50', 'pointer-events-none');
+            btnText.innerHTML = "AI 努力撰寫中...";
+
+            const rpt = c.report || {};
+            const rawDraft = `
+            就業狀況/工作內容：${rpt.status || c.clientCondition || '無'}
+            生理限制：${rpt.limits || c.disability || '無'}
+            問題診斷與分析：${rpt.analysis || c.initialProblems || '無'}
+            改善策略與輔具建議：${rpt.strategy || c.strategy || '無'}
+            `;
+
+            const payload = {
+                contents: [{ role: "user", parts: [
+                    { text: `你是一位專業的職務再設計評估委員。請根據以下現場紀錄草稿，為個案撰寫一份正式的評估報告，請使用專業、客觀的第三人稱語氣，文字需通順流暢、結構完整。
+                    
+現場紀錄草稿：
+${rawDraft}
+
+請將內容潤飾並擴寫成正式報告，務必回傳純 JSON 格式，包含以下四個欄位(純文字，不要包含 HTML 標籤)：
+{
+  "status": "一、個案之就業狀況（請根據草稿改寫...）",
+  "limits": "二、個案之生理限制（請根據草稿改寫...）",
+  "analysis": "三、個案就業問題診斷與分析（請根據草稿改寫...）",
+  "strategy": "四、職務再設計改善方式、內容及期程（請根據草稿改寫...）"
+}` }
+                ]}],
+                generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { status: { type: "STRING" }, limits: { type: "STRING" }, analysis: { type: "STRING" }, strategy: { type: "STRING" } } } }
+            };
 
             try {
-                const transcript = await transcribeAudioWithAI(blob);
-                const c = casesData.find(x => x.id === currentEditingCaseId);
-                const newAudios = c.audios.map(a => {
-                    if (a.name === fileName) a.transcript = transcript;
-                    return a;
-                });
-                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
-                showToast("✅ 逐字稿生成成功！");
-            } catch(e) {
-                alert("轉譯失敗: " + e.message);
-                btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 重新轉譯';
-                btn.classList.remove('opacity-50', 'pointer-events-none');
-            }
-        };
-
-        window.copyTranscript = (text) => {
-            navigator.clipboard.writeText(text).then(() => {
-                showToast("逐字稿已複製，可貼上至報告區塊！");
-            }).catch(err => alert("複製失敗"));
-        };
-
-        function renderAudios(audiosArr) {
-            const container = document.getElementById('audios-container');
-            if (audiosArr.length === 0) {
-                container.innerHTML = '<p class="text-sm text-slate-400">尚無錄音。</p>'; return;
-            }
-            container.innerHTML = audiosArr.map((audio, index) => {
-                const dUrl = audio.downloadUrl || audio.url;
-                const safeBtnId = 'btn-transcribe-' + audio.name.replace(/[^a-zA-Z0-9]/g, '');
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!res.ok) throw new Error(`API 錯誤 (${res.status})`);
+                const data = await res.json();
+                const aiResult = JSON.parse(data.candidates[0].content.parts[0].text);
                 
-                let transcriptSection = '';
-                if (audio.transcript) {
-                    transcriptSection = `
-                        <div class="mt-3 p-4 bg-white rounded-xl border border-purple-200 shadow-inner">
-                            <div class="flex justify-between items-center mb-3 border-b border-purple-100 pb-2">
-                                <span class="text-base font-bold text-purple-700"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 逐字稿</span>
-                                <button onclick="window.copyTranscript(\`${audio.transcript.replace(/`/g, "'")}\`)" class="text-sm bg-purple-100 text-purple-700 hover:bg-purple-200 px-4 py-2 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-copy mr-1"></i> 複製內容</button>
-                            </div>
-                            <p class="text-base text-slate-700 whitespace-pre-wrap leading-relaxed">${audio.transcript}</p>
-                        </div>
-                    `;
-                } else {
-                    transcriptSection = `
-                        <div class="mt-2 text-right">
-                            <button id="${safeBtnId}" onclick="window.startTranscription('${audio.name}')" class="text-sm bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-sm">
-                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 產生逐字稿
-                            </button>
-                        </div>
-                    `;
-                }
+                // 將 AI 生成的內容注入 HTML 模板
+                document.getElementById('report-editor').innerHTML = buildReportHTML(c, aiResult);
+                showToast("✨ AI 報告撰寫完成，請核對與編輯！");
+            } catch (err) {
+                alert("AI 生成失敗：" + err.message);
+            } finally {
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+                btnText.innerHTML = "AI 智能撰寫/潤飾";
+            }
+        };
 
-                return `
-                <div class="bg-slate-50 p-5 border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm relative group">
-                    <div class="flex justify-between items-center">
-                        <span class="text-base md:text-lg text-slate-700 font-bold"><i class="fa-solid fa-headphones text-blue-500 mr-2"></i>${audio.displayName || audio.name}</span>
-                        <div class="flex gap-2">
-                            <!-- 🗑️ 刪除按鈕 -->
-                            <button onclick="window.deleteMedia('audios', ${index})" class="text-red-500 hover:text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors"><i class="fa-solid fa-trash"></i></button>
-                            <a href="${dUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-800 text-sm bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg font-bold transition-colors"><i class="fa-solid fa-download"></i></a>
-                        </div>
-                    </div>
-                    <audio controls src="${dUrl}" class="w-full h-12 mt-1"></audio>
-                    ${transcriptSection}
-                </div>`}).join('');
+        function buildReportHTML(c, aiTextObj) {
+            const isWorkstation = c.category === '中高齡及高齡者';
+            const hasHearing = (c.disability && (c.disability.includes('聽') || c.disability.includes('聾'))) || (c.hearing && (c.hearing.ind1 || c.hearing.ind2));
+            
+            const rpt = c.report || {};
+            const textStatus = aiTextObj ? aiTextObj.status : (rpt.status || c.clientCondition || '');
+            const textLimits = aiTextObj ? aiTextObj.limits : (rpt.limits || c.disability || '');
+            const textAnalysis = aiTextObj ? aiTextObj.analysis : (rpt.analysis || c.initialProblems || '');
+            const textStrategy = aiTextObj ? aiTextObj.strategy : (rpt.strategy || c.strategy || '');
+
+            let topTableHTML = '';
+            let chkBoxStr = (target) => c.category === target ? '■' : '□';
+
+            // 依據案件類別生成不同的上方表格
+            if (isWorkstation) {
+                let clientRows = (c.clients || []).map(client => `
+                    <tr>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center;">${client.id || ''}</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center;">${client.name || ''}</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center;">-</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center;">${client.age || ''}</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center;">${client.title || ''}</td>
+                    </tr>
+                `).join('');
+
+                topTableHTML = `
+                <table style="width: 100%; border-collapse: collapse; font-size: 12pt; border: 1px solid black; margin-bottom: 20px;">
+                    <tr>
+                        <td style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9; width: 15%;">申請單位</td>
+                        <td style="border: 1px solid black; padding: 6px; width: 35%;">${c.company || ''}</td>
+                        <td style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9; width: 15%;">聯絡電話</td>
+                        <td style="border: 1px solid black; padding: 6px; width: 35%;">${c.phone || ''}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9;">對象別</td>
+                        <td colspan="3" style="border: 1px solid black; padding: 6px;">
+                            ${chkBoxStr('中高齡及高齡者')} 中高齡及高齡者　${chkBoxStr('勞工就業通')} 勞工就業通計畫　□ 其他
+                        </td>
+                    </tr>
+                    <tr>
+                        <td rowspan="${(c.clients?.length || 0) + 1}" style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9;">個案資料</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold; background-color: #f8fafc;">編號</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold; background-color: #f8fafc;">姓名</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold; background-color: #f8fafc;">性別</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold; background-color: #f8fafc;">年齡</td>
+                    </tr>
+                    ${clientRows}
+                    <tr>
+                        <td style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9;">訪視人員</td>
+                        <td colspan="3" style="border: 1px solid black; padding: 6px;">${c.visitors || ''}</td>
+                    </tr>
+                </table>`;
+            } else {
+                topTableHTML = `
+                <table style="width: 100%; border-collapse: collapse; font-size: 12pt; border: 1px solid black; margin-bottom: 20px;">
+                    <tr>
+                        <td style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9; width: 15%;">申請單位</td>
+                        <td style="border: 1px solid black; padding: 6px; width: 35%;">${c.company || ''}</td>
+                        <td style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9; width: 15%;">聯絡電話</td>
+                        <td style="border: 1px solid black; padding: 6px; width: 35%;">${c.phone || ''}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9;">對象別</td>
+                        <td colspan="3" style="border: 1px solid black; padding: 6px;">
+                            ${chkBoxStr('身心障礙者')} 身心障礙者：${c.disability || ''}　${chkBoxStr('勞工就業通')} 勞工就業通
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9;">初訪日期</td>
+                        <td colspan="3" style="border: 1px solid black; padding: 6px;">${c.visitDate || c.date || ''}</td>
+                    </tr>
+                    <tr>
+                        <td rowspan="2" style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9;">個案資料</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold; background-color: #f8fafc;">姓名</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold; background-color: #f8fafc;">性別</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center; font-weight: bold; background-color: #f8fafc;">年齡</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center;">${c.clientName || ''}</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center;">${c.clientGender || ''}</td>
+                        <td style="border: 1px solid black; padding: 4px; text-align: center;">${c.clientAge || ''}</td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid black; padding: 6px; font-weight: bold; background-color: #f1f5f9;">訪視人員</td>
+                        <td colspan="3" style="border: 1px solid black; padding: 6px;">${c.visitors || ''}</td>
+                    </tr>
+                </table>`;
+            }
+
+            // 聽力附表邏輯
+            let hearingTableHTML = '';
+            if (hasHearing) {
+                const ind1 = c.hearing?.ind1 || '';
+                const ind2 = c.hearing?.ind2 || '';
+                const total = (parseInt(ind1) || 0) + (parseInt(ind2) || 0);
+                
+                const c1 = (v) => ind1 === v ? '■' : '□';
+                const c2 = (v) => ind2 === v ? '■' : '□';
+                
+                let resH = '□', resM = '□', resL = '□';
+                if(total >= 6) resH = '■'; else if(total >=3) resM = '■'; else if(total > 0) resL = '■';
+
+                hearingTableHTML = `
+                <div style="margin-top: 20px; page-break-inside: avoid;">
+                    <p style="font-weight: bold; margin-bottom: 5px; font-size: 12pt;">指標一、職場聆聽需求： <span style="font-weight: normal;">個案在職務上需要以聆聽功能接收及理解聲音的需求。</span></p>
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid black; text-align: center; font-size: 11pt; margin-bottom: 15px;">
+                        <tr>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #f59e0b; font-weight: bold;">${c1('4')} 4分</td>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #fbbf24; font-weight: bold;">${c1('3')} 3分</td>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #fcd34d; font-weight: bold;">${c1('2')} 2分</td>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #fef3c7; font-weight: bold;">${c1('1')} 1分</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid black; padding: 8px; vertical-align: top;">大多數的情境下，個案需運用純聽覺功能執行職務活動（聆聽>75%）</td>
+                            <td style="border: 1px solid black; padding: 8px; vertical-align: top;">多數情境下，個案需運用聽覺功能執行職務活動，但有時可運用其他知覺功能協助執行（聆聽50%~74%）</td>
+                            <td style="border: 1px solid black; padding: 8px; vertical-align: top;">半數情境下，個案需運用聽覺功能執行職務活動，但經常可運用其他知覺功能協助執行（聆聽25%-49%）</td>
+                            <td style="border: 1px solid black; padding: 8px; vertical-align: top;">大多數的情境下，個案不需運用聽覺功能也能執行職務活動（聆聽&lt;24%）</td>
+                        </tr>
+                    </table>
+
+                    <p style="font-weight: bold; margin-bottom: 5px; font-size: 12pt;">指標二、職場溝通需求： <span style="font-weight: normal;">溝通需求佔工作內容比例</span></p>
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid black; text-align: center; font-size: 11pt; margin-bottom: 15px;">
+                        <tr>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #f59e0b; font-weight: bold;">${c2('4')} 4分</td>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #fbbf24; font-weight: bold;">${c2('3')} 3分</td>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #fcd34d; font-weight: bold;">${c2('2')} 2分</td>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #fef3c7; font-weight: bold;">${c2('1')} 1分</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid black; padding: 8px; vertical-align: top;">有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例70%以上</td>
+                            <td style="border: 1px solid black; padding: 8px; vertical-align: top;">有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例40%-69%之間</td>
+                            <td style="border: 1px solid black; padding: 8px; vertical-align: top;">有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例10%-39%之間</td>
+                            <td style="border: 1px solid black; padding: 8px; vertical-align: top;">有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例小於10%</td>
+                        </tr>
+                    </table>
+
+                    <p style="font-weight: bold; margin-bottom: 5px; font-size: 12pt;">新購助聽器之必要性： <span style="font-weight: normal;">由指標一和指標二的分數加總</span></p>
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid black; text-align: center; font-size: 11pt; margin-bottom: 15px;">
+                        <tr>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #f59e0b; font-weight: bold; width: 33.3%;">${resH} 6-8分</td>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #fcd34d; font-weight: bold; width: 33.3%;">${resM} 3-5分</td>
+                            <td style="border: 1px solid black; padding: 8px; background-color: #fef3c7; font-weight: bold; width: 33.3%;">${resL} 2分</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid black; padding: 8px; font-weight: bold; font-size: 14pt;">高</td>
+                            <td style="border: 1px solid black; padding: 8px; font-weight: bold; font-size: 14pt;">中</td>
+                            <td style="border: 1px solid black; padding: 8px; font-weight: bold; font-size: 14pt;">低</td>
+                        </tr>
+                    </table>
+                </div>`;
+            }
+
+            return `
+                <h1 style="text-align: center; font-size: 18pt; font-weight: bold; margin-bottom: 5px;">高屏澎東區職務再設計專案單位</h1>
+                <h2 style="text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 20px;">個案接案評估表</h2>
+                
+                ${topTableHTML}
+
+                <div style="margin-bottom: 20px;">
+                    <h3 style="font-weight: bold; font-size: 14pt; background-color: #e2e8f0; padding: 5px;">個案之就業狀況、困難及需求</h3>
+                    
+                    <p style="font-weight: bold; margin-top: 10px;">一、個案之就業狀況</p>
+                    <p style="text-indent: 2em; margin-bottom: 10px; line-height: 1.8;">${textStatus.replace(/\n/g, '<br>&nbsp;&nbsp;&nbsp;&nbsp;')}</p>
+
+                    <p style="font-weight: bold; margin-top: 10px;">二、個案之生理限制</p>
+                    <p style="text-indent: 2em; margin-bottom: 10px; line-height: 1.8;">${textLimits.replace(/\n/g, '<br>&nbsp;&nbsp;&nbsp;&nbsp;')}</p>
+
+                    <p style="font-weight: bold; margin-top: 10px;">三、個案就業問題診斷與分析</p>
+                    <p style="text-indent: 2em; margin-bottom: 10px; line-height: 1.8;">${textAnalysis.replace(/\n/g, '<br>&nbsp;&nbsp;&nbsp;&nbsp;')}</p>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h3 style="font-weight: bold; font-size: 14pt; background-color: #e2e8f0; padding: 5px;">評估建議、改善方式或試用情形</h3>
+                    
+                    <p style="font-weight: bold; margin-top: 10px;">四、職務再設計改善方式、內容及期程</p>
+                    <p style="font-weight: bold;">（一）改善方式及內容：</p>
+                    <p style="text-indent: 2em; margin-bottom: 10px; line-height: 1.8;">${textStrategy.replace(/\n/g, '<br>&nbsp;&nbsp;&nbsp;&nbsp;')}</p>
+                    
+                    ${hearingTableHTML}
+
+                    <p style="font-weight: bold; margin-top: 20px;">（二）製作金額（訪價資料）：</p>
+                    <p style="margin-bottom: 40px; color: #64748b;">(如需附表請於下載後手動貼上圖片或廠商報價資訊)</p>
+
+                    <table style="width: 100%; border: none;">
+                        <tr>
+                            <td style="width: 60%; text-align: left; font-size: 12pt;">專案單位主管簽章：__________________</td>
+                            <td style="width: 40%; text-align: left; font-size: 12pt;">日期：_____年_____月_____日</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
         }
+
+        window.downloadWordReport = () => {
+            const editorHTML = document.getElementById('report-editor').innerHTML;
+            const c = casesData.find(x => x.id === currentEditingCaseId);
+            const titleName = c ? (c.clientName || c.company || '個案') : '個案';
+            const filename = `${titleName}_接案評估表`;
+            
+            // 補齊 Word 需要的 XML 標頭，確保 UTF-8 與排版正常解析
+            const preHtml = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>評估表</title></head><body>";
+            const postHtml = "</body></html>";
+            const html = preHtml + editorHTML + postHtml;
+            
+            // 使用 Blob 產生 msword 檔案
+            const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+            const downloadLink = document.createElement("a");
+            document.body.appendChild(downloadLink);
+            
+            if(navigator.msSaveOrOpenBlob ){
+                navigator.msSaveOrOpenBlob(blob, filename + '.doc');
+            } else {
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = filename + '.doc';
+                downloadLink.click();
+            }
+            document.body.removeChild(downloadLink);
+            showToast("✅ 已成功下載 Word 報告！");
+        };
+
 
         // ==========================================
         // 畫布上傳
