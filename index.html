@@ -89,7 +89,7 @@
                 <div class="flex items-center justify-between bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm">
                     <div class="text-sm md:text-base text-slate-600 font-bold flex items-center gap-2">
                         <i class="fa-solid fa-user-check text-blue-500"></i>
-                        <span>預設只顯示主責：<span class="text-blue-700">凱宇</span>（統計亦僅計入凱宇案件）</span>
+                        <span>預設只顯示主責：<span class="text-blue-700">凱宇/蔡凱宇</span>（且隱藏已完成報告）</span>
                     </div>
                     <button id="btn-toggle-other-owners" class="text-sm md:text-base font-bold px-4 py-2 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 transition-colors active:scale-95">
                         展開其他主責案件
@@ -127,7 +127,7 @@
 
                 <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-100">
                     <h2 class="text-xl md:text-2xl font-bold text-slate-700 mb-6 border-b pb-3">案件進度追蹤 (點擊方塊查看清單)</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6">
                         <!-- 報告撰寫中 -->
                         <div class="bg-amber-50 border border-amber-200 p-6 rounded-2xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.showDashboardList('progress')">
                             <p class="text-lg text-amber-700 font-bold mb-2">✍️ 報告撰寫中</p>
@@ -137,11 +137,6 @@
                         <div class="bg-blue-50 border border-blue-200 p-6 rounded-2xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.showDashboardList('done')">
                             <p class="text-lg text-blue-700 font-bold mb-2">📄 完成報告</p>
                             <p class="text-5xl font-black text-blue-600" id="dash-done">0</p>
-                        </div>
-                        <!-- 已結案 -->
-                        <div class="bg-emerald-50 border border-emerald-200 p-6 rounded-2xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.showDashboardList('closed')">
-                            <p class="text-lg text-emerald-700 font-bold mb-2">✅ 已結案數量</p>
-                            <p class="text-5xl font-black text-emerald-600" id="dash-closed">0</p>
                         </div>
                     </div>
 
@@ -418,8 +413,15 @@
                         <button id="btn-edit-case" class="flex-1 text-blue-700 bg-white hover:bg-blue-50 py-2 rounded-lg text-sm font-bold border border-blue-200 shadow-sm transition-colors"><i class="fa-solid fa-pen mr-1"></i> 編輯</button>
                         <button id="btn-delete-case" class="flex-1 text-red-700 bg-white hover:bg-red-50 py-2 rounded-lg text-sm font-bold border border-red-200 shadow-sm transition-colors"><i class="fa-solid fa-trash mr-1"></i> 刪除</button>
                     </div>
+                    <label class="mt-3 flex items-start gap-3 bg-rose-50 border border-rose-200 rounded-lg p-3 cursor-pointer">
+                        <input type="checkbox" id="ws-report-completed" class="mt-1 w-5 h-5 text-rose-600 rounded border-rose-300 focus:ring-rose-500">
+                        <span class="text-sm font-bold text-rose-800 leading-relaxed">
+                            本案件已完成報告（勾選後預設列表隱藏，展開全部仍可見）
+                            <span id="ws-report-completed-time" class="block text-xs font-medium text-rose-700 mt-1">完成時間：未設定</span>
+                        </span>
+                    </label>
                     <button id="btn-download-package" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-black shadow-md transition-transform active:scale-95">
-                        <i class="fa-solid fa-box-archive mr-2"></i> 打包下載（資料/照片/錄音/Word）
+                        <i class="fa-solid fa-box-archive mr-2"></i> 打包下載（文字檔/Word）
                     </button>
                 </div>
 
@@ -1123,6 +1125,11 @@
         // 小工具：主責人/工作天/檔名安全
         // ==========================================
         const getCaseOwner = (c) => (c && c.owner) ? String(c.owner).trim() : PRIMARY_OWNER;
+        const isReportCompleted = (c) => !!(c && c.reportCompleted);
+        const formatLocalDateTime = (d = new Date()) => {
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        };
         const isPrimaryOwner = (ownerName) => PRIMARY_OWNER_ALIASES.includes(String(ownerName || '').trim());
         const normalizeText = (s) => String(s || '').trim().toLowerCase();
         const parseDistrictKeywords = (s) => String(s || '').split(/[,，、\n]/).map(x => x.trim()).filter(Boolean);
@@ -1185,7 +1192,7 @@
             return count;
         };
 
-        const isReportDone = (c) => !!(c && !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
+        const isReportDone = (c) => isReportCompleted(c);
 
         const getOwnerCases = () => casesData.filter(c => isPrimaryOwner(getCaseOwner(c)));
 
@@ -1194,7 +1201,7 @@
             const ownerCases = getOwnerCases();
 
             const items = ownerCases
-                .filter(c => c && !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && String(c.report.strategy).trim() !== ''))
+                .filter(c => c && !(c.outcome && c.outcome.closeDate) && !isReportDone(c))
                 .map(c => {
                     const vd = parseYMD(c.visitDate || c.date);
                     if (!vd) return null;
@@ -1359,6 +1366,10 @@
         });
 
         DOM.btnBack.addEventListener('click', () => {
+            if (!DOM.views.workspace.classList.contains('hidden')) {
+                showView('list', '訪視案件管理', true);
+                return;
+            }
             if (window.history.length > 1) window.history.back();
             else showView('list', '訪視案件管理', true);
         });
@@ -1787,14 +1798,15 @@
             // 更新「展開/收合」按鈕文字
             const toggleBtn = document.getElementById('btn-toggle-other-owners');
             if (toggleBtn) {
-                toggleBtn.textContent = showOtherOwnersInList ? '收合其他主責案件' : '展開其他主責案件';
+                toggleBtn.textContent = showOtherOwnersInList ? '收合（回到預設列表）' : '展開全部案件（含已完成）';
             }
 
             const term = String(searchTerm || '').trim();
 
-            const base = showOtherOwnersInList
+            const baseRaw = showOtherOwnersInList
                 ? casesData
                 : casesData.filter(c => isPrimaryOwner(getCaseOwner(c)));
+            const base = showOtherOwnersInList ? baseRaw : baseRaw.filter(c => !isReportCompleted(c));
 
             const filtered = base.filter(c => {
                 const comp = String(c.company || '');
@@ -1804,7 +1816,7 @@
 
             if (filtered.length === 0) {
                 if (!showOtherOwnersInList && !term) {
-                    DOM.casesContainer.innerHTML = '<div class="text-center text-slate-400 py-10">目前無「主責凱宇/蔡凱宇」案件</div>';
+                    DOM.casesContainer.innerHTML = '<div class="text-center text-slate-400 py-10">目前無「主責凱宇/蔡凱宇」且未標記完成報告的案件</div>';
                 } else {
                     DOM.casesContainer.innerHTML = '<div class="text-center text-slate-400 py-10">目前無案件</div>';
                 }
@@ -1818,12 +1830,16 @@
 
                 const owner = getCaseOwner(item);
                 const ownerColor = isPrimaryOwner(owner) ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-slate-50 text-slate-600 border border-slate-200';
+                const completedBadge = isReportCompleted(item)
+                    ? `<span class="text-xs bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1 rounded-lg font-black whitespace-nowrap">已完成：${item.reportCompletedAt || '-'}</span>`
+                    : '';
 
                 el.innerHTML = `
                     <div class="flex justify-between items-start mb-3 gap-3">
                         <h3 class="font-bold text-slate-800 text-xl pr-4 flex-1 min-w-0">${item.company || '未命名企業'}</h3>
                         <div class="flex flex-col items-end gap-2 shrink-0">
                             <span class="text-xs ${ownerColor} px-3 py-1 rounded-lg font-black whitespace-nowrap">主責：${owner}</span>
+                            ${completedBadge}
                             <span class="text-sm ${catColor} px-3 py-1 rounded-lg font-bold whitespace-nowrap">${item.category || '未分類'}</span>
                         </div>
                     </div>
@@ -1855,11 +1871,9 @@
             document.getElementById('dash-job').textContent = ownerCases.filter(c => c.category === '勞工就業通').length;
 
             // 進度分類（只統計主責凱宇/蔡凱宇）
-            const closedCases = ownerCases.filter(c => c.outcome && c.outcome.closeDate);
-            const doneCases = ownerCases.filter(c => !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
-            const progressCases = ownerCases.filter(c => !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
+            const doneCases = ownerCases.filter(c => isReportDone(c));
+            const progressCases = ownerCases.filter(c => !isReportDone(c));
 
-            document.getElementById('dash-closed').textContent = closedCases.length;
             document.getElementById('dash-done').textContent = doneCases.length;
             document.getElementById('dash-progress').textContent = progressCases.length;
 
@@ -1878,13 +1892,10 @@
 
             if (type === 'progress') {
                 title.innerHTML = '✍️ 報告撰寫中 - 案件清單';
-                filtered = ownerCases.filter(c => !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
+                filtered = ownerCases.filter(c => !isReportDone(c));
             } else if (type === 'done') {
                 title.innerHTML = '📄 完成報告 - 案件清單';
-                filtered = ownerCases.filter(c => !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
-            } else if (type === 'closed') {
-                title.innerHTML = '✅ 已結案 - 案件清單';
-                filtered = ownerCases.filter(c => c.outcome && c.outcome.closeDate);
+                filtered = ownerCases.filter(c => isReportDone(c));
             }
 
             if (filtered.length === 0) {
@@ -1992,6 +2003,10 @@
                 document.getElementById('ws-outcome-acceptance').value = outcome.acceptance || '';
                 document.getElementById('ws-outcome-benefit').value = outcome.benefit || '';
                 document.getElementById('ws-outcome-date').value = outcome.closeDate || '';
+                const completedChk = document.getElementById('ws-report-completed');
+                const completedTime = document.getElementById('ws-report-completed-time');
+                if (completedChk) completedChk.checked = isReportCompleted(c);
+                if (completedTime) completedTime.textContent = `完成時間：${c.reportCompletedAt || '未設定'}`;
 
                 const env = c.env || {};
                 document.getElementById('env-lux').value = env.lux || '';
@@ -2116,6 +2131,24 @@
                     showView('list', '訪視案件管理', true);
                     currentEditingCaseId = null;
                 } catch (e) { alert("刪除失敗：" + e.message); }
+            }
+        });
+
+        document.getElementById('ws-report-completed')?.addEventListener('change', async (e) => {
+            if (!currentEditingCaseId) return;
+            const checked = !!e.target.checked;
+            const completedAt = checked ? formatLocalDateTime(new Date()) : '';
+            const completedTime = document.getElementById('ws-report-completed-time');
+            if (completedTime) completedTime.textContent = `完成時間：${completedAt || '未設定'}`;
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), {
+                    reportCompleted: checked,
+                    reportCompletedAt: completedAt,
+                    updatedAt: serverTimestamp()
+                });
+                showToast(checked ? "已標記完成報告" : "已取消完成報告標記");
+            } catch (err) {
+                alert("更新完成狀態失敗：" + err.message);
             }
         });
 
@@ -2583,6 +2616,7 @@ ${hearingChecked ? `
             if (caseId) { await updateDoc(doc(casesRef, caseId), data); showToast("基本資料更新成功"); } 
             else {
                 data.createdAt = serverTimestamp(); data.photos = []; data.audios = []; data.files = []; data.checklist = {}; data.env = { lux: '', noise: '', height: '', weight: '' };
+                data.reportCompleted = false; data.reportCompletedAt = '';
                 let limitsDraft = []; if (data.disability) limitsDraft.push(`障礙類別：${data.disability}`); if (data.disabilityCause) limitsDraft.push(`致障原因：${data.disabilityCause}`);
                 data.report = { status: data.clientCondition || "", limits: limitsDraft.join('\n'), analysis: data.initialProblems ? "申請書反映問題：\n" + data.initialProblems : "", strategy: "" };
                 data.outcome = { resolution: "", acceptance: "", benefit: "", closeDate: "" };
