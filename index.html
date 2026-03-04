@@ -421,7 +421,7 @@
                         </span>
                     </label>
                     <button id="btn-download-package" class="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-black shadow-md transition-transform active:scale-95">
-                        <i class="fa-solid fa-box-archive mr-2"></i> 打包下載（文字檔/Word）
+                        <i class="fa-solid fa-file-lines mr-2"></i> 下載文字檔
                     </button>
                 </div>
 
@@ -2332,33 +2332,33 @@
         };
 
         // ==========================================
-        // 📦 案件打包下載（僅文字檔與 Word，不含照片/錄音檔）
+        // 📝 下載案件文字檔（不打包）
         // ==========================================
         window.downloadCasePackage = async () => {
             if (!currentEditingCaseId) return;
             const c = casesData.find(x => x.id === currentEditingCaseId);
             if (!c) return;
 
-            if (typeof JSZip === 'undefined') {
-                alert("打包下載需要 JSZip（已透過 CDN 載入）。\n若目前網路阻擋 cdnjs，請更換網路環境後重試。");
-                return;
-            }
-
             const btn = document.getElementById('btn-download-package');
             const originalText = btn ? btn.innerHTML : '';
-            if (btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 打包中...'; btn.classList.add('opacity-60', 'pointer-events-none'); }
+            if (btn) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 產生文字檔中...'; btn.classList.add('opacity-60', 'pointer-events-none'); }
 
-            const zip = new JSZip();
             const companySafe = sanitizeFileName(c.company || '未命名企業');
             const clientSafe = sanitizeFileName(c.clientName || '未命名個案');
-            const zipName = `${companySafe}_${clientSafe}_案件文字打包.zip`;
+            const fileName = `${companySafe}_${clientSafe}_案件完整紀錄.txt`;
 
-            const fText = zip.folder('1_文字資料');
-            const fWord = zip.folder('2_Word報告');
-
-            const escapeHtml = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-            const rpt = c.report || {};
-            const out = c.outcome || {};
+            const rpt = {
+                status: document.getElementById('ws-status-text')?.value ?? c.report?.status ?? '',
+                limits: document.getElementById('ws-limits-text')?.value ?? c.report?.limits ?? '',
+                analysis: document.getElementById('ws-analysis-text')?.value ?? c.report?.analysis ?? '',
+                strategy: document.getElementById('ws-strategy-text')?.value ?? c.report?.strategy ?? ''
+            };
+            const out = {
+                resolution: document.getElementById('ws-outcome-resolution')?.value ?? c.outcome?.resolution ?? '',
+                acceptance: document.getElementById('ws-outcome-acceptance')?.value ?? c.outcome?.acceptance ?? '',
+                benefit: document.getElementById('ws-outcome-benefit')?.value ?? c.outcome?.benefit ?? '',
+                closeDate: document.getElementById('ws-outcome-date')?.value ?? c.outcome?.closeDate ?? ''
+            };
             const env = {
                 lux: document.getElementById('env-lux')?.value ?? (c.env?.lux || ''),
                 noise: document.getElementById('env-noise')?.value ?? (c.env?.noise || ''),
@@ -2391,119 +2391,108 @@
                 }
             }
 
-            const hearingSummary = hearingChecked
-                ? [
-                    `指標一：${hearing.ind1 || '-'}`,
-                    `指標二：${hearing.ind2 || '-'}`,
-                    `總分：${Number(hearing.ind1 || 0) + Number(hearing.ind2 || 0)}`
-                ].join('\n')
-                : '（未勾選，略過）';
+            const lines = [];
+            const addSection = (title) => {
+                if (lines.length > 0) lines.push('');
+                lines.push(`【${title}】`);
+            };
+            const addIf = (label, value) => {
+                const v = (value ?? '').toString().trim();
+                if (!v) return;
+                lines.push(`${label}：${v}`);
+            };
 
-            const summaryTxt = [
-                `主責人：${getCaseOwner(c)}`,
-                `申請單位：${c.company || ''}`,
-                `個案/工作站：${c.clientName || ''}`,
-                `對象別：${c.category || ''}`,
-                `接案日：${c.intakeDate || ''}`,
-                `初訪日：${c.visitDate || c.date || ''}`,
-                `訪視委員：${c.visitors || ''}`,
-                '',
-                '【遭遇問題及期待改善事項】',
-                (c.initialProblems || ''),
-                '',
-                '【客觀數據】',
-                `環境照度(Lux)：${env.lux || ''}`,
-                `環境噪音(dB)：${env.noise || ''}`,
-                `操作檯面高度(cm)：${env.height || ''}`,
-                `搬運物重量(kg)：${env.weight || ''}`,
-                '',
-                '【現場環境與能力檢核】',
-                ...checklistText,
-                '【聽覺需求評估表】',
-                hearingSummary
-            ].join('\n');
-            fText.file('案件摘要與檢核.txt', summaryTxt);
+            addSection('個案基本資料');
+            addIf('主責人', getCaseOwner(c));
+            addIf('轄區', c.district);
+            addIf('申請單位', c.company);
+            addIf('聯絡電話', c.phone);
+            addIf('對象別', c.category);
+            addIf('個案/工作站', c.clientName);
+            addIf('接案日', c.intakeDate);
+            addIf('初訪日', c.visitDate || c.date);
+            addIf('訪視委員', c.visitors);
+            addIf('完成報告', c.reportCompleted ? '是' : '');
+            addIf('完成時間', c.reportCompletedAt);
 
-            const wordHtml = `<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<style>
-body{font-family:'標楷體','Times New Roman',serif;line-height:1.8;font-size:12pt;}
-h1{font-size:18pt;margin:0 0 12px 0;}
-h2{font-size:14pt;margin:18px 0 6px 0;}
-p{margin:0 0 8px 0;white-space:pre-wrap;}
-ul{margin:0 0 8px 20px;padding:0;}
-li{margin:0 0 4px 0;}
-.small{color:#64748b;font-size:10pt;}
-</style>
-</head>
-<body>
-<h1>職務再設計｜訪視評估與成果報告</h1>
-<p class="small">主責人：${escapeHtml(getCaseOwner(c))}　｜　申請單位：${escapeHtml(c.company || '')}　｜　個案/工作站：${escapeHtml(c.clientName || '')}</p>
-<p class="small">接案日：${escapeHtml(c.intakeDate || '')}　｜　初訪日：${escapeHtml(c.visitDate || c.date || '')}　｜　訪視委員：${escapeHtml(c.visitors || '')}</p>
+            addSection('個案詳細資料');
+            if (Array.isArray(c.clients) && c.clients.length > 0) {
+                c.clients.forEach((mc, idx) => {
+                    const row = [mc.name, mc.age ? `${mc.age}歲` : '', mc.title].filter(Boolean).join(' / ');
+                    addIf(`工作站個案${idx + 1}`, row);
+                });
+            } else {
+                addIf('姓名', c.clientName);
+                addIf('性別', c.clientGender);
+                addIf('年齡', c.clientAge ? `${c.clientAge}歲` : '');
+                addIf('出生年月日', c.clientDob);
+                addIf('職稱', c.clientTitle);
+                addIf('障礙類別', c.disability);
+                addIf('致障原因', c.disabilityCause);
+                addIf('個人障礙情形/工作內容', c.clientCondition);
+                addIf('實際工作地點', c.workLocation);
+                addIf('遭遇問題及期待改善事項', c.initialProblems);
+            }
 
-<h2>一、個案之就業狀況</h2>
-<p>${escapeHtml(rpt.status || '')}</p>
+            addSection('評估撰寫');
+            addIf('一、個案之就業狀況', rpt.status);
+            addIf('二、個案之生理限制', rpt.limits);
+            addIf('三、個案就業問題診斷與分析', rpt.analysis);
+            addIf('四、改善方式、內容及輔具建議', rpt.strategy);
 
-<h2>二、個案之生理限制</h2>
-<p>${escapeHtml(rpt.limits || '')}</p>
+            addSection('成果報告');
+            addIf('五、審查會決議', out.resolution);
+            addIf('六、輔具試用、訓練及驗收', out.acceptance);
+            addIf('七、職務再設計前後效益評估', out.benefit);
+            addIf('八、結案日期', out.closeDate);
 
-<h2>三、個案就業問題診斷與分析</h2>
-<p>${escapeHtml(rpt.analysis || '')}</p>
+            addSection('客觀數據');
+            addIf('環境照度(Lux)', env.lux);
+            addIf('環境噪音(dB)', env.noise);
+            addIf('操作檯面高度(cm)', env.height);
+            addIf('搬運物重量(kg)', env.weight);
 
-<h2>四、改善方式、內容及輔具建議</h2>
-<p>${escapeHtml(rpt.strategy || '')}</p>
+            addSection('現場環境與能力檢核');
+            let hasChecklist = false;
+            for (const [catName, items] of Object.entries(safeChecklists)) {
+                const catLines = [];
+                (items || []).forEach(item => {
+                    const safeKey = String(item || '').replace(/[.#$/[\]]/g, '_');
+                    const checked = (safeKey in domChecklist) ? domChecklist[safeKey] : !!(c.checklist && c.checklist[safeKey]);
+                    if (checked) catLines.push(`■ ${item}`);
+                });
+                if (catLines.length > 0) {
+                    hasChecklist = true;
+                    lines.push(`${catName}：`);
+                    lines.push(...catLines);
+                }
+            }
+            if (!hasChecklist) {
+                lines.push('（無勾選項目）');
+            }
 
-<h2>五、審查會決議</h2>
-<p>${escapeHtml(out.resolution || '')}</p>
+            if (hearingChecked) {
+                addSection('聽覺需求評估表');
+                addIf('指標一', hearing.ind1);
+                addIf('指標二', hearing.ind2);
+                addIf('總分', String(Number(hearing.ind1 || 0) + Number(hearing.ind2 || 0)));
+            }
 
-<h2>六、輔具試用、訓練及驗收</h2>
-<p>${escapeHtml(out.acceptance || '')}</p>
-
-<h2>七、職務再設計前後效益評估</h2>
-<p>${escapeHtml(out.benefit || '')}</p>
-
-<h2>八、結案日期</h2>
-<p>${escapeHtml(out.closeDate || '')}</p>
-
-<h2>九、客觀數據</h2>
-<p>環境照度(Lux)：${escapeHtml(env.lux || '')}</p>
-<p>環境噪音(dB)：${escapeHtml(env.noise || '')}</p>
-<p>操作檯面高度(cm)：${escapeHtml(env.height || '')}</p>
-<p>搬運物重量(kg)：${escapeHtml(env.weight || '')}</p>
-
-<h2>十、現場環境與能力檢核</h2>
-${Object.entries(safeChecklists).map(([catName, items]) => `
-<p><strong>${escapeHtml(catName)}</strong></p>
-<ul>
-${(items || []).map(item => {
-    const safeKey = String(item || '').replace(/[.#$/[\]]/g, '_');
-    const checked = (safeKey in domChecklist) ? domChecklist[safeKey] : !!(c.checklist && c.checklist[safeKey]);
-    return `<li>${checked ? '■' : '□'} ${escapeHtml(item)}</li>`;
-}).join('')}
-</ul>`).join('')}
-
-${hearingChecked ? `
-<h2>十一、聽覺需求評估表</h2>
-<p>指標一：${escapeHtml(hearing.ind1 || '-')}</p>
-<p>指標二：${escapeHtml(hearing.ind2 || '-')}</p>
-<p>總分：${escapeHtml(String(Number(hearing.ind1 || 0) + Number(hearing.ind2 || 0)))}</p>` : ''}
-</body></html>`;
-
-            fWord.file('案件文字與檢核.doc', '\ufeff' + wordHtml);
+            const textContent = lines.join('\n');
 
             try {
-                const blob = await zip.generateAsync({ type: 'blob' });
+                const blob = new Blob(['\ufeff', textContent], { type: 'text/plain;charset=utf-8' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = zipName;
+                a.download = fileName;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
                 URL.revokeObjectURL(url);
-                showToast("📦 已完成文字打包下載");
+                showToast("已下載案件文字檔");
             } catch (e) {
-                alert("打包失敗：" + e.message);
+                alert("下載失敗：" + e.message);
             } finally {
                 if (btn) { btn.innerHTML = originalText; btn.classList.remove('opacity-60', 'pointer-events-none'); }
             }
