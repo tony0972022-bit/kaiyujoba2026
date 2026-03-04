@@ -1246,8 +1246,8 @@
 
                     return {
                         id: c.id,
-                        company: c.company || '?芸??璆?,
-                        clientName: c.clientName || '??,
+                        company: c.company || '未命名單位',
+                        clientName: c.clientName || '未命名個案',
                         visitDate: (c.visitDate || c.date || '-'),
                         dueDate: `${due.getFullYear()}-${String(due.getMonth()+1).padStart(2,'0')}-${String(due.getDate()).padStart(2,'0')}`,
                         overdue,
