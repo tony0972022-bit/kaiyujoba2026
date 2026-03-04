@@ -949,6 +949,15 @@
         </div>
     </div>
 
+    <!-- 錄音懸浮控制（工作區左下角） -->
+    <div id="recording-float" class="hidden fixed left-4 bottom-4 z-[160] bg-white border border-slate-200 rounded-xl shadow-xl p-3 w-56 no-print">
+        <div class="text-xs font-bold text-slate-600 mb-2">錄音快捷控制</div>
+        <button id="btn-record-floating" class="w-full bg-red-50 text-red-600 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-bold border border-red-200 flex justify-center items-center">
+            <i class="fa-solid fa-circle mr-2 text-xs"></i> <span class="btn-text">開始錄音</span>
+        </button>
+        <div id="recording-floating-status" class="hidden mt-2 text-xs text-red-600 font-bold animate-pulse text-center">● 錄音中</div>
+    </div>
+
     <!-- 吐司通知 -->
     <div id="toast" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-900 bg-opacity-90 text-white px-8 py-5 rounded-2xl shadow-2xl transition-opacity duration-300 opacity-0 pointer-events-none z-[200] text-xl font-bold flex items-center gap-4">
         <i class="fa-solid fa-circle-check text-green-400 text-3xl"></i> <span id="toast-msg">已儲存</span>
@@ -1402,6 +1411,7 @@
                 document.getElementById('view-container-standard').classList.add('hidden');
                 DOM.views.workspace.classList.remove('hidden');
             }
+            document.getElementById('recording-float')?.classList.toggle('hidden', viewName !== 'workspace');
 
             document.getElementById('app-title').textContent = title;
             const btnSettings = document.getElementById('btn-settings');
@@ -2042,8 +2052,12 @@
         // ==========================================
         // 開啟工作區 (強化防呆機制與詳細錯誤報告)
         // ==========================================
-        function openWorkspace(id) {
+        async function openWorkspace(id) {
             try {
+                if (isRecording && currentEditingCaseId && currentEditingCaseId !== id) {
+                    showToast("已切換案件，系統自動結束並上傳前一案件錄音");
+                    await stopRecordingFlow();
+                }
                 currentEditingCaseId = id;
                 const c = casesData.find(x => x.id === id);
                 if (!c) return;
@@ -2150,6 +2164,7 @@
                 alert(`開啟案件時發生錯誤，請截圖告知開發者：\n${err.name}: ${err.message}`); 
             }
         }
+        window.openWorkspace = openWorkspace;
 
         document.getElementById('btn-edit-case').addEventListener('click', () => {
             const c = casesData.find(x => x.id === currentEditingCaseId);
@@ -2970,8 +2985,11 @@
         // 🌟 新版：錄音與手動 AI 轉譯分離 (恢復遺失的區塊)
         // ==========================================
         const btnRecord = document.getElementById('btn-record-audio');
+        const btnRecordFloating = document.getElementById('btn-record-floating');
         let mediaRecorder; let audioChunks = []; let isRecording = false;
         let recordingStream = null;
+        let recordingCaseId = null;
+        let stopRecordingResolver = null;
 
         function createRecMeta() {
             return {
@@ -3036,82 +3054,137 @@
             await discardCachedRecording();
         });
 
-        btnRecord.addEventListener('click', async () => {
-            if (isRecording) {
-                mediaRecorder.stop();
-                isRecording = false;
-                btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> <span class="btn-text">開始錄音</span>';
-                btnRecord.classList.replace('bg-slate-100', 'bg-red-50');
-                btnRecord.classList.replace('text-slate-600', 'text-red-600');
-                document.getElementById('recording-status').classList.add('hidden');
-            } else {
-                try {
-                    recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(recordingStream);
-                    audioChunks = [];
-                    recChunkSeq = 0;
-                    activeRecMeta = createRecMeta();
-                    writeRecMeta(activeRecMeta);
+        function syncRecordingUi(mode = 'idle') {
+            const inProgress = mode !== 'idle';
+            const busy = mode === 'uploading';
+            const statusMain = document.getElementById('recording-status');
+            const statusFloat = document.getElementById('recording-floating-status');
 
-                    mediaRecorder.ondataavailable = async (e) => {
-                        if(e.data.size > 0) {
-                            audioChunks.push(e.data);
-                            recChunkSeq += 1;
-                            try {
-                                await cacheRecordingChunk(activeRecMeta.sessionId, recChunkSeq, e.data);
-                            } catch (cacheErr) {
-                                console.warn("錄音暫存寫入失敗：", cacheErr);
-                            }
-                        }
-                    };
-                    mediaRecorder.onstop = async () => {
-                        btnRecord.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 錄音存檔上傳中...';
-                        btnRecord.classList.add('opacity-50', 'pointer-events-none');
-                        
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        const fileName = `audio_${Date.now()}.webm`;
-                        
-                        // 將 blob 存入記憶體快取，供稍後手動 AI 轉譯使用
-                        audioBlobCache[fileName] = audioBlob;
-                        
-                        try {
-                            // 僅上傳不轉譯
-                            const result = await uploadToGoogleDrive(audioBlob, fileName);
-                            
-                            const c = casesData.find(x => x.id === currentEditingCaseId);
-                            const newAudios = [...(c.audios || []), { 
-                                name: fileName,
-                                displayName: new Date().toLocaleString(),
-                                previewUrl: result.previewUrl,
-                                downloadUrl: result.downloadUrl,
-                                transcript: '' // 預設為空
-                            }];
-                            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
-                            renderAudios(newAudios);
-                            showToast("錄音已安全上傳至雲端！");
-                            if (activeRecMeta?.sessionId) await clearCachedSession(activeRecMeta.sessionId);
-                            writeRecMeta(null);
-                            toggleRecoveryBanner(false);
-                        } catch(err) { 
-                            alert("錄音存檔失敗：" + err.message);
-                            toggleRecoveryBanner(true);
-                        } finally {
-                            btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> <span class="btn-text">開始錄音</span>';
-                            btnRecord.classList.remove('opacity-50', 'pointer-events-none');
-                            activeRecMeta = null;
-                        }
-                        if (recordingStream) recordingStream.getTracks().forEach(track => track.stop());
-                        recordingStream = null;
-                    };
-                    mediaRecorder.start(1000);
-                    isRecording = true;
-                    btnRecord.innerHTML = '<i class="fa-solid fa-stop mr-2"></i> 停止錄音';
-                    btnRecord.classList.replace('bg-red-50', 'bg-slate-100');
-                    btnRecord.classList.replace('text-red-600', 'text-slate-600');
-                    document.getElementById('recording-status').classList.remove('hidden');
-                } catch (err) { alert("無法存取麥克風，請檢查瀏覽器權限設定"); }
+            const applyBtn = (btn, useWideStyle) => {
+                if (!btn) return;
+                if (busy) {
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 上傳中...';
+                    btn.classList.add('opacity-50', 'pointer-events-none');
+                    return;
+                }
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+                if (inProgress) {
+                    btn.innerHTML = '<i class="fa-solid fa-stop mr-2"></i> <span class="btn-text">停止錄音</span>';
+                    if (useWideStyle) {
+                        btn.classList.replace('bg-red-50', 'bg-slate-100');
+                        btn.classList.replace('text-red-600', 'text-slate-600');
+                    } else {
+                        btn.classList.replace('bg-red-50', 'bg-slate-100');
+                        btn.classList.replace('text-red-600', 'text-slate-700');
+                    }
+                } else {
+                    btn.innerHTML = '<i class="fa-solid fa-circle mr-2 text-xs"></i> <span class="btn-text">開始錄音</span>';
+                    if (useWideStyle) {
+                        btn.classList.replace('bg-slate-100', 'bg-red-50');
+                        btn.classList.replace('text-slate-600', 'text-red-600');
+                    } else {
+                        btn.classList.replace('bg-slate-100', 'bg-red-50');
+                        btn.classList.replace('text-slate-700', 'text-red-600');
+                    }
+                }
+            };
+
+            applyBtn(btnRecord, true);
+            applyBtn(btnRecordFloating, false);
+            if (statusMain) statusMain.classList.toggle('hidden', !inProgress);
+            if (statusFloat) statusFloat.classList.toggle('hidden', !inProgress);
+        }
+
+        async function startRecordingFlow() {
+            recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(recordingStream);
+            audioChunks = [];
+            recChunkSeq = 0;
+            recordingCaseId = currentEditingCaseId;
+            activeRecMeta = createRecMeta();
+            activeRecMeta.caseId = recordingCaseId || activeRecMeta.caseId;
+            writeRecMeta(activeRecMeta);
+
+            mediaRecorder.ondataavailable = async (e) => {
+                if(e.data.size > 0) {
+                    audioChunks.push(e.data);
+                    recChunkSeq += 1;
+                    try {
+                        await cacheRecordingChunk(activeRecMeta.sessionId, recChunkSeq, e.data);
+                    } catch (cacheErr) {
+                        console.warn("錄音暫存寫入失敗：", cacheErr);
+                    }
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                syncRecordingUi('uploading');
+                const targetCaseId = recordingCaseId || currentEditingCaseId;
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const fileName = `audio_${Date.now()}.webm`;
+                audioBlobCache[fileName] = audioBlob;
+
+                try {
+                    const result = await uploadToGoogleDrive(audioBlob, fileName);
+                    const targetCase = casesData.find(x => x.id === targetCaseId);
+                    if (targetCase) {
+                        const newAudios = [...(targetCase.audios || []), {
+                            name: fileName,
+                            displayName: new Date().toLocaleString(),
+                            previewUrl: result.previewUrl,
+                            downloadUrl: result.downloadUrl,
+                            transcript: ''
+                        }];
+                        await updateDoc(doc(db, 'users', currentUser.uid, 'cases', targetCaseId), { audios: newAudios });
+                        if (currentEditingCaseId === targetCaseId) renderAudios(newAudios);
+                    }
+                    showToast("錄音已安全上傳至雲端！");
+                    if (activeRecMeta?.sessionId) await clearCachedSession(activeRecMeta.sessionId);
+                    writeRecMeta(null);
+                    toggleRecoveryBanner(false);
+                } catch(err) {
+                    alert("錄音存檔失敗：" + err.message);
+                    toggleRecoveryBanner(true);
+                } finally {
+                    if (recordingStream) recordingStream.getTracks().forEach(track => track.stop());
+                    recordingStream = null;
+                    activeRecMeta = null;
+                    recordingCaseId = null;
+                    syncRecordingUi('idle');
+                    if (stopRecordingResolver) { stopRecordingResolver(); stopRecordingResolver = null; }
+                }
+            };
+
+            mediaRecorder.start(1000);
+            isRecording = true;
+            syncRecordingUi('recording');
+        }
+
+        async function stopRecordingFlow() {
+            if (!isRecording || !mediaRecorder || mediaRecorder.state !== 'recording') return;
+            isRecording = false;
+            syncRecordingUi('recording');
+            await new Promise((resolve) => {
+                stopRecordingResolver = resolve;
+                mediaRecorder.stop();
+            });
+        }
+
+        async function toggleRecordingFlow() {
+            if (isRecording) {
+                await stopRecordingFlow();
+                return;
             }
-        });
+            try {
+                await startRecordingFlow();
+            } catch (err) {
+                alert("無法存取麥克風，請檢查瀏覽器權限設定");
+            }
+        }
+
+        btnRecord?.addEventListener('click', () => { toggleRecordingFlow(); });
+        btnRecordFloating?.addEventListener('click', () => { toggleRecordingFlow(); });
+        syncRecordingUi('idle');
 
         window.addEventListener('beforeunload', (e) => {
             if (!isRecording) return;
