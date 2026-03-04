@@ -3443,23 +3443,54 @@
         function renderAudios(audiosArr) {
             const container = document.getElementById('audios-container');
             if (audiosArr.length === 0) {
-                container.innerHTML = '<p class="text-sm text-slate-400">尚未上傳錄音。</p>';
-                return;
+                container.innerHTML = '<p class="text-sm text-slate-400">撠???/p>'; return;
             }
             container.innerHTML = audiosArr.map((audio, index) => {
                 const dUrl = audio.downloadUrl || audio.previewUrl || audio.url;
+                const safeBtnId = 'btn-transcribe-' + audio.name.replace(/[^a-zA-Z0-9]/g, '');
+                const encodedName = encodeURIComponent(audio.name || '');
+                
+                let transcriptSection = '';
+                if (audio.transcript) {
+                    // ?? 靽格嚗??????寧?舐楊頛舐? textarea
+                    transcriptSection = `
+                        <div class="mt-3 p-4 bg-white rounded-xl border border-purple-200 shadow-inner">
+                            <div class="flex justify-between items-center mb-2 border-b border-purple-100 pb-2">
+                                <span class="text-sm font-bold text-purple-700"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI ??蝔?(?舐?仿??耨??</span>
+                                <button onclick="window.copyTranscript(document.getElementById('ts-${index}').value)" class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-3 py-1.5 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-copy mr-1"></i> 銴ˊ</button>
+                            </div>
+                            <textarea id="ts-${index}" onchange="window.updateTranscript('${encodedName}', this.value)" class="auto-resize w-full p-2 text-base text-slate-700 bg-transparent focus:bg-slate-50 border border-transparent focus:border-purple-300 rounded-lg outline-none resize-none leading-relaxed transition-colors">${audio.transcript}</textarea>
+                        </div>
+                    `;
+                } else {
+                    transcriptSection = `
+                        <div class="mt-2 text-right">
+                            <button id="${safeBtnId}" onclick="window.startTranscription('${encodedName}')" class="text-sm bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-sm">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> ??甇日??喟??蝔?                            </button>
+                        </div>
+                    `;
+                }
+
+                // ?? 靽格嚗??交?蝷綽?? Google Drive ?單??航?暺?銝??內?剜
                 return `
                 <div class="bg-slate-50 p-5 border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm relative group">
                     <div class="flex justify-between items-center">
                         <span class="text-base md:text-lg text-slate-700 font-bold truncate pr-2"><i class="fa-solid fa-headphones text-blue-500 mr-2"></i>${audio.displayName || audio.name}</span>
                         <div class="flex gap-2 shrink-0">
+                            <!-- ??儭??芷?? -->
                             <button onclick="window.deleteMedia('audios', ${index})" class="text-red-500 hover:text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors"><i class="fa-solid fa-trash"></i></button>
-                            <a href="${dUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-800 text-sm bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg font-bold transition-colors flex items-center" title="下載"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> 下載</a>
+                            <a href="${dUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-800 text-sm bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg font-bold transition-colors flex items-center" title="?阡?閬??剜/銝?"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> 銝?</a>
                         </div>
                     </div>
-                </div>`;
-            }).join('');
+                    <p class="text-xs text-slate-400">?乩??寞?曉?⊥??剜嚗?暺??喃?閫??脫????瑼?/p>
+                    <audio controls src="${dUrl}" class="w-full h-12 mt-1"></audio>
+                    ${transcriptSection}
+                </div>`}).join('');
+                
+            // 閫貊?閮?擃漲
+            setTimeout(() => triggerAutoResize(), 100);
         }
+
         // ==========================================
         // ?? AI 甇???勗?????Word ?臬?摩
         // ==========================================
@@ -3840,9 +3871,9 @@ ${rawDraft}
         document.getElementById('btn-next-page').addEventListener('click', () => { if(currentCanvasIdx < canvasPages.length - 1) { saveCanvasPage(); loadCanvasPage(currentCanvasIdx + 1); } });
 
         const startPos = (e) => { 
-            isDrawing = true;
+            isDrawing = true; 
             isTempEraser = false;
-            draw(e);
+            draw(e); 
         };
         const endPos = () => { 
             isDrawing = false; 
