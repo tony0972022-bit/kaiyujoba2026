@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -18,7 +18,13 @@
             .no-print { display: none !important; }
             .print-break-inside-avoid { page-break-inside: avoid; }
         }
-        #drawing-board { touch-action: none; background-color: #ffffff; }
+        #drawing-board {
+            touch-action: none;
+            background-color: #ffffff;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
         .tool-active { outline: 2px solid #3b82f6; outline-offset: 2px; }
         #preview-header { cursor: move; touch-action: none; }
         /* 文字框自適應高度過渡動畫 */
@@ -562,7 +568,7 @@
                             </button>
                         </div>
                         
-                        <div class="flex flex-wrap gap-4 items-center bg-slate-50 p-3 rounded-t-xl border-x border-t border-slate-200">
+                        <div class="flex flex-wrap gap-4 items-center bg-slate-50 p-3 rounded-t-xl border-x border-t border-slate-200 select-none">
                             <div class="flex gap-3 items-center">
                                 <button class="color-btn w-8 h-8 rounded-full bg-slate-900 tool-active shadow-sm" data-color="#0f172a"></button>
                                 <button class="color-btn w-8 h-8 rounded-full bg-red-500 shadow-sm" data-color="#ef4444"></button>
@@ -579,7 +585,7 @@
                             <canvas id="drawing-board" class="w-full h-[400px] md:h-[500px] cursor-crosshair touch-none"></canvas>
                         </div>
                         
-                        <div class="flex justify-between items-center bg-slate-50 p-3 rounded-b-xl border-x border-b border-slate-200 text-sm font-bold">
+                        <div class="flex justify-between items-center bg-slate-50 p-3 rounded-b-xl border-x border-b border-slate-200 text-sm font-bold select-none">
                             <div class="flex items-center gap-4 bg-white px-2 py-1 rounded border border-slate-200 shadow-sm">
                                 <button id="btn-prev-page" class="text-slate-600 hover:text-blue-600 px-3 py-1 text-lg"><i class="fa-solid fa-chevron-left"></i></button>
                                 <span id="page-indicator" class="text-slate-700 w-12 text-center text-base">1 / 1</span>
@@ -3878,15 +3884,22 @@ ${rawDraft}
         document.getElementById('btn-next-page').addEventListener('click', () => { if(currentCanvasIdx < canvasPages.length - 1) { saveCanvasPage(); loadCanvasPage(currentCanvasIdx + 1); } });
 
         const startPos = (e) => { 
+            if (e.pointerType && e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
+            if (e.cancelable) e.preventDefault();
             isDrawing = true; 
+            try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
             draw(e); 
         };
-        const endPos = () => { 
+        const endPos = (e) => { 
             isDrawing = false; 
+            if (e && typeof e.pointerId !== 'undefined') {
+                try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
+            }
             ctx.beginPath(); 
         };
         const draw = (e) => {
             if (!isDrawing) return;
+            if (e.pointerType && e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
             if (e.cancelable) e.preventDefault(); 
             
             const rect = canvas.getBoundingClientRect();
@@ -3920,7 +3933,6 @@ ${rawDraft}
         canvas.addEventListener('pointerdown', startPos); 
         canvas.addEventListener('pointerup', endPos);
         canvas.addEventListener('pointermove', draw, {passive: false}); 
-        canvas.addEventListener('pointerout', endPos);
         canvas.addEventListener('pointercancel', endPos);
 
         document.getElementById('btn-save-canvas').addEventListener('click', async () => {
