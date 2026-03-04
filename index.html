@@ -301,6 +301,29 @@
                         </select>
                     </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label class="block text-base font-medium text-slate-600 mb-1">個案聯繫手機</label>
+                            <input type="text" id="form-client-mobile" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                        </div>
+                        <div>
+                            <label class="block text-base font-medium text-slate-600 mb-1">個案聯繫 Email</label>
+                            <input type="email" id="form-client-email" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                        </div>
+                        <div>
+                            <label class="block text-base font-medium text-slate-600 mb-1">教育程度</label>
+                            <input type="text" id="form-education" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg" placeholder="如：高中/專科/大學">
+                        </div>
+                        <div>
+                            <label class="block text-base font-medium text-slate-600 mb-1">到職日（可輸入民國）</label>
+                            <input type="text" id="form-hire-date" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg" placeholder="YYYY-MM-DD 或 112/03/01">
+                        </div>
+                        <div>
+                            <label class="block text-base font-medium text-slate-600 mb-1">年資（自動）</label>
+                            <input type="text" id="form-seniority" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 bg-slate-100 text-base md:text-lg font-bold text-blue-700" readonly>
+                        </div>
+                    </div>
+
                     <div id="group-single-client" class="bg-blue-50 p-4 md:p-5 rounded-xl border border-blue-100 space-y-4">
                         <h3 class="text-base font-bold text-blue-800 border-b border-blue-200 pb-2">單一個案詳細資料</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -338,6 +361,10 @@
                             </div>
                         </div>
                         <div>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">個人特質</label>
+                            <textarea id="form-client-traits" rows="3" class="auto-resize w-full p-3 rounded-lg border border-slate-200 text-base" placeholder="描述個案個人特質..."></textarea>
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium text-slate-600 mb-1">個人障礙情形或工作內容</label>
                             <textarea id="form-client-condition" rows="3" class="auto-resize w-full p-3 rounded-lg border border-slate-200 text-base" placeholder="描述個案目前的障礙狀況或主要工作..."></textarea>
                         </div>
@@ -346,7 +373,7 @@
                             <input type="text" id="form-work-location" class="w-full p-3 rounded-lg border border-slate-200 text-base" placeholder="若無填寫則預設同申請單位">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-600 mb-1">遭遇問題及期待改善事項 (帶入報告草稿)</label>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">遭遇問題及期待經由職務再設計改善事項</label>
                             <textarea id="form-initial-problems" rows="3" class="auto-resize w-full p-3 rounded-lg border border-slate-200 text-base" placeholder="上傳申請書後將自動擷取於此..."></textarea>
                         </div>
                     </div>
@@ -1322,6 +1349,49 @@
         }
         document.getElementById('form-client-dob').addEventListener('change', updateAge);
 
+        const toYMD = (y, m, d) => `${String(y).padStart(4,'0')}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        function normalizeHireDateInput(raw) {
+            const txt = String(raw || '').trim();
+            if (!txt) return '';
+            if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(txt)) {
+                const [y,m,d] = txt.split('-').map(Number);
+                return toYMD(y,m,d);
+            }
+            const m1 = txt.match(/^(\d{2,3})[\/.\-年](\d{1,2})[\/.\-月](\d{1,2})/);
+            if (m1) return toYMD(Number(m1[1]) + 1911, Number(m1[2]), Number(m1[3]));
+            const m2 = txt.match(/^(\d{2,3})(\d{2})(\d{2})$/);
+            if (m2) return toYMD(Number(m2[1]) + 1911, Number(m2[2]), Number(m2[3]));
+            return txt;
+        }
+
+        function updateSeniority() {
+            const hireInput = document.getElementById('form-hire-date');
+            const seniorityInput = document.getElementById('form-seniority');
+            if (!hireInput || !seniorityInput) return;
+            const normalized = normalizeHireDateInput(hireInput.value);
+            const d = new Date(`${normalized}T00:00:00`);
+            if (!normalized || isNaN(d.getTime())) {
+                seniorityInput.value = '';
+                return;
+            }
+            const now = new Date();
+            let years = now.getFullYear() - d.getFullYear();
+            let months = now.getMonth() - d.getMonth();
+            if (now.getDate() < d.getDate()) months -= 1;
+            if (months < 0) { years -= 1; months += 12; }
+            if (years < 0) { seniorityInput.value = ''; return; }
+            seniorityInput.value = `${years}年${months}個月`;
+        }
+
+        document.getElementById('form-hire-date')?.addEventListener('blur', () => {
+            const el = document.getElementById('form-hire-date');
+            if (!el) return;
+            const normalized = normalizeHireDateInput(el.value);
+            el.value = normalized || el.value;
+            updateSeniority();
+        });
+        document.getElementById('form-hire-date')?.addEventListener('input', updateSeniority);
+
         function showView(viewName, title = "訪視案件管理", showTabs = true, pushHistory = true) {
             if(viewName !== 'workspace') {
                 document.getElementById('view-container-standard').classList.remove('hidden');
@@ -2092,6 +2162,11 @@
 
             document.getElementById('form-company').value = c.company || '';
             document.getElementById('form-phone').value = c.phone || '';
+            document.getElementById('form-client-mobile').value = c.clientMobile || '';
+            document.getElementById('form-client-email').value = c.clientEmail || '';
+            document.getElementById('form-education').value = c.education || '';
+            document.getElementById('form-hire-date').value = c.hireDate || '';
+            document.getElementById('form-seniority').value = c.seniority || '';
             document.getElementById('form-intake-date').value = c.intakeDate || '';
             document.getElementById('form-visit-date').value = c.visitDate || c.date || '';
             const ownerField = document.getElementById('form-owner'); if (ownerField) ownerField.value = getCaseOwner(c);
@@ -2109,11 +2184,13 @@
                 document.getElementById('form-client-title').value = c.clientTitle || c.jobTitle || '';
                 document.getElementById('form-client-disability').value = c.disability || '';
                 document.getElementById('form-client-cause').value = c.disabilityCause || '';
+                document.getElementById('form-client-traits').value = c.clientTraits || '';
                 document.getElementById('form-client-condition').value = c.clientCondition || '';
                 document.getElementById('form-work-location').value = c.workLocation || '';
                 document.getElementById('form-initial-problems').value = c.initialProblems || '';
             }
             if (!c.district) autoAssignDistrictByLocation();
+            updateSeniority();
 
             const visitorArr = c.visitors ? c.visitors.split('、') : [];
             document.querySelectorAll('input[name="chk-visitor"]').forEach(cb => { cb.checked = visitorArr.includes(cb.value); });
@@ -2407,6 +2484,11 @@
             addIf('轄區', c.district);
             addIf('申請單位', c.company);
             addIf('聯絡電話', c.phone);
+            addIf('個案聯繫手機', c.clientMobile);
+            addIf('個案聯繫Email', c.clientEmail);
+            addIf('教育程度', c.education);
+            addIf('到職日', c.hireDate);
+            addIf('年資', c.seniority);
             addIf('對象別', c.category);
             addIf('個案/工作站', c.clientName);
             addIf('接案日', c.intakeDate);
@@ -2429,6 +2511,7 @@
                 addIf('職稱', c.clientTitle);
                 addIf('障礙類別', c.disability);
                 addIf('致障原因', c.disabilityCause);
+                addIf('個人特質', c.clientTraits);
                 addIf('個人障礙情形/工作內容', c.clientCondition);
                 addIf('實際工作地點', c.workLocation);
                 addIf('遭遇問題及期待改善事項', c.initialProblems);
@@ -2534,10 +2617,10 @@
             });
             const payload = {
                 contents: [{ role: "user", parts: [
-                    { text: "你是一個專業的資料擷取助理。請從這份職務再設計申請書中擷取資訊並回傳 JSON 格式。\n包含：\n- company: 申請單位名稱\n- name: 姓名\n- gender: 性別(男或女)\n- dob: 出生年月日，轉西元 YYYY-MM-DD\n- title: 職稱\n- location: 實際工作地點\n- disability: 障礙類別\n- cause: 致障原因\n- condition: 個人障礙情形或工作內容\n- problems: 遭遇問題及期待改善事項\n若無請填空字串。必須回傳純 JSON。" },
+                    { text: "你是一個專業的資料擷取助理。請從這份職務再設計申請書中擷取資訊並回傳 JSON 格式。\n包含：\n- company: 申請單位名稱\n- name: 姓名\n- gender: 性別(男或女)\n- dob: 出生年月日，轉西元 YYYY-MM-DD\n- title: 職稱\n- mobile: 個案聯繫手機\n- email: 個案聯繫email\n- education: 教育程度\n- hireDate: 到職日（若為民國年請保留原格式）\n- location: 實際工作地點\n- disability: 障礙類別\n- cause: 致障原因\n- traits: 個人特質\n- condition: 個人障礙情形或工作內容\n- problems: 遭遇問題及期待經由職務再設計改善事項\n若無請填空字串。必須回傳純 JSON。" },
                     { inlineData: { mimeType: file.type, data: base64Data } }
                 ]}],
-                generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { company: { type: "STRING" }, name: { type: "STRING" }, gender: { type: "STRING" }, dob: { type: "STRING" }, title: { type: "STRING" }, location: { type: "STRING" }, disability: { type: "STRING" }, cause: { type: "STRING" }, condition: { type: "STRING" }, problems: { type: "STRING" } } } }
+                generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { company: { type: "STRING" }, name: { type: "STRING" }, gender: { type: "STRING" }, dob: { type: "STRING" }, title: { type: "STRING" }, mobile: { type: "STRING" }, email: { type: "STRING" }, education: { type: "STRING" }, hireDate: { type: "STRING" }, location: { type: "STRING" }, disability: { type: "STRING" }, cause: { type: "STRING" }, traits: { type: "STRING" }, condition: { type: "STRING" }, problems: { type: "STRING" } } } }
             };
             const data = await fetchGeminiWithFallback(apiKey, payload);
             return JSON.parse(data.candidates[0].content.parts[0].text);
@@ -2558,10 +2641,18 @@
                 if(result.gender) { const select = document.getElementById('form-client-gender'); if([...select.options].some(o => o.value === result.gender)) select.value = result.gender; }
                 if(result.dob) { document.getElementById('form-client-dob').value = result.dob; updateAge(); }
                 if(result.title) document.getElementById('form-client-title').value = result.title;
+                if(result.mobile) document.getElementById('form-client-mobile').value = result.mobile;
+                if(result.email) document.getElementById('form-client-email').value = result.email;
+                if(result.education) document.getElementById('form-education').value = result.education;
+                if(result.hireDate) {
+                    document.getElementById('form-hire-date').value = normalizeHireDateInput(result.hireDate);
+                    updateSeniority();
+                }
                 if(result.location) document.getElementById('form-work-location').value = result.location;
                 autoAssignDistrictByLocation();
                 if(result.disability) document.getElementById('form-client-disability').value = result.disability;
                 if(result.cause) document.getElementById('form-client-cause').value = result.cause;
+                if(result.traits) document.getElementById('form-client-traits').value = result.traits;
                 if(result.condition) document.getElementById('form-client-condition').value = result.condition;
                 if(result.problems) document.getElementById('form-initial-problems').value = result.problems;
                 const radio = document.querySelector('input[name="form-category"][value="身心障礙者"]');
@@ -2576,6 +2667,7 @@
             DOM.form.reset(); document.getElementById('form-id').value = ''; document.getElementById('form-visit-date').valueAsDate = new Date();
             const ownerSel = document.getElementById('form-owner'); if (ownerSel) ownerSel.value = PRIMARY_OWNER;
             renderDistrictOptions();
+            updateSeniority();
             multiClients = []; document.getElementById('group-single-client').classList.remove('hidden'); document.getElementById('group-multi-client').classList.add('hidden');
             toggleRecoveryBanner(false);
             renderCommitteeCheckboxes(); showView('form', '新增訪視案件', false); triggerAutoResize();
@@ -2590,7 +2682,23 @@
             let owner = (document.getElementById('form-owner')?.value || PRIMARY_OWNER).trim();
             const districtOwner = getDistrictOwnerByName(district);
             if (districtOwner) owner = districtOwner;
-            const data = { category, owner, district, company: document.getElementById('form-company').value, phone: document.getElementById('form-phone').value, intakeDate: document.getElementById('form-intake-date').value, visitDate: document.getElementById('form-visit-date').value, visitors: visitors, updatedAt: serverTimestamp() };
+            const hireDateNormalized = normalizeHireDateInput(document.getElementById('form-hire-date')?.value || '');
+            const data = {
+                category,
+                owner,
+                district,
+                company: document.getElementById('form-company').value,
+                phone: document.getElementById('form-phone').value,
+                clientMobile: document.getElementById('form-client-mobile')?.value || '',
+                clientEmail: document.getElementById('form-client-email')?.value || '',
+                education: document.getElementById('form-education')?.value || '',
+                hireDate: hireDateNormalized,
+                seniority: document.getElementById('form-seniority')?.value || '',
+                intakeDate: document.getElementById('form-intake-date').value,
+                visitDate: document.getElementById('form-visit-date').value,
+                visitors: visitors,
+                updatedAt: serverTimestamp()
+            };
 
             if(category === '中高齡及高齡者') {
                 data.clients = multiClients.filter(c => c.name.trim() !== ''); data.clientName = data.clients.length > 0 ? `${data.clients[0].name} 等 ${data.clients.length} 人` : '未命名工作站';
@@ -2598,7 +2706,8 @@
                 data.clientName = document.getElementById('form-client-name').value; data.clientGender = document.getElementById('form-client-gender').value;
                 data.clientDob = document.getElementById('form-client-dob').value; data.clientAge = document.getElementById('form-client-age').value;
                 data.clientTitle = document.getElementById('form-client-title').value; data.disability = document.getElementById('form-client-disability').value;
-                data.disabilityCause = document.getElementById('form-client-cause').value; data.clientCondition = document.getElementById('form-client-condition').value;
+                data.disabilityCause = document.getElementById('form-client-cause').value; data.clientTraits = document.getElementById('form-client-traits').value;
+                data.clientCondition = document.getElementById('form-client-condition').value;
                 data.workLocation = document.getElementById('form-work-location').value; data.initialProblems = document.getElementById('form-initial-problems').value; data.clients = [];
             }
             const casesRef = collection(db, 'users', currentUser.uid, 'cases');
