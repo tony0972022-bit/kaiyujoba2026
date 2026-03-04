@@ -460,6 +460,9 @@
                     <button class="ws-tab-btn flex items-center p-3 rounded-xl text-slate-600 hover:bg-white font-bold border border-transparent hover:border-slate-200 transition-colors" data-target="tab-assess">
                         <i class="fa-solid fa-clipboard-check w-6 text-center"></i> 客觀與檢核
                     </button>
+                    <button class="ws-tab-btn flex items-center p-3 rounded-xl text-slate-600 hover:bg-white font-bold border border-transparent hover:border-slate-200 transition-colors" data-target="tab-hearing">
+                        <i class="fa-solid fa-ear-listen w-6 text-center"></i> 聽力案檢核
+                    </button>
                 </div>
 
                 <!-- 3. 雲端文件與檔案 (常駐左下角) -->
@@ -778,6 +781,126 @@
                             <i class="fa-solid fa-check-double mr-2"></i>儲存檢核與數據
                         </button>
                     </div>
+                </div>
+
+                <!-- 頁籤 2-2: 聽力案檢核 -->
+                <div id="tab-hearing" class="ws-tab-content hidden max-w-4xl mx-auto w-full space-y-6">
+                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-xl text-slate-700 border-b pb-4 mb-5"><i class="fa-solid fa-comments text-blue-500 mr-2"></i>區塊一：聽力訪談問卷</h3>
+
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-base font-bold text-slate-700 mb-2">您目前是否戴過助聽器？</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <label class="p-3 border rounded-lg"><input type="radio" name="hearing-aid-status" value="是-目前已配戴助聽器" class="mr-2">是 目前已配戴助聽器</label>
+                                    <label class="p-3 border rounded-lg"><input type="radio" name="hearing-aid-status" value="是-已有一段時間沒配戴" class="mr-2">是 但已有一段時間沒配戴</label>
+                                    <label class="p-3 border rounded-lg"><input type="radio" name="hearing-aid-status" value="否-從未配戴過助聽器" class="mr-2">否 從未配戴過助聽器</label>
+                                    <label class="p-3 border rounded-lg"><input type="radio" name="hearing-aid-status" value="否-有先去試用過助聽器" class="mr-2">否 但有先去試用過助聽器</label>
+                                </div>
+                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">先想了解您過去跟助聽器的使用經驗，這會影響後續我幫您評估職場上最合適的調整方式。</p></details>
+                            </div>
+
+                            <div>
+                                <label class="block text-base font-bold text-slate-700 mb-2">聽損原因</label>
+                                <textarea id="hearing-loss-cause" rows="2" class="w-full p-3 border rounded-lg" placeholder="例：發現聽損年齡、疾病導致聽損"></textarea>
+                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">您大概是什麼時候開始發現聽力變化？醫師有沒有提到比較可能的原因？</p></details>
+                            </div>
+
+                            <div>
+                                <label class="block text-base font-bold text-slate-700 mb-2">目前聽力狀況</label>
+                                <textarea id="hearing-current-status" rows="2" class="w-full p-3 border rounded-lg" placeholder="例：近期聽力加重"></textarea>
+                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">最近三到六個月，您覺得聽力有沒有變化？在什麼情境最容易聽不清楚？</p></details>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-base font-bold text-slate-700 mb-2">使用助聽器經驗約幾年？</label>
+                                    <input id="hearing-aid-years" type="text" class="w-full p-3 border rounded-lg" placeholder="例如：3年、半年">
+                                    <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">如果含中間停戴的時間，大約累積使用多久？目前每天大概戴幾小時？</p></details>
+                                </div>
+                                <div>
+                                    <label class="block text-base font-bold text-slate-700 mb-2">目前配戴助聽器的品牌與型號</label>
+                                    <input id="hearing-brand-model" type="text" class="w-full p-3 border rounded-lg" placeholder="品牌 / 型號">
+                                    <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">方便的話請提供品牌和型號，之後才能更精準評估是否需要調整或升級。</p></details>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-base font-bold text-slate-700 mb-2">目前配戴的助聽器型式</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-type" value="耳掛型(BTE/RITE/RIC)">耳掛型【含 BTE/RITE/RIC】</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-type" value="訂製型(ITE/ITC/CIC)">訂製型【含 ITE/ITC/CIC】</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-type" value="CROS/BiCROS收音麥克風">CROS/BiCROS 收音麥克風</label>
+                                </div>
+                                <input id="hearing-aid-type-other" type="text" class="w-full mt-2 p-3 border rounded-lg" placeholder="其他型式">
+                                <div class="mt-2 text-xs text-slate-600 bg-slate-50 border rounded-lg p-3">型式示意：耳掛型（機身在耳後）｜訂製型（機身在耳道內）｜CROS/BiCROS（單側收音跨耳傳輸）</div>
+                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">您目前是耳掛式、耳內式，還是跨耳收音型？平常是單耳還是雙耳使用？</p></details>
+                            </div>
+
+                            <div>
+                                <label class="block text-base font-bold text-slate-700 mb-2">目前配戴的助聽器狀況（可複選）</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="已使用多年">已使用多年</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="損壞">損壞</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="損壞故障">損壞故障</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="聆聽狀況不穩定">聆聽狀況不穩定</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="音量太小不符職場使用">音量太小不符職場使用</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="有雜音">有雜音</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="有回音">有回音</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="聲音不自然">聲音不自然</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="兩耳助聽器聲音不平均">兩耳助聽器聲音不平均</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="音量太大">音量太大</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="其他">其他</label>
+                                </div>
+                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">目前最困擾的狀況是什麼？這些狀況最常在工作哪個時間點或地點出現？</p></details>
+                            </div>
+
+                            <div>
+                                <label class="block text-base font-bold text-slate-700 mb-2">工作職場聆聽需求（可複選）</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="面對面溝通(安靜環境)">面對面溝通(安靜環境)</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="面對面溝通(吵雜環境)">面對面溝通(吵雜環境)</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="線上會議">線上會議</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="主持會議">主持會議</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="參與會議">參與會議</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="駕駛交通工具">駕駛交通工具</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="聆聽機器運作聲音">聆聽機器運作聲音</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="使用市內電話溝通">使用市內電話溝通</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="手機聆聽溝通(含LINE通話)">手機聆聽溝通(含LINE通話)</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="本身為主管需管理下屬">本身為主管需管理下屬</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="使用手持對講機溝通">使用手持對講機溝通</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="聆聽周遭環境聲音">聆聽周遭環境聲音</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="內部教育訓練課程或職涯進修">內部教育訓練課程或職涯進修</label>
+                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="其他">其他</label>
+                                </div>
+                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">你一天工作流程中，最需要聽得準、回應快的前三個情境是哪些？</p></details>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="md:col-span-2">
+                                    <label class="block text-base font-bold text-slate-700 mb-2">溝通情境(一) 情境簡述說明</label>
+                                    <textarea id="hearing-scenario1-desc" rows="2" class="w-full p-3 border rounded-lg" placeholder="範例：主管、同事、客戶"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-base font-bold text-slate-700 mb-2">溝通情境(一) 溝通頻率</label>
+                                    <input id="hearing-scenario1-freq" type="text" class="w-full p-3 border rounded-lg" placeholder="範例：每周 人數約5~10人">
+                                </div>
+                            </div>
+                            <details class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">我們先挑一個你最常遇到、也最吃力的溝通場景，先把情境跟頻率釐清。</p></details>
+
+                            <div>
+                                <label class="block text-base font-bold text-slate-700 mb-2">在溝通情境(一)下，可聆聽字句完整程度（1~10分）</label>
+                                <div class="flex items-center gap-3">
+                                    <input id="hearing-scenario1-score" type="range" min="1" max="10" value="5" class="w-full accent-blue-600">
+                                    <span id="hearing-scenario1-score-val" class="w-8 text-center font-bold text-blue-700">5</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-1">1=完全沒辦法聽清楚；10=可以聽得很清楚</p>
+                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">如果10分是完全聽得清楚，你會給目前幾分？為什麼不是更高或更低？</p></details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="hearing-tab-table-slot" class="space-y-6"></div>
                 </div>
 
                 <!-- 頁籤 3: 評估撰寫 -->
@@ -2130,15 +2253,32 @@
                 if (window.calculateHearingScore) window.calculateHearingScore();
 
                 const hearingSection = document.getElementById('hearing-assessment-section');
-                // 防呆：強制轉為字串再做 includes 判斷，避免 Excel 匯入的資料是數字型態時報錯
-                const safeDisabilityStr = String(c.disability || '');
-                const isHearingDisabled = safeDisabilityStr.includes('聽') || safeDisabilityStr.includes('聾');
-                
-                if (isHearingDisabled || hearing.ind1 || hearing.ind2) {
-                    hearingSection.classList.remove('hidden');
-                } else {
-                    hearingSection.classList.add('hidden');
+                if (hearingSection) hearingSection.classList.remove('hidden');
+
+                document.querySelectorAll('input[name="hearing-aid-status"]').forEach(r => r.checked = false);
+                if (hearing.aidStatus) {
+                    const aidStatusRadio = document.querySelector(`input[name="hearing-aid-status"][value="${hearing.aidStatus}"]`);
+                    if (aidStatusRadio) aidStatusRadio.checked = true;
                 }
+                const setVal = (id, v = '') => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+                setVal('hearing-loss-cause', hearing.lossCause);
+                setVal('hearing-current-status', hearing.currentStatus);
+                setVal('hearing-aid-years', hearing.aidYears);
+                setVal('hearing-aid-type-other', hearing.aidTypeOther);
+                setVal('hearing-brand-model', hearing.brandModel);
+                setVal('hearing-scenario1-desc', hearing.scenario1Desc);
+                setVal('hearing-scenario1-freq', hearing.scenario1Freq);
+                setVal('hearing-scenario1-score', hearing.scenario1Score || '5');
+                const scoreVal = document.getElementById('hearing-scenario1-score-val');
+                if (scoreVal) scoreVal.textContent = String(hearing.scenario1Score || 5);
+
+                const toArr = (v) => Array.isArray(v) ? v : (v ? String(v).split('|').filter(Boolean) : []);
+                const aidTypes = toArr(hearing.aidTypes);
+                const aidIssues = toArr(hearing.aidIssues);
+                const workNeeds = toArr(hearing.workNeeds);
+                document.querySelectorAll('.hearing-aid-type').forEach(cb => cb.checked = aidTypes.includes(cb.value));
+                document.querySelectorAll('.hearing-aid-issue').forEach(cb => cb.checked = aidIssues.includes(cb.value));
+                document.querySelectorAll('.hearing-work-need').forEach(cb => cb.checked = workNeeds.includes(cb.value));
 
                 pendingPhotosQueue = [];
                 renderPendingPhotos();
@@ -2270,7 +2410,19 @@
                     },
                     hearing: {
                         ind1: document.querySelector('input[name="hearing-ind-1"]:checked')?.value || '',
-                        ind2: document.querySelector('input[name="hearing-ind-2"]:checked')?.value || ''
+                        ind2: document.querySelector('input[name="hearing-ind-2"]:checked')?.value || '',
+                        aidStatus: document.querySelector('input[name="hearing-aid-status"]:checked')?.value || '',
+                        lossCause: document.getElementById('hearing-loss-cause')?.value || '',
+                        currentStatus: document.getElementById('hearing-current-status')?.value || '',
+                        aidYears: document.getElementById('hearing-aid-years')?.value || '',
+                        aidTypes: Array.from(document.querySelectorAll('.hearing-aid-type:checked')).map(el => el.value),
+                        aidTypeOther: document.getElementById('hearing-aid-type-other')?.value || '',
+                        brandModel: document.getElementById('hearing-brand-model')?.value || '',
+                        aidIssues: Array.from(document.querySelectorAll('.hearing-aid-issue:checked')).map(el => el.value),
+                        workNeeds: Array.from(document.querySelectorAll('.hearing-work-need:checked')).map(el => el.value),
+                        scenario1Desc: document.getElementById('hearing-scenario1-desc')?.value || '',
+                        scenario1Freq: document.getElementById('hearing-scenario1-freq')?.value || '',
+                        scenario1Score: document.getElementById('hearing-scenario1-score')?.value || '5'
                     },
                     checklist: {}, 
                     updatedAt: serverTimestamp()
@@ -3674,9 +3826,21 @@ ${rawDraft}
         let drawColor = '#0f172a'; let drawSize = 3; let isEraser = false;
 
         // 聽覺需求評估表相關函式
-        document.getElementById('btn-toggle-hearing').addEventListener('click', () => {
-            document.getElementById('hearing-assessment-section').classList.toggle('hidden');
-        });
+        (() => {
+            const assessSection = document.getElementById('tab-assess');
+            const hearingSection = document.getElementById('hearing-assessment-section');
+            const hearingSlot = document.getElementById('hearing-tab-table-slot');
+            const toggleBtn = document.getElementById('btn-toggle-hearing');
+            if (toggleBtn) toggleBtn.remove();
+            if (hearingSection && hearingSlot) hearingSlot.appendChild(hearingSection);
+            if (assessSection) {
+                const desc = assessSection.querySelector('.bg-white .flex.justify-between.items-center.border-b.pb-4.mb-5');
+                if (desc) {
+                    const title = desc.querySelector('h3');
+                    if (title) title.textContent = '現場環境與能力檢核';
+                }
+            }
+        })();
 
         window.calculateHearingScore = () => {
             const ind1 = document.querySelector('input[name="hearing-ind-1"]:checked');
@@ -3716,6 +3880,11 @@ ${rawDraft}
 
         document.querySelectorAll('input[name="hearing-ind-1"], input[name="hearing-ind-2"]').forEach(radio => {
             radio.addEventListener('change', window.calculateHearingScore);
+        });
+        document.getElementById('hearing-scenario1-score')?.addEventListener('input', (e) => {
+            const v = e.target.value || '5';
+            const show = document.getElementById('hearing-scenario1-score-val');
+            if (show) show.textContent = String(v);
         });
 
         function initCanvasSize() {
