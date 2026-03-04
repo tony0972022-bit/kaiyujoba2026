@@ -270,41 +270,99 @@
                         </div>
                     </div>
 
+                    <div class="bg-emerald-50 p-4 md:p-5 rounded-xl border border-emerald-100 space-y-4">
+                        <h3 class="text-base font-bold text-emerald-800 border-b border-emerald-200 pb-2">區塊一：申請單位資料表</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">申請單位名稱 *</label>
+                                <input type="text" id="form-company" required class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">單位電話</label>
+                                <input type="tel" id="form-phone" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">聯絡人姓名/職稱</label>
+                                <input type="text" id="form-contact-name-title" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">聯絡人電話</label>
+                                <input type="text" id="form-contact-phone" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">聯絡人郵件</label>
+                                <input type="email" id="form-contact-email" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">行業別</label>
+                                <input type="text" id="form-industry" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">員工總數</label>
+                                <input type="number" id="form-employee-total" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">身心障礙員工人數</label>
+                                <input type="number" id="form-employee-disabled" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">中高齡者員工人數</label>
+                                <input type="number" id="form-employee-middleaged" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">高齡員工人數</label>
+                                <input type="number" id="form-employee-senior" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">申請協助人數</label>
+                                <input type="number" id="form-apply-count" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-4 md:p-5 rounded-xl border border-blue-100 space-y-4">
+                        <h3 class="text-base font-bold text-blue-800 border-b border-blue-200 pb-2">區塊二：個案主要身分</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">個案主要身分</label>
+                                <input type="text" id="form-main-identity" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                            <div>
+                                <label class="block text-base font-medium text-slate-600 mb-1">服務單位/部門</label>
+                                <input type="text" id="form-service-unit" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
-                            <label class="block text-base font-medium text-slate-600 mb-1">申請單位 *</label>
-                            <input type="text" id="form-company" required class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            <label class="block text-base font-medium text-slate-600 mb-1">主責人 *</label>
+                            <select id="form-owner" required class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg bg-white">
+                                <option value="凱宇">凱宇</option>
+                                <option value="黃國裕">黃國裕</option>
+                                <option value="高湘怡">高湘怡</option>
+                                <option value="方姿云">方姿云</option>
+                                <option value="陳秋媚">陳秋媚</option>
+                                <option value="盧怡倫">盧怡倫</option>
+                                <option value="蔡凱宇">蔡凱宇</option>
+                            </select>
                         </div>
                         <div>
-                            <label class="block text-base font-medium text-slate-600 mb-1">聯絡電話</label>
-                            <input type="tel" id="form-phone" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                            <label class="block text-base font-medium text-slate-600 mb-1">轄區</label>
+                            <select id="form-district" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-cyan-500 text-base md:text-lg bg-white">
+                                <option value="">請選擇轄區</option>
+                            </select>
                         </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-base font-medium text-slate-600 mb-1">主責人 *</label>
-                        <select id="form-owner" required class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg bg-white">
-                            <option value="凱宇">凱宇</option>
-                            <option value="黃國裕">黃國裕</option>
-                            <option value="高湘怡">高湘怡</option>
-                            <option value="方姿云">方姿云</option>
-                            <option value="陳秋媚">陳秋媚</option>
-                            <option value="盧怡倫">盧怡倫</option>
-                            <option value="蔡凱宇">蔡凱宇</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-base font-medium text-slate-600 mb-1">轄區</label>
-                        <select id="form-district" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-cyan-500 text-base md:text-lg bg-white">
-                            <option value="">請選擇轄區</option>
-                        </select>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div>
                             <label class="block text-base font-medium text-slate-600 mb-1">個案聯繫手機</label>
                             <input type="text" id="form-client-mobile" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
+                        </div>
+                        <div>
+                            <label class="block text-base font-medium text-slate-600 mb-1">個案聯繫電話</label>
+                            <input type="text" id="form-client-telephone" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
                         </div>
                         <div>
                             <label class="block text-base font-medium text-slate-600 mb-1">個案聯繫 Email</label>
@@ -359,9 +417,13 @@
                                 <label class="block text-sm font-medium text-slate-600 mb-1">致障原因</label>
                                 <input type="text" id="form-client-cause" placeholder="如:先天/職災" class="w-full p-3 rounded-lg border border-slate-200 text-base">
                             </div>
+                            <div class="col-span-1 sm:col-span-2">
+                                <label class="block text-sm font-medium text-slate-600 mb-1">聽力鑑定結果</label>
+                                <input type="text" id="form-hearing-result" class="w-full p-3 rounded-lg border border-slate-200 text-base" placeholder="如無可留空">
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-slate-600 mb-1">個人特質</label>
+                            <label class="block text-sm font-medium text-slate-600 mb-1">個人特質及工作/訓練內容</label>
                             <textarea id="form-client-traits" rows="3" class="auto-resize w-full p-3 rounded-lg border border-slate-200 text-base" placeholder="描述個案個人特質..."></textarea>
                         </div>
                         <div>
@@ -2177,7 +2239,19 @@
 
             document.getElementById('form-company').value = c.company || '';
             document.getElementById('form-phone').value = c.phone || '';
+            document.getElementById('form-contact-name-title').value = c.contactNameTitle || '';
+            document.getElementById('form-contact-phone').value = c.contactPhone || '';
+            document.getElementById('form-contact-email').value = c.contactEmail || '';
+            document.getElementById('form-industry').value = c.industry || '';
+            document.getElementById('form-employee-total').value = c.employeeTotal || '';
+            document.getElementById('form-employee-disabled').value = c.employeeDisabled || '';
+            document.getElementById('form-employee-middleaged').value = c.employeeMiddleaged || '';
+            document.getElementById('form-employee-senior').value = c.employeeSenior || '';
+            document.getElementById('form-apply-count').value = c.applyCount || '';
+            document.getElementById('form-main-identity').value = c.mainIdentity || '';
+            document.getElementById('form-service-unit').value = c.serviceUnit || '';
             document.getElementById('form-client-mobile').value = c.clientMobile || '';
+            document.getElementById('form-client-telephone').value = c.clientTelephone || '';
             document.getElementById('form-client-email').value = c.clientEmail || '';
             document.getElementById('form-education').value = c.education || '';
             document.getElementById('form-hire-date').value = c.hireDate || '';
@@ -2199,6 +2273,7 @@
                 document.getElementById('form-client-title').value = c.clientTitle || c.jobTitle || '';
                 document.getElementById('form-client-disability').value = c.disability || '';
                 document.getElementById('form-client-cause').value = c.disabilityCause || '';
+                document.getElementById('form-hearing-result').value = c.hearingResult || '';
                 document.getElementById('form-client-traits').value = c.clientTraits || '';
                 document.getElementById('form-client-condition').value = c.clientCondition || '';
                 document.getElementById('form-work-location').value = c.workLocation || '';
@@ -2494,42 +2569,62 @@
                 lines.push(`${label}：${v}`);
             };
 
-            addSection('個案基本資料');
+            addSection('區塊一：申請單位資料表');
             addIf('主責人', getCaseOwner(c));
             addIf('轄區', c.district);
-            addIf('申請單位', c.company);
-            addIf('聯絡電話', c.phone);
-            addIf('個案聯繫手機', c.clientMobile);
-            addIf('個案聯繫Email', c.clientEmail);
-            addIf('教育程度', c.education);
+            addIf('申請單位名稱', c.company);
+            addIf('單位電話', c.phone);
+            addIf('聯絡人姓名/職稱', c.contactNameTitle);
+            addIf('聯絡人電話', c.contactPhone);
+            addIf('聯絡人郵件', c.contactEmail);
+            addIf('行業別', c.industry);
+            addIf('員工總數', c.employeeTotal);
+            addIf('身心障礙員工人數', c.employeeDisabled);
+            addIf('中高齡者員工人數', c.employeeMiddleaged);
+            addIf('高齡員工人數', c.employeeSenior);
+            addIf('申請協助人數', c.applyCount);
+
+            addSection('區塊二：個案主要身分');
+            addIf('個案主要身分', c.mainIdentity);
+            addIf('個案姓名', c.clientName);
+            addIf('性別', c.clientGender);
+            addIf('年齡', c.clientAge ? `${c.clientAge}歲` : '');
+            addIf('服務單位/部門', c.serviceUnit);
+            addIf('職稱', c.clientTitle);
+            const clientContactArr = [c.clientMobile, c.clientTelephone, c.clientEmail].map(x => (x || '').toString().trim()).filter(Boolean);
+            if (clientContactArr.length > 0) {
+                addIf('個案聯繫方式', clientContactArr.join(' / '));
+            } else {
+                const fallbackArr = [c.contactNameTitle, c.contactPhone, c.contactEmail].map(x => (x || '').toString().trim()).filter(Boolean);
+                addIf('個案聯繫方式', fallbackArr.join(' / '));
+            }
             addIf('到職日', c.hireDate);
             addIf('年資', c.seniority);
+            addIf('教育程度', c.education);
+            addIf('障礙類別', c.disability);
+            addIf('致障原因', c.disabilityCause);
+            addIf('聽力鑑定結果', c.hearingResult);
+            addIf('個人特質及工作/訓練內容', c.clientTraits);
+            addIf('遭遇問題及期待經由職務再設計改善事項', c.initialProblems);
+
+            addSection('案件追蹤資訊');
             addIf('對象別', c.category);
-            addIf('個案/工作站', c.clientName);
             addIf('接案日', c.intakeDate);
             addIf('初訪日', c.visitDate || c.date);
             addIf('訪視委員', c.visitors);
             addIf('完成報告', c.reportCompleted ? '是' : '');
             addIf('完成時間', c.reportCompletedAt);
 
-            addSection('個案詳細資料');
+            addSection('個案詳細補充');
             if (Array.isArray(c.clients) && c.clients.length > 0) {
                 c.clients.forEach((mc, idx) => {
                     const row = [mc.name, mc.age ? `${mc.age}歲` : '', mc.title].filter(Boolean).join(' / ');
                     addIf(`工作站個案${idx + 1}`, row);
                 });
             } else {
-                addIf('姓名', c.clientName);
-                addIf('性別', c.clientGender);
-                addIf('年齡', c.clientAge ? `${c.clientAge}歲` : '');
                 addIf('出生年月日', c.clientDob);
-                addIf('職稱', c.clientTitle);
-                addIf('障礙類別', c.disability);
-                addIf('致障原因', c.disabilityCause);
-                addIf('個人特質', c.clientTraits);
                 addIf('個人障礙情形/工作內容', c.clientCondition);
                 addIf('實際工作地點', c.workLocation);
-                addIf('遭遇問題及期待改善事項', c.initialProblems);
             }
 
             addSection('評估撰寫');
@@ -2632,10 +2727,10 @@
             });
             const payload = {
                 contents: [{ role: "user", parts: [
-                    { text: "你是一個專業的資料擷取助理。請從這份職務再設計申請書中擷取資訊並回傳 JSON 格式。\n包含：\n- company: 申請單位名稱\n- name: 姓名\n- gender: 性別(男或女)\n- dob: 出生年月日，轉西元 YYYY-MM-DD\n- title: 職稱\n- mobile: 個案聯繫手機\n- email: 個案聯繫email\n- education: 教育程度\n- hireDate: 到職日（若為民國年請保留原格式）\n- location: 實際工作地點\n- disability: 障礙類別\n- cause: 致障原因\n- traits: 個人特質\n- condition: 個人障礙情形或工作內容\n- problems: 遭遇問題及期待經由職務再設計改善事項\n若無請填空字串。必須回傳純 JSON。" },
+                    { text: "你是一個專業的資料擷取助理。請從這份職務再設計申請書中擷取資訊並回傳 JSON 格式。\n包含：\n- company: 申請單位名稱\n- unitPhone: 單位電話\n- contactNameTitle: 聯絡人姓名/職稱\n- contactPhone: 聯絡人電話\n- contactEmail: 聯絡人郵件\n- industry: 行業別\n- employeeTotal: 員工總數\n- employeeDisabled: 身心障礙員工人數\n- employeeMiddleaged: 中高齡者員工人數\n- employeeSenior: 高齡員工人數\n- applyCount: 申請協助人數\n- mainIdentity: 個案主要身分\n- name: 個案姓名\n- gender: 性別(男或女)\n- dob: 出生年月日，轉西元 YYYY-MM-DD\n- serviceUnit: 服務單位/部門\n- title: 職稱\n- mobile: 個案聯繫手機\n- telephone: 個案聯繫電話\n- email: 個案聯繫email\n- hireDate: 到職日（若為民國年請保留原格式）\n- education: 教育程度\n- location: 實際工作地點\n- disability: 障礙類別\n- cause: 致障原因\n- hearingResult: 聽力鑑定結果\n- traits: 個人特質及工作/訓練內容\n- condition: 個人障礙情形或工作內容\n- problems: 遭遇問題及期待經由職務再設計改善事項\n若無請填空字串。必須回傳純 JSON。" },
                     { inlineData: { mimeType: file.type, data: base64Data } }
                 ]}],
-                generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { company: { type: "STRING" }, name: { type: "STRING" }, gender: { type: "STRING" }, dob: { type: "STRING" }, title: { type: "STRING" }, mobile: { type: "STRING" }, email: { type: "STRING" }, education: { type: "STRING" }, hireDate: { type: "STRING" }, location: { type: "STRING" }, disability: { type: "STRING" }, cause: { type: "STRING" }, traits: { type: "STRING" }, condition: { type: "STRING" }, problems: { type: "STRING" } } } }
+                generationConfig: { responseMimeType: "application/json", responseSchema: { type: "OBJECT", properties: { company: { type: "STRING" }, unitPhone: { type: "STRING" }, contactNameTitle: { type: "STRING" }, contactPhone: { type: "STRING" }, contactEmail: { type: "STRING" }, industry: { type: "STRING" }, employeeTotal: { type: "STRING" }, employeeDisabled: { type: "STRING" }, employeeMiddleaged: { type: "STRING" }, employeeSenior: { type: "STRING" }, applyCount: { type: "STRING" }, mainIdentity: { type: "STRING" }, name: { type: "STRING" }, gender: { type: "STRING" }, dob: { type: "STRING" }, serviceUnit: { type: "STRING" }, title: { type: "STRING" }, mobile: { type: "STRING" }, telephone: { type: "STRING" }, email: { type: "STRING" }, education: { type: "STRING" }, hireDate: { type: "STRING" }, location: { type: "STRING" }, disability: { type: "STRING" }, cause: { type: "STRING" }, hearingResult: { type: "STRING" }, traits: { type: "STRING" }, condition: { type: "STRING" }, problems: { type: "STRING" } } } }
             };
             const data = await fetchGeminiWithFallback(apiKey, payload);
             return JSON.parse(data.candidates[0].content.parts[0].text);
@@ -2652,11 +2747,24 @@
             try {
                 const result = await analyzeDocumentWithAI(file);
                 if(result.company) document.getElementById('form-company').value = result.company;
+                if(result.unitPhone) document.getElementById('form-phone').value = result.unitPhone;
+                if(result.contactNameTitle) document.getElementById('form-contact-name-title').value = result.contactNameTitle;
+                if(result.contactPhone) document.getElementById('form-contact-phone').value = result.contactPhone;
+                if(result.contactEmail) document.getElementById('form-contact-email').value = result.contactEmail;
+                if(result.industry) document.getElementById('form-industry').value = result.industry;
+                if(result.employeeTotal) document.getElementById('form-employee-total').value = result.employeeTotal;
+                if(result.employeeDisabled) document.getElementById('form-employee-disabled').value = result.employeeDisabled;
+                if(result.employeeMiddleaged) document.getElementById('form-employee-middleaged').value = result.employeeMiddleaged;
+                if(result.employeeSenior) document.getElementById('form-employee-senior').value = result.employeeSenior;
+                if(result.applyCount) document.getElementById('form-apply-count').value = result.applyCount;
+                if(result.mainIdentity) document.getElementById('form-main-identity').value = result.mainIdentity;
                 if(result.name) document.getElementById('form-client-name').value = result.name;
                 if(result.gender) { const select = document.getElementById('form-client-gender'); if([...select.options].some(o => o.value === result.gender)) select.value = result.gender; }
                 if(result.dob) { document.getElementById('form-client-dob').value = result.dob; updateAge(); }
+                if(result.serviceUnit) document.getElementById('form-service-unit').value = result.serviceUnit;
                 if(result.title) document.getElementById('form-client-title').value = result.title;
                 if(result.mobile) document.getElementById('form-client-mobile').value = result.mobile;
+                if(result.telephone) document.getElementById('form-client-telephone').value = result.telephone;
                 if(result.email) document.getElementById('form-client-email').value = result.email;
                 if(result.education) document.getElementById('form-education').value = result.education;
                 if(result.hireDate) {
@@ -2667,6 +2775,7 @@
                 autoAssignDistrictByLocation();
                 if(result.disability) document.getElementById('form-client-disability').value = result.disability;
                 if(result.cause) document.getElementById('form-client-cause').value = result.cause;
+                if(result.hearingResult) document.getElementById('form-hearing-result').value = result.hearingResult;
                 if(result.traits) document.getElementById('form-client-traits').value = result.traits;
                 if(result.condition) document.getElementById('form-client-condition').value = result.condition;
                 if(result.problems) document.getElementById('form-initial-problems').value = result.problems;
@@ -2704,7 +2813,19 @@
                 district,
                 company: document.getElementById('form-company').value,
                 phone: document.getElementById('form-phone').value,
+                contactNameTitle: document.getElementById('form-contact-name-title')?.value || '',
+                contactPhone: document.getElementById('form-contact-phone')?.value || '',
+                contactEmail: document.getElementById('form-contact-email')?.value || '',
+                industry: document.getElementById('form-industry')?.value || '',
+                employeeTotal: document.getElementById('form-employee-total')?.value || '',
+                employeeDisabled: document.getElementById('form-employee-disabled')?.value || '',
+                employeeMiddleaged: document.getElementById('form-employee-middleaged')?.value || '',
+                employeeSenior: document.getElementById('form-employee-senior')?.value || '',
+                applyCount: document.getElementById('form-apply-count')?.value || '',
+                mainIdentity: document.getElementById('form-main-identity')?.value || '',
+                serviceUnit: document.getElementById('form-service-unit')?.value || '',
                 clientMobile: document.getElementById('form-client-mobile')?.value || '',
+                clientTelephone: document.getElementById('form-client-telephone')?.value || '',
                 clientEmail: document.getElementById('form-client-email')?.value || '',
                 education: document.getElementById('form-education')?.value || '',
                 hireDate: hireDateNormalized,
@@ -2722,6 +2843,7 @@
                 data.clientDob = document.getElementById('form-client-dob').value; data.clientAge = document.getElementById('form-client-age').value;
                 data.clientTitle = document.getElementById('form-client-title').value; data.disability = document.getElementById('form-client-disability').value;
                 data.disabilityCause = document.getElementById('form-client-cause').value; data.clientTraits = document.getElementById('form-client-traits').value;
+                data.hearingResult = document.getElementById('form-hearing-result').value;
                 data.clientCondition = document.getElementById('form-client-condition').value;
                 data.workLocation = document.getElementById('form-work-location').value; data.initialProblems = document.getElementById('form-initial-problems').value; data.clients = [];
             }
