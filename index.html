@@ -231,6 +231,20 @@
                     </div>
                     <ul id="setting-committee-list" class="space-y-2 md:text-lg"></ul>
                 </div>
+
+                <div class="mb-6">
+                    <h3 class="font-bold text-lg text-cyan-800 mb-2">轄區設定</h3>
+                    <p class="text-sm text-slate-500 mb-3">可在此維護轄區、關鍵字與承辦人。新增案件會依工作地點關鍵字自動判斷轄區並帶入承辦人。</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+                        <input type="text" id="setting-district-name" placeholder="轄區名稱（例：北區）" class="p-3 border border-slate-200 rounded-lg text-base">
+                        <input type="text" id="setting-district-keywords" placeholder="關鍵字（逗號分隔）" class="p-3 border border-slate-200 rounded-lg text-base">
+                        <select id="setting-district-owner" class="p-3 border border-slate-200 rounded-lg text-base bg-white"></select>
+                    </div>
+                    <button id="btn-add-district" class="w-full bg-cyan-600 text-white px-4 py-3 rounded-lg font-bold hover:bg-cyan-700 shadow mb-3">
+                        <i class="fa-solid fa-plus mr-1"></i> 新增轄區規則
+                    </button>
+                    <ul id="setting-district-list" class="space-y-2 md:text-lg"></ul>
+                </div>
             </div>
 
             <!-- ================= 視圖 3: 新增/編輯案件表單 ================= -->
@@ -281,6 +295,13 @@
                             <option value="陳秋媚">陳秋媚</option>
                             <option value="盧怡倫">盧怡倫</option>
                             <option value="蔡凱宇">蔡凱宇</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-base font-medium text-slate-600 mb-1">轄區</label>
+                        <select id="form-district" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-cyan-500 text-base md:text-lg bg-white">
+                            <option value="">請選擇轄區</option>
                         </select>
                     </div>
 
@@ -408,16 +429,6 @@
                     </button>
                     <button class="ws-tab-btn flex items-center p-3 rounded-xl text-slate-600 hover:bg-white font-bold border border-transparent hover:border-slate-200 transition-colors" data-target="tab-assess">
                         <i class="fa-solid fa-clipboard-check w-6 text-center"></i> 客觀與檢核
-                    </button>
-                    <button class="ws-tab-btn flex items-center p-3 rounded-xl text-slate-600 hover:bg-white font-bold border border-transparent hover:border-slate-200 transition-colors" data-target="tab-text">
-                        <i class="fa-solid fa-pen-to-square w-6 text-center"></i> 評估撰寫
-                    </button>
-                    <button class="ws-tab-btn flex items-center p-3 rounded-xl text-slate-600 hover:bg-white font-bold border border-transparent hover:border-slate-200 transition-colors" data-target="tab-outcome">
-                        <i class="fa-solid fa-flag-checkered w-6 text-center"></i> 成果報告
-                    </button>
-                    <!-- 🌟 新增：產生正式報告按鈕 -->
-                    <button onclick="window.openReportModal()" class="mt-2 flex items-center justify-center p-3 rounded-xl bg-slate-800 text-white hover:bg-slate-700 font-bold shadow-md transition-colors">
-                        <i class="fa-solid fa-file-word mr-2 text-xl"></i> 產生正式評估報告
                     </button>
                 </div>
 
@@ -949,8 +960,9 @@
         // 主責人 (案件篩選/統計設定)
         // ==========================================
         const PRIMARY_OWNER = '凱宇';
+        const PRIMARY_OWNER_ALIASES = ['凱宇', '蔡凱宇'];
         const RESPONSIBLE_OPTIONS = ['凱宇','黃國裕','高湘怡','方姿云','陳秋媚','盧怡倫','蔡凱宇'];
-        let showOtherOwnersInList = false; // 案件列表：預設只顯示主責凱宇
+        let showOtherOwnersInList = false; // 案件列表：預設只顯示主責凱宇/蔡凱宇
         let cachedDeadlineItems = []; // 儀表板期限提醒清單快取
 
         
@@ -960,6 +972,9 @@
             gasUrl: 'https://script.google.com/macros/s/AKfycbxelfY8BWyg2ZWeO4UbnenSH8eLS20qojH5N-tvZgvj_fcgoLL-MJosD53NIdo03qPdFw/exec',
             geminiApiKey: 'AIzaSyDcr3EH_yPAd9kQO1Qi00d2q8QUP9YGnd8',
             aiPromptStyle: '請用專業、客觀且具同理心的口吻，將以下草稿潤飾成正式的職務再設計評估報告段落。請修正錯字並讓語句通順，不需加入額外的引言或結語，直接給出潤飾後的純文字內容即可。',
+            districts: [
+                { name: '未分區', keywords: [], owner: '凱宇' }
+            ],
             checklists: {
                 "中高齡/人因工程": [
                     "頻繁彎腰或過度伸展手臂作業？",
@@ -1004,6 +1019,23 @@
         // 小工具：主責人/工作天/檔名安全
         // ==========================================
         const getCaseOwner = (c) => (c && c.owner) ? String(c.owner).trim() : PRIMARY_OWNER;
+        const isPrimaryOwner = (ownerName) => PRIMARY_OWNER_ALIASES.includes(String(ownerName || '').trim());
+        const normalizeText = (s) => String(s || '').trim().toLowerCase();
+        const parseDistrictKeywords = (s) => String(s || '').split(/[,，、\n]/).map(x => x.trim()).filter(Boolean);
+        const getDistrictList = () => Array.isArray(settings.districts) ? settings.districts : [];
+        const getDistrictByName = (name) => getDistrictList().find(d => d.name === name);
+        const getDistrictOwnerByName = (name) => {
+            const found = getDistrictByName(name);
+            return found && found.owner ? String(found.owner).trim() : '';
+        };
+        const findDistrictByLocation = (locationText) => {
+            const target = normalizeText(locationText);
+            if (!target) return null;
+            return getDistrictList().find(d => {
+                const keywords = Array.isArray(d.keywords) ? d.keywords : [];
+                return keywords.some(k => target.includes(normalizeText(k)));
+            }) || null;
+        };
 
         const sanitizeFileName = (name) => {
             return String(name || '')
@@ -1051,7 +1083,7 @@
 
         const isReportDone = (c) => !!(c && !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
 
-        const getOwnerCases = () => casesData.filter(c => getCaseOwner(c) === PRIMARY_OWNER);
+        const getOwnerCases = () => casesData.filter(c => isPrimaryOwner(getCaseOwner(c)));
 
         const computeDeadlineItems = () => {
             const today = dateOnly(new Date());
@@ -1232,6 +1264,8 @@
         // ==========================================
         document.getElementById('btn-settings').addEventListener('click', () => {
             renderCommitteeList();
+            renderDistrictOwnerOptions();
+            renderDistrictList();
             document.getElementById('setting-gas-input').value = settings.gasUrl || '';
             document.getElementById('setting-gemini-input').value = settings.geminiApiKey || '';
             document.getElementById('setting-ai-prompt').value = settings.aiPromptStyle || '';
@@ -1253,6 +1287,7 @@
                     if(data.geminiApiKey) settings.geminiApiKey = data.geminiApiKey;
                     if(data.aiPromptStyle) settings.aiPromptStyle = data.aiPromptStyle;
                     if(data.checklists) settings.checklists = data.checklists;
+                    if(Array.isArray(data.districts)) settings.districts = data.districts;
                 }
             } catch (err) { console.warn("載入設定失敗:", err); }
         }
@@ -1261,6 +1296,9 @@
             if(!currentUser) return;
             await setDoc(doc(db, 'users', currentUser.uid, 'settings', 'main'), settings);
             renderCommitteeList();
+            renderDistrictOwnerOptions();
+            renderDistrictList();
+            renderDistrictOptions();
             renderCommitteeCheckboxes(); 
         }
 
@@ -1328,6 +1366,104 @@
         });
 
         window.removeCommittee = (idx) => { settings.committee.splice(idx, 1); saveSettings(); };
+
+        function renderDistrictOwnerOptions() {
+            const sel = document.getElementById('setting-district-owner');
+            if (!sel) return;
+            sel.innerHTML = RESPONSIBLE_OPTIONS.map(name => `<option value="${name}">${name}</option>`).join('');
+            sel.value = PRIMARY_OWNER;
+        }
+
+        function renderDistrictList() {
+            const list = document.getElementById('setting-district-list');
+            if (!list) return;
+            const districts = getDistrictList();
+            if (districts.length === 0) {
+                list.innerHTML = '<li class="text-sm text-slate-400 bg-slate-50 border border-slate-200 rounded-lg p-3">目前無轄區規則</li>';
+                return;
+            }
+            list.innerHTML = districts.map((d, idx) => {
+                const kw = Array.isArray(d.keywords) && d.keywords.length > 0 ? d.keywords.join('、') : '無關鍵字';
+                return `<li class="bg-slate-50 p-3 border border-slate-200 rounded-lg flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div>
+                        <div class="font-bold text-slate-800">${d.name || '未命名轄區'}</div>
+                        <div class="text-sm text-slate-600">關鍵字：${kw}</div>
+                        <div class="text-sm text-slate-600">承辦：${d.owner || PRIMARY_OWNER}</div>
+                    </div>
+                    <button class="text-red-500 hover:text-red-700 bg-red-50 px-3 py-1 rounded self-start md:self-auto" onclick="window.removeDistrict(${idx})"><i class="fa-solid fa-trash"></i></button>
+                </li>`;
+            }).join('');
+        }
+
+        function renderDistrictOptions(selectedValue = '') {
+            const sel = document.getElementById('form-district');
+            if (!sel) return;
+            const options = ['<option value="">請選擇轄區</option>'];
+            getDistrictList().forEach(d => {
+                const name = String(d.name || '').trim();
+                if (name) options.push(`<option value="${name}">${name}</option>`);
+            });
+            sel.innerHTML = options.join('');
+            if (selectedValue && [...sel.options].some(o => o.value === selectedValue)) {
+                sel.value = selectedValue;
+            } else {
+                sel.value = '';
+            }
+        }
+
+        function applyDistrictOwnerToForm() {
+            const district = document.getElementById('form-district')?.value || '';
+            if (!district) return;
+            const owner = getDistrictOwnerByName(district);
+            if (owner) {
+                const ownerSel = document.getElementById('form-owner');
+                if (ownerSel) ownerSel.value = owner;
+            }
+        }
+
+        function autoAssignDistrictByLocation() {
+            const workLocation = document.getElementById('form-work-location')?.value || '';
+            const company = document.getElementById('form-company')?.value || '';
+            const basis = String(workLocation || company).trim();
+            if (!basis) return;
+            const matched = findDistrictByLocation(basis);
+            if (!matched) return;
+            const districtSel = document.getElementById('form-district');
+            if (districtSel) districtSel.value = matched.name;
+            applyDistrictOwnerToForm();
+        }
+
+        document.getElementById('btn-add-district').addEventListener('click', () => {
+            const nameInput = document.getElementById('setting-district-name');
+            const keywordsInput = document.getElementById('setting-district-keywords');
+            const ownerSel = document.getElementById('setting-district-owner');
+
+            const name = String(nameInput?.value || '').trim();
+            const keywords = parseDistrictKeywords(keywordsInput?.value || '');
+            const owner = String(ownerSel?.value || PRIMARY_OWNER).trim();
+
+            if (!name) return alert('請輸入轄區名稱');
+            if (getDistrictByName(name)) return alert('轄區名稱已存在，請改用其他名稱');
+
+            if (!Array.isArray(settings.districts)) settings.districts = [];
+            settings.districts.push({ name, keywords, owner });
+
+            if (nameInput) nameInput.value = '';
+            if (keywordsInput) keywordsInput.value = '';
+            if (ownerSel) ownerSel.value = PRIMARY_OWNER;
+            saveSettings();
+            showToast('轄區規則已新增');
+        });
+
+        window.removeDistrict = (idx) => {
+            if (!Array.isArray(settings.districts)) settings.districts = [];
+            settings.districts.splice(idx, 1);
+            saveSettings();
+        };
+
+        document.getElementById('form-district')?.addEventListener('change', applyDistrictOwnerToForm);
+        document.getElementById('form-work-location')?.addEventListener('blur', autoAssignDistrictByLocation);
+        document.getElementById('form-company')?.addEventListener('blur', autoAssignDistrictByLocation);
 
         function renderCommitteeCheckboxes() {
             const container = document.getElementById('form-committee-checkboxes');
@@ -1504,6 +1640,8 @@
 
                     await loadSettings();
                     renderCommitteeCheckboxes();
+                    renderDistrictOwnerOptions();
+                    renderDistrictOptions();
                     loadCases();
                 } else {
                     overlay.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
@@ -1552,7 +1690,7 @@
 
             const base = showOtherOwnersInList
                 ? casesData
-                : casesData.filter(c => getCaseOwner(c) === PRIMARY_OWNER);
+                : casesData.filter(c => isPrimaryOwner(getCaseOwner(c)));
 
             const filtered = base.filter(c => {
                 const comp = String(c.company || '');
@@ -1562,7 +1700,7 @@
 
             if (filtered.length === 0) {
                 if (!showOtherOwnersInList && !term) {
-                    DOM.casesContainer.innerHTML = '<div class="text-center text-slate-400 py-10">目前無「主責凱宇」案件</div>';
+                    DOM.casesContainer.innerHTML = '<div class="text-center text-slate-400 py-10">目前無「主責凱宇/蔡凱宇」案件</div>';
                 } else {
                     DOM.casesContainer.innerHTML = '<div class="text-center text-slate-400 py-10">目前無案件</div>';
                 }
@@ -1575,7 +1713,7 @@
                 const catColor = (item.category === '中高齡及高齡者') ? 'bg-amber-100 text-amber-700' : (item.category === '身心障礙者') ? 'bg-emerald-100 text-emerald-700' : (item.category === '勞工就業通') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700';
 
                 const owner = getCaseOwner(item);
-                const ownerColor = owner === PRIMARY_OWNER ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-slate-50 text-slate-600 border border-slate-200';
+                const ownerColor = isPrimaryOwner(owner) ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-slate-50 text-slate-600 border border-slate-200';
 
                 el.innerHTML = `
                     <div class="flex justify-between items-start mb-3 gap-3">
@@ -1606,13 +1744,13 @@
         function updateDashboard() {
             const ownerCases = getOwnerCases();
 
-            // 傳統分類（只統計主責凱宇）
+            // 傳統分類（只統計主責凱宇/蔡凱宇）
             document.getElementById('dash-total').textContent = ownerCases.length;
             document.getElementById('dash-elder').textContent = ownerCases.filter(c => c.category === '中高齡及高齡者').length;
             document.getElementById('dash-disabled').textContent = ownerCases.filter(c => c.category === '身心障礙者').length;
             document.getElementById('dash-job').textContent = ownerCases.filter(c => c.category === '勞工就業通').length;
 
-            // 進度分類（只統計主責凱宇）
+            // 進度分類（只統計主責凱宇/蔡凱宇）
             const closedCases = ownerCases.filter(c => c.outcome && c.outcome.closeDate);
             const doneCases = ownerCases.filter(c => !(c.outcome && c.outcome.closeDate) && (c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
             const progressCases = ownerCases.filter(c => !(c.outcome && c.outcome.closeDate) && !(c.report && c.report.strategy && String(c.report.strategy).trim() !== ''));
@@ -1631,7 +1769,7 @@
             const content = document.getElementById('dashboard-list-content');
             const title = document.getElementById('dashboard-list-title');
 
-            const ownerCases = getOwnerCases(); // 只顯示主責凱宇
+            const ownerCases = getOwnerCases(); // 只顯示主責凱宇/蔡凱宇
             let filtered = [];
 
             if (type === 'progress') {
@@ -1734,7 +1872,8 @@
                 document.getElementById('ws-client').textContent = `${displayName} ${displayTitle}${genderAge}`;
                 document.getElementById('ws-visit-date').textContent = `初訪日: ${c.visitDate || c.date || '-'}`;
                 
-                document.getElementById('ws-details-location').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i> ${c.workLocation || c.company || '未填寫'}`;
+                const districtText = c.district ? `｜轄區：${c.district}` : '';
+                document.getElementById('ws-details-location').innerHTML = `<i class="fa-solid fa-location-dot mr-1"></i> ${c.workLocation || c.company || '未填寫'} ${districtText}`;
                 const disText = (c.disability || c.disabilityCause) ? `${c.disability || ''} ${c.disabilityCause ? '('+c.disabilityCause+')' : ''}` : '無紀錄';
                 document.getElementById('ws-details-disability').innerHTML = `<i class="fa-solid fa-notes-medical mr-1"></i> ${disText}`;
                 
@@ -1836,6 +1975,7 @@
             document.getElementById('form-intake-date').value = c.intakeDate || '';
             document.getElementById('form-visit-date').value = c.visitDate || c.date || '';
             const ownerField = document.getElementById('form-owner'); if (ownerField) ownerField.value = getCaseOwner(c);
+            renderDistrictOptions(c.district || '');
 
             if (c.category === '中高齡及高齡者') {
                 multiClients = c.clients || [];
@@ -1853,6 +1993,7 @@
                 document.getElementById('form-work-location').value = c.workLocation || '';
                 document.getElementById('form-initial-problems').value = c.initialProblems || '';
             }
+            if (!c.district) autoAssignDistrictByLocation();
 
             const visitorArr = c.visitors ? c.visitors.split('、') : [];
             document.querySelectorAll('input[name="chk-visitor"]').forEach(cb => { cb.checked = visitorArr.includes(cb.value); });
@@ -2316,6 +2457,7 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                 if(result.dob) { document.getElementById('form-client-dob').value = result.dob; updateAge(); }
                 if(result.title) document.getElementById('form-client-title').value = result.title;
                 if(result.location) document.getElementById('form-work-location').value = result.location;
+                autoAssignDistrictByLocation();
                 if(result.disability) document.getElementById('form-client-disability').value = result.disability;
                 if(result.cause) document.getElementById('form-client-cause').value = result.cause;
                 if(result.condition) document.getElementById('form-client-condition').value = result.condition;
@@ -2331,6 +2473,7 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
         DOM.btnNewCase.addEventListener('click', () => {
             DOM.form.reset(); document.getElementById('form-id').value = ''; document.getElementById('form-visit-date').valueAsDate = new Date();
             const ownerSel = document.getElementById('form-owner'); if (ownerSel) ownerSel.value = PRIMARY_OWNER;
+            renderDistrictOptions();
             multiClients = []; document.getElementById('group-single-client').classList.remove('hidden'); document.getElementById('group-multi-client').classList.add('hidden');
             renderCommitteeCheckboxes(); showView('form', '新增訪視案件', false); triggerAutoResize();
         });
@@ -2340,8 +2483,11 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
             const caseId = document.getElementById('form-id').value;
             const category = document.querySelector('input[name="form-category"]:checked')?.value || '其他';
             const visitors = Array.from(document.querySelectorAll('input[name="chk-visitor"]:checked')).map(cb => cb.value).join('、');
-            const owner = (document.getElementById('form-owner')?.value || PRIMARY_OWNER).trim();
-            const data = { category, owner, company: document.getElementById('form-company').value, phone: document.getElementById('form-phone').value, intakeDate: document.getElementById('form-intake-date').value, visitDate: document.getElementById('form-visit-date').value, visitors: visitors, updatedAt: serverTimestamp() };
+            const district = (document.getElementById('form-district')?.value || '').trim();
+            let owner = (document.getElementById('form-owner')?.value || PRIMARY_OWNER).trim();
+            const districtOwner = getDistrictOwnerByName(district);
+            if (districtOwner) owner = districtOwner;
+            const data = { category, owner, district, company: document.getElementById('form-company').value, phone: document.getElementById('form-phone').value, intakeDate: document.getElementById('form-intake-date').value, visitDate: document.getElementById('form-visit-date').value, visitors: visitors, updatedAt: serverTimestamp() };
 
             if(category === '中高齡及高齡者') {
                 data.clients = multiClients.filter(c => c.name.trim() !== ''); data.clientName = data.clients.length > 0 ? `${data.clients[0].name} 等 ${data.clients.length} 人` : '未命名工作站';
