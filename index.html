@@ -529,8 +529,16 @@
 
                             <hr class="my-5 border-slate-100">
                             <h4 class="font-bold text-slate-600 mb-3"><i class="fa-solid fa-cloud text-blue-400 mr-2"></i>已上傳雲端照片</h4>
-                            <div id="photos-container" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <p class="text-sm text-slate-400 col-span-full">尚無照片。</p>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <button id="btn-select-all-photos" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-bold border border-slate-200">
+                                    全選
+                                </button>
+                                <button id="btn-download-selected-photos" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-bold">
+                                    下載已選照片（逐一下載）
+                                </button>
+                            </div>
+                            <div id="photos-container" class="space-y-2">
+                                <p class="text-sm text-slate-400">尚無照片。</p>
                             </div>
                         </div>
                     </div>
@@ -633,7 +641,7 @@
                                         <div class="bg-[#d97706] peer-checked:bg-[#b45309] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
                                             <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 4 分
                                         </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-amber-50 leading-relaxed font-medium text-slate-800">
+                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
                                             大多數的情境下，個案需運用純聽覺功能執行職務活動（聆聽 >75%）
                                         </div>
                                     </label>
@@ -642,7 +650,7 @@
                                         <div class="bg-[#f59e0b] peer-checked:bg-[#d97706] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
                                             <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 3 分
                                         </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-amber-50 leading-relaxed font-medium text-slate-800">
+                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
                                             多數情境下，個案需運用聽覺功能執行職務活動，但有時可運用其他知覺功能協助執行（聆聽 50%~74%）
                                         </div>
                                     </label>
@@ -651,7 +659,7 @@
                                         <div class="bg-[#fcd34d] peer-checked:bg-[#fbbf24] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
                                             <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 2 分
                                         </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-amber-50 leading-relaxed font-medium text-slate-800">
+                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
                                             半數情境下，個案需運用聽覺功能執行職務活動，但經常可運用其他知覺功能協助執行（聆聽 25%-49%）
                                         </div>
                                     </label>
@@ -660,7 +668,7 @@
                                         <div class="bg-[#fef3c7] peer-checked:bg-[#fde68a] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
                                             <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 1 分
                                         </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-amber-50 leading-relaxed font-medium text-slate-800">
+                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
                                             大多數的情境下，個案不需運用聽覺功能也能執行職務活動（聆聽 &lt;24%）
                                         </div>
                                     </label>
@@ -676,7 +684,7 @@
                                         <div class="bg-[#d97706] peer-checked:bg-[#b45309] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
                                             <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 4 分
                                         </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-amber-50 leading-relaxed font-medium text-slate-800">
+                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
                                             有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例 70%以上
                                         </div>
                                     </label>
@@ -685,7 +693,7 @@
                                         <div class="bg-[#f59e0b] peer-checked:bg-[#d97706] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
                                             <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 3 分
                                         </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-amber-50 leading-relaxed font-medium text-slate-800">
+                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
                                             有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例 40%-69%之間
                                         </div>
                                     </label>
@@ -694,7 +702,7 @@
                                         <div class="bg-[#fcd34d] peer-checked:bg-[#fbbf24] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
                                             <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 2 分
                                         </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-amber-50 leading-relaxed font-medium text-slate-800">
+                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
                                             有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例 10%-39%之間
                                         </div>
                                     </label>
@@ -703,7 +711,7 @@
                                         <div class="bg-[#fef3c7] peer-checked:bg-[#fde68a] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
                                             <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 1 分
                                         </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-amber-50 leading-relaxed font-medium text-slate-800">
+                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
                                             有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例小於 10%
                                         </div>
                                     </label>
@@ -2000,9 +2008,9 @@
                         const safeKey = item.replace(/[.#$/[\]]/g, '_');
                         const isChecked = c.checklist && c.checklist[safeKey] ? 'checked' : '';
                         html += `
-                            <label class="flex items-start gap-4 p-4 bg-slate-50 hover:bg-white rounded-xl cursor-pointer border-2 border-slate-100 hover:border-blue-300 transition-colors shadow-sm">
-                                <input type="checkbox" data-chkkey="${safeKey}" class="chk-dynamic mt-1 w-6 h-6 md:w-7 md:h-7 text-blue-600 rounded border-slate-300 focus:ring-blue-500" ${isChecked}>
-                                <span class="text-base md:text-lg text-slate-700 leading-relaxed font-bold">${item}</span>
+                            <label class="flex items-start gap-4 cursor-pointer">
+                                <input type="checkbox" data-chkkey="${safeKey}" class="chk-dynamic peer mt-1 w-6 h-6 md:w-7 md:h-7 text-red-600 rounded border-slate-300 focus:ring-red-500" ${isChecked}>
+                                <span class="flex-1 p-4 rounded-xl border-2 border-slate-100 bg-slate-50 hover:bg-white transition-colors shadow-sm peer-checked:bg-red-100 peer-checked:border-red-300 text-base md:text-lg text-slate-700 leading-relaxed font-bold">${item}</span>
                             </label>`;
                     });
                     html += `</div></div>`;
@@ -2291,7 +2299,7 @@
         };
 
         // ==========================================
-        // 📦 案件打包下載（資料/照片/錄音/Word）
+        // 📦 案件打包下載（僅文字檔與 Word，不含照片/錄音檔）
         // ==========================================
         window.downloadCasePackage = async () => {
             if (!currentEditingCaseId) return;
@@ -2310,55 +2318,53 @@
             const zip = new JSZip();
             const companySafe = sanitizeFileName(c.company || '未命名企業');
             const clientSafe = sanitizeFileName(c.clientName || '未命名個案');
-            const zipName = `${companySafe}_${clientSafe}_案件打包.zip`;
+            const zipName = `${companySafe}_${clientSafe}_案件文字打包.zip`;
 
-            const fCase = zip.folder('1_個案相關資料');
-            const fPhotos = zip.folder('2_訪視照片');
-            const fAudios = zip.folder('3_訪視錄音');
-            const fWord = zip.folder('4_案件文字word檔');
+            const fText = zip.folder('1_文字資料');
+            const fWord = zip.folder('2_Word報告');
 
             const escapeHtml = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-            const extFromMime = (mime, fallback) => {
-                const m = String(mime || '').toLowerCase();
-                if (m.includes('jpeg')) return '.jpg';
-                if (m.includes('png')) return '.png';
-                if (m.includes('webp')) return '.webp';
-                if (m.includes('gif')) return '.gif';
-                if (m.includes('wav')) return '.wav';
-                if (m.includes('mpeg') || m.includes('mp3')) return '.mp3';
-                if (m.includes('mp4') || m.includes('m4a')) return '.m4a';
-                if (m.includes('webm')) return '.webm';
-                return fallback || '';
+            const rpt = c.report || {};
+            const out = c.outcome || {};
+            const env = {
+                lux: document.getElementById('env-lux')?.value ?? (c.env?.lux || ''),
+                noise: document.getElementById('env-noise')?.value ?? (c.env?.noise || ''),
+                height: document.getElementById('env-height')?.value ?? (c.env?.height || ''),
+                weight: document.getElementById('env-weight')?.value ?? (c.env?.weight || '')
             };
+            const hearing = {
+                ind1: document.querySelector('input[name="hearing-ind-1"]:checked')?.value || c.hearing?.ind1 || '',
+                ind2: document.querySelector('input[name="hearing-ind-2"]:checked')?.value || c.hearing?.ind2 || ''
+            };
+            const hearingChecked = !!(hearing.ind1 || hearing.ind2);
 
-            // 1) 個案相關資料
-            const exportData = {
-                id: c.id,
-                owner: getCaseOwner(c),
-                category: c.category || '',
-                company: c.company || '',
-                phone: c.phone || '',
-                intakeDate: c.intakeDate || '',
-                visitDate: c.visitDate || c.date || '',
-                visitors: c.visitors || '',
-                clientName: c.clientName || '',
-                clientGender: c.clientGender || '',
-                clientAge: c.clientAge || '',
-                clientDob: c.clientDob || '',
-                clientTitle: c.clientTitle || '',
-                workLocation: c.workLocation || '',
-                disability: c.disability || '',
-                disabilityCause: c.disabilityCause || '',
-                initialProblems: c.initialProblems || '',
-                report: c.report || {},
-                outcome: c.outcome || {},
-                env: c.env || {},
-                checklist: c.checklist || {},
-                hearing: c.hearing || {},
-                createdAt: c.createdAt ? '(Firestore Timestamp)' : '',
-                updatedAt: c.updatedAt ? '(Firestore Timestamp)' : ''
-            };
-            fCase.file('案件基本資料.json', JSON.stringify(exportData, null, 2));
+            const checklistText = [];
+            const safeChecklists = settings.checklists || {};
+            const domChecklist = {};
+            document.querySelectorAll('.chk-dynamic').forEach(checkbox => {
+                domChecklist[checkbox.dataset.chkkey] = !!checkbox.checked;
+            });
+            for (const [catName, items] of Object.entries(safeChecklists)) {
+                const lines = [];
+                (items || []).forEach(item => {
+                    const safeKey = String(item || '').replace(/[.#$/[\]]/g, '_');
+                    const checked = (safeKey in domChecklist) ? domChecklist[safeKey] : !!(c.checklist && c.checklist[safeKey]);
+                    lines.push(`${checked ? '■' : '□'} ${item}`);
+                });
+                if (lines.length > 0) {
+                    checklistText.push(`【${catName}】`);
+                    checklistText.push(...lines);
+                    checklistText.push('');
+                }
+            }
+
+            const hearingSummary = hearingChecked
+                ? [
+                    `指標一：${hearing.ind1 || '-'}`,
+                    `指標二：${hearing.ind2 || '-'}`,
+                    `總分：${Number(hearing.ind1 || 0) + Number(hearing.ind2 || 0)}`
+                ].join('\n')
+                : '（未勾選，略過）';
 
             const summaryTxt = [
                 `主責人：${getCaseOwner(c)}`,
@@ -2371,69 +2377,20 @@
                 '',
                 '【遭遇問題及期待改善事項】',
                 (c.initialProblems || ''),
+                '',
+                '【客觀數據】',
+                `環境照度(Lux)：${env.lux || ''}`,
+                `環境噪音(dB)：${env.noise || ''}`,
+                `操作檯面高度(cm)：${env.height || ''}`,
+                `搬運物重量(kg)：${env.weight || ''}`,
+                '',
+                '【現場環境與能力檢核】',
+                ...checklistText,
+                '【聽覺需求評估表】',
+                hearingSummary
             ].join('\n');
-            fCase.file('案件摘要.txt', summaryTxt);
+            fText.file('案件摘要與檢核.txt', summaryTxt);
 
-            // 2) 訪視照片（若因權限/CORS 無法抓檔，會改存 URL 清單）
-            const photoUrlsFallback = [];
-            const photos = Array.isArray(c.photos) ? c.photos : [];
-            for (let i = 0; i < photos.length; i++) {
-                const p = photos[i];
-                const previewUrl = typeof p === 'string' ? p : (p.previewUrl || '');
-                const downloadUrl = typeof p === 'string' ? p : (p.downloadUrl || p.previewUrl || '');
-                const url = downloadUrl || previewUrl;
-                const base = sanitizeFileName(typeof p === 'string' ? `photo_${i+1}` : (p.name || `photo_${i+1}`));
-
-                if (!url) continue;
-
-                try {
-                    const res = await fetch(url);
-                    if (!res.ok) throw new Error('fetch not ok');
-                    const blob = await res.blob();
-                    const ext = extFromMime(blob.type, '.jpg');
-                    fPhotos.file(`${String(i+1).padStart(2,'0')}_${base}${ext}`, blob);
-                } catch (e) {
-                    photoUrlsFallback.push(`${String(i+1).padStart(2,'0')}. ${url}`);
-                }
-            }
-            if (photoUrlsFallback.length > 0) {
-                fPhotos.file('⚠️_照片無法自動下載_請改用下列連結.txt', photoUrlsFallback.join('\n'));
-            }
-
-            // 3) 訪視錄音（同上：失敗則存 URL）
-            const audioUrlsFallback = [];
-            const audios = Array.isArray(c.audios) ? c.audios : [];
-            for (let i = 0; i < audios.length; i++) {
-                const a = audios[i] || {};
-                const previewUrl = a.previewUrl || '';
-                const downloadUrl = a.downloadUrl || a.previewUrl || '';
-                const url = downloadUrl || previewUrl;
-
-                const displayName = sanitizeFileName(a.displayName || a.name || `audio_${i+1}`);
-                if (!url) continue;
-
-                // 逐字稿（若有）
-                if (a.transcript) {
-                    fAudios.file(`${String(i+1).padStart(2,'0')}_${displayName}_逐字稿.txt`, String(a.transcript));
-                }
-
-                try {
-                    const res = await fetch(url);
-                    if (!res.ok) throw new Error('fetch not ok');
-                    const blob = await res.blob();
-                    const ext = extFromMime(blob.type, '.webm');
-                    fAudios.file(`${String(i+1).padStart(2,'0')}_${displayName}${ext}`, blob);
-                } catch (e) {
-                    audioUrlsFallback.push(`${String(i+1).padStart(2,'0')}. ${url}`);
-                }
-            }
-            if (audioUrlsFallback.length > 0) {
-                fAudios.file('⚠️_錄音無法自動下載_請改用下列連結.txt', audioUrlsFallback.join('\n'));
-            }
-
-            // 4) 案件文字（Word 可開啟的 .doc）
-            const rpt = c.report || {};
-            const out = c.outcome || {};
             const wordHtml = `<!DOCTYPE html>
 <html><head><meta charset="utf-8">
 <style>
@@ -2441,6 +2398,8 @@ body{font-family:'標楷體','Times New Roman',serif;line-height:1.8;font-size:1
 h1{font-size:18pt;margin:0 0 12px 0;}
 h2{font-size:14pt;margin:18px 0 6px 0;}
 p{margin:0 0 8px 0;white-space:pre-wrap;}
+ul{margin:0 0 8px 20px;padding:0;}
+li{margin:0 0 4px 0;}
 .small{color:#64748b;font-size:10pt;}
 </style>
 </head>
@@ -2472,8 +2431,32 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
 
 <h2>八、結案日期</h2>
 <p>${escapeHtml(out.closeDate || '')}</p>
+
+<h2>九、客觀數據</h2>
+<p>環境照度(Lux)：${escapeHtml(env.lux || '')}</p>
+<p>環境噪音(dB)：${escapeHtml(env.noise || '')}</p>
+<p>操作檯面高度(cm)：${escapeHtml(env.height || '')}</p>
+<p>搬運物重量(kg)：${escapeHtml(env.weight || '')}</p>
+
+<h2>十、現場環境與能力檢核</h2>
+${Object.entries(safeChecklists).map(([catName, items]) => `
+<p><strong>${escapeHtml(catName)}</strong></p>
+<ul>
+${(items || []).map(item => {
+    const safeKey = String(item || '').replace(/[.#$/[\]]/g, '_');
+    const checked = (safeKey in domChecklist) ? domChecklist[safeKey] : !!(c.checklist && c.checklist[safeKey]);
+    return `<li>${checked ? '■' : '□'} ${escapeHtml(item)}</li>`;
+}).join('')}
+</ul>`).join('')}
+
+${hearingChecked ? `
+<h2>十一、聽覺需求評估表</h2>
+<p>指標一：${escapeHtml(hearing.ind1 || '-')}</p>
+<p>指標二：${escapeHtml(hearing.ind2 || '-')}</p>
+<p>總分：${escapeHtml(String(Number(hearing.ind1 || 0) + Number(hearing.ind2 || 0)))}</p>` : ''}
 </body></html>`;
-            fWord.file('案件文字.doc', '\ufeff' + wordHtml);
+
+            fWord.file('案件文字與檢核.doc', '\ufeff' + wordHtml);
 
             try {
                 const blob = await zip.generateAsync({ type: 'blob' });
@@ -2485,7 +2468,7 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                 a.click();
                 a.remove();
                 URL.revokeObjectURL(url);
-                showToast("📦 已完成打包下載");
+                showToast("📦 已完成文字打包下載");
             } catch (e) {
                 alert("打包失敗：" + e.message);
             } finally {
@@ -2749,130 +2732,62 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
             const arr = Array.isArray(photosArr) ? photosArr : [];
 
             if (arr.length === 0) {
-                container.className = 'text-sm text-slate-400';
+                container.className = 'space-y-2';
                 container.innerHTML = '<p class="text-sm text-slate-400">尚無照片。</p>';
                 return;
             }
 
-            // 由 grid 改為「一頁一頁滑」(scroll-snap) 的圖庫
-            container.className = 'w-full';
-
-            const slidesHtml = arr.map((p, index) => {
+            container.className = 'space-y-2';
+            container.innerHTML = arr.map((p, index) => {
                 const previewUrl = typeof p === 'string' ? p : (p.previewUrl || '');
                 const downloadUrl = typeof p === 'string' ? p : (p.downloadUrl || p.previewUrl || '');
-                const src = downloadUrl || previewUrl;
+                const url = downloadUrl || previewUrl;
                 const name = (typeof p === 'string' ? `現場照片_${index+1}` : (p.name || `現場照片_${index+1}`));
-
+                const safeName = sanitizeFileName(name);
                 return `
-                    <div class="snap-center shrink-0 w-full" data-photo-idx="${index}">
-                        <div class="relative w-full aspect-[4/3] md:aspect-video bg-black flex items-center justify-center">
-                            <img src="${src}" class="w-full h-full object-contain cursor-pointer select-none" alt="${name}"
-                                 onclick="window.openPreview('${previewUrl}', '${downloadUrl}', 'image/jpeg', '${sanitizeFileName(name)}')">
-
-                            <div class="absolute top-3 left-3 flex gap-2">
-                                <button onclick="event.stopPropagation(); window.deleteMedia('photos', ${index});"
-                                    class="bg-red-600/90 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm font-black shadow">
-                                    <i class="fa-solid fa-trash mr-1"></i>刪除
-                                </button>
-                                <a href="${downloadUrl}" target="_blank" onclick="event.stopPropagation();"
-                                    class="bg-white/90 hover:bg-white text-blue-700 px-3 py-2 rounded-lg text-xs md:text-sm font-black shadow">
-                                    <i class="fa-solid fa-download mr-1"></i>下載
-                                </a>
-                            </div>
-
-                            <div class="absolute bottom-3 right-3 bg-slate-900/60 text-white px-3 py-1.5 rounded-lg text-xs md:text-sm font-black">
-                                ${index + 1} / ${arr.length}
-                            </div>
-                        </div>
-                    </div>
+                    <label class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-lg p-3">
+                        <input type="checkbox" class="photo-select w-5 h-5" data-photo-url="${url}" data-photo-name="${safeName}">
+                        <span class="flex-1 text-sm md:text-base text-slate-700 font-bold truncate">${safeName}</span>
+                        <button type="button" onclick="window.deleteMedia('photos', ${index})" class="text-red-600 hover:text-red-700 text-sm px-2 py-1 rounded bg-red-50">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                        <a href="${url}" target="_blank" class="text-blue-700 hover:text-blue-800 text-sm px-2 py-1 rounded bg-blue-50">
+                            <i class="fa-solid fa-download"></i>
+                        </a>
+                    </label>
                 `;
             }).join('');
-
-            const thumbsHtml = arr.map((p, index) => {
-                const previewUrl = typeof p === 'string' ? p : (p.previewUrl || '');
-                const downloadUrl = typeof p === 'string' ? p : (p.downloadUrl || p.previewUrl || '');
-                const src = downloadUrl || previewUrl;
-                return `
-                    <button type="button" data-thumb-idx="${index}" class="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-400 transition-colors shrink-0">
-                        <img src="${src}" class="w-full h-full object-cover" alt="縮圖_${index+1}">
-                    </button>
-                `;
-            }).join('');
-
-            container.innerHTML = `
-                <div class="relative">
-                    <div id="photo-snap-track" class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar rounded-2xl border border-slate-200 bg-black/90" style="scroll-behavior:smooth;">
-                        ${slidesHtml}
-                    </div>
-
-                    <button id="photo-prev-btn" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-slate-700 w-10 h-10 rounded-full shadow flex items-center justify-center active:scale-95">
-                        <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                    <button id="photo-next-btn" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-slate-700 w-10 h-10 rounded-full shadow flex items-center justify-center active:scale-95">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </button>
-
-                    <div class="mt-3 text-center text-sm font-black text-slate-600">
-                        <span id="photo-page-indicator">1 / ${arr.length}</span>
-                        <span class="text-slate-300 mx-2">•</span>
-                        <span class="text-slate-500 font-bold">可左右滑動切換</span>
-                    </div>
-                    <div id="photo-thumbs" class="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
-                        ${thumbsHtml}
-                    </div>
-                </div>
-            `;
-
-            const track = document.getElementById('photo-snap-track');
-            const indicator = document.getElementById('photo-page-indicator');
-            const prevBtn = document.getElementById('photo-prev-btn');
-            const nextBtn = document.getElementById('photo-next-btn');
-            const thumbBtns = container.querySelectorAll('[data-thumb-idx]');
-
-            if (!track || !indicator || !prevBtn || !nextBtn) return;
-
-            let currentIndex = 0;
-            let scrollTimer = null;
-
-            const updateIndicator = () => {
-                const w = track.clientWidth || 1;
-                const idx = Math.round(track.scrollLeft / w);
-                currentIndex = Math.max(0, Math.min(idx, arr.length - 1));
-                indicator.textContent = `${currentIndex + 1} / ${arr.length}`;
-                thumbBtns.forEach(btn => {
-                    const idxNum = Number(btn.getAttribute('data-thumb-idx'));
-                    if (idxNum === currentIndex) {
-                        btn.classList.add('border-blue-500');
-                    } else {
-                        btn.classList.remove('border-blue-500');
-                    }
-                });
-            };
-
-            const goToIndex = (idx) => {
-                const w = track.clientWidth || 1;
-                const target = Math.max(0, Math.min(idx, arr.length - 1));
-                track.scrollTo({ left: target * w, behavior: 'smooth' });
-            };
-
-            track.addEventListener('scroll', () => {
-                if (scrollTimer) clearTimeout(scrollTimer);
-                scrollTimer = setTimeout(updateIndicator, 80);
-            });
-            window.addEventListener('resize', () => updateIndicator(), { passive: true });
-
-            prevBtn.addEventListener('click', (e) => { e.preventDefault(); goToIndex(currentIndex - 1); });
-            nextBtn.addEventListener('click', (e) => { e.preventDefault(); goToIndex(currentIndex + 1); });
-            thumbBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const idx = Number(btn.getAttribute('data-thumb-idx'));
-                    goToIndex(idx);
-                });
-            });
-
-            // 初始更新
-            updateIndicator();
         }
+
+        function triggerSingleDownload(url, fileName) {
+            if (!url) return;
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName || '';
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        document.getElementById('btn-select-all-photos')?.addEventListener('click', () => {
+            const boxes = Array.from(document.querySelectorAll('.photo-select'));
+            if (boxes.length === 0) return;
+            const allChecked = boxes.every(b => b.checked);
+            boxes.forEach(b => { b.checked = !allChecked; });
+        });
+
+        document.getElementById('btn-download-selected-photos')?.addEventListener('click', async () => {
+            const selected = Array.from(document.querySelectorAll('.photo-select:checked'));
+            if (selected.length === 0) return alert('請先勾選要下載的照片');
+            for (const box of selected) {
+                const url = box.getAttribute('data-photo-url') || '';
+                const name = box.getAttribute('data-photo-name') || 'photo';
+                triggerSingleDownload(url, name);
+                await new Promise(r => setTimeout(r, 300));
+            }
+            showToast(`已開始下載 ${selected.length} 張照片`);
+        });
 
         document.getElementById('file-upload').addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -3574,7 +3489,7 @@ ${rawDraft}
                 const el = document.getElementById(`hearing-result-${level}`);
                 el.querySelector('.res-chk').classList.remove('hidden');
                 el.querySelector('.res-checked').classList.add('hidden');
-                el.querySelector('.p-3').classList.remove('bg-amber-100');
+                el.querySelector('.p-3').classList.remove('bg-red-100');
                 el.querySelector('.p-3').classList.add('bg-white');
             });
 
@@ -3582,17 +3497,17 @@ ${rawDraft}
                 const el = document.getElementById('hearing-result-high');
                 el.querySelector('.res-chk').classList.add('hidden');
                 el.querySelector('.res-checked').classList.remove('hidden');
-                el.querySelector('.p-3').classList.replace('bg-white', 'bg-amber-100');
+                el.querySelector('.p-3').classList.replace('bg-white', 'bg-red-100');
             } else if (total >= 3 && total <= 5) {
                 const el = document.getElementById('hearing-result-mid');
                 el.querySelector('.res-chk').classList.add('hidden');
                 el.querySelector('.res-checked').classList.remove('hidden');
-                el.querySelector('.p-3').classList.replace('bg-white', 'bg-amber-100');
+                el.querySelector('.p-3').classList.replace('bg-white', 'bg-red-100');
             } else if (total > 0 && total <= 2) {
                 const el = document.getElementById('hearing-result-low');
                 el.querySelector('.res-chk').classList.add('hidden');
                 el.querySelector('.res-checked').classList.remove('hidden');
-                el.querySelector('.p-3').classList.replace('bg-white', 'bg-amber-100');
+                el.querySelector('.p-3').classList.replace('bg-white', 'bg-red-100');
             }
         };
 
