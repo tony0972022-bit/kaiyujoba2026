@@ -10,6 +10,7 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
+        html, body { overscroll-behavior-y: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @media print {
@@ -506,7 +507,7 @@
                             <h3 class="font-bold text-slate-700 text-lg md:text-xl"><i class="fa-solid fa-camera text-blue-500 mr-2"></i>現場拍照與圖庫</h3>
                             <i id="icon-photos-toggle" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
                         </div>
-                        <div id="section-photos-content" class="hidden p-5 md:p-6 border-t border-slate-100">
+                        <div id="section-photos-content" class="p-5 md:p-6 border-t border-slate-100">
                             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-5 gap-4">
                                 <div>
                                     <p class="text-sm text-amber-600 font-bold bg-amber-50 px-3 py-1 rounded inline-block"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 拍完請務必點擊【確認上傳】，以免網頁重整遺失</p>
@@ -560,6 +561,19 @@
                                         <input type="file" id="audio-upload-input" accept="audio/*,video/mp4" class="hidden">
                                     </label>
                                     <p class="text-xs text-slate-500 mt-2 text-center">支援 mp3, m4a, wav (建議小於 15MB)</p>
+                                </div>
+                            </div>
+                            <div id="recording-recovery" class="hidden mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                <p class="text-sm md:text-base font-bold text-amber-800 mb-3">
+                                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>偵測到未完成上傳的錄音暫存，您可以直接恢復。
+                                </p>
+                                <div class="flex gap-2">
+                                    <button id="btn-recover-recording" class="flex-1 bg-amber-600 text-white px-4 py-2.5 rounded-lg font-bold hover:bg-amber-700">
+                                        <i class="fa-solid fa-rotate-right mr-1"></i>恢復並上傳
+                                    </button>
+                                    <button id="btn-discard-recording" class="bg-slate-200 text-slate-700 px-4 py-2.5 rounded-lg font-bold hover:bg-slate-300">
+                                        捨棄暫存
+                                    </button>
                                 </div>
                             </div>
 
@@ -955,6 +969,12 @@
         let currentEditingCaseId = null;
         let pendingPhotosQueue = []; 
         let audioBlobCache = {}; 
+        const REC_DB_NAME = 'case_audio_cache_v1';
+        const REC_STORE = 'recording_chunks';
+        const REC_META_KEY = 'active_recording_meta';
+        let recChunkSeq = 0;
+        let activeRecMeta = null;
+        let recDbPromise = null;
 
         // ==========================================
         // 主責人 (案件篩選/統計設定)
@@ -1013,6 +1033,82 @@
             DOM.toastMsg.textContent = msg;
             DOM.toast.classList.remove('opacity-0');
             setTimeout(() => DOM.toast.classList.add('opacity-0'), 3000);
+        }
+
+        function openRecDb() {
+            if (recDbPromise) return recDbPromise;
+            recDbPromise = new Promise((resolve, reject) => {
+                const req = indexedDB.open(REC_DB_NAME, 1);
+                req.onupgradeneeded = (e) => {
+                    const dbi = e.target.result;
+                    const store = dbi.createObjectStore(REC_STORE, { keyPath: 'id' });
+                    store.createIndex('sessionId', 'sessionId', { unique: false });
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+            return recDbPromise;
+        }
+
+        function readRecMeta() {
+            try { return JSON.parse(localStorage.getItem(REC_META_KEY) || 'null'); }
+            catch { return null; }
+        }
+
+        function writeRecMeta(meta) {
+            if (!meta) localStorage.removeItem(REC_META_KEY);
+            else localStorage.setItem(REC_META_KEY, JSON.stringify(meta));
+        }
+
+        async function cacheRecordingChunk(sessionId, seq, blob) {
+            const dbi = await openRecDb();
+            await new Promise((resolve, reject) => {
+                const tx = dbi.transaction(REC_STORE, 'readwrite');
+                tx.objectStore(REC_STORE).put({ id: `${sessionId}_${seq}`, sessionId, seq, blob, createdAt: Date.now() });
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function getCachedChunks(sessionId) {
+            const dbi = await openRecDb();
+            return await new Promise((resolve, reject) => {
+                const tx = dbi.transaction(REC_STORE, 'readonly');
+                const idx = tx.objectStore(REC_STORE).index('sessionId');
+                const req = idx.getAll(IDBKeyRange.only(sessionId));
+                req.onsuccess = () => {
+                    const rows = (req.result || []).sort((a,b) => (a.seq || 0) - (b.seq || 0));
+                    resolve(rows.map(r => r.blob).filter(Boolean));
+                };
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function clearCachedSession(sessionId) {
+            if (!sessionId) return;
+            const dbi = await openRecDb();
+            await new Promise((resolve, reject) => {
+                const tx = dbi.transaction(REC_STORE, 'readwrite');
+                const idx = tx.objectStore(REC_STORE).index('sessionId');
+                const req = idx.getAllKeys(IDBKeyRange.only(sessionId));
+                req.onsuccess = () => {
+                    (req.result || []).forEach(key => tx.objectStore(REC_STORE).delete(key));
+                };
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        function toggleRecoveryBanner(show) {
+            const el = document.getElementById('recording-recovery');
+            if (!el) return;
+            el.classList.toggle('hidden', !show);
+        }
+
+        function refreshRecoveryBannerForCurrentCase() {
+            const meta = readRecMeta();
+            const shouldShow = !!(meta && meta.caseId && currentEditingCaseId && meta.caseId === currentEditingCaseId);
+            toggleRecoveryBanner(shouldShow);
         }
 
         // ==========================================
@@ -1942,6 +2038,7 @@
                 renderPhotos(Array.isArray(c.photos) ? c.photos : []);
                 renderFiles(Array.isArray(c.files) ? c.files : []); 
                 renderAudios(Array.isArray(c.audios) ? c.audios : []);
+                refreshRecoveryBannerForCurrentCase();
 
                 canvasPages = ['']; currentCanvasIdx = 0; isEraser = false; drawColor = '#0f172a'; drawSize = 3;
                 if (typeof isTempEraser !== 'undefined') isTempEraser = false; // 防呆：重置 Apple Pencil 狀態
@@ -2475,6 +2572,7 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
             const ownerSel = document.getElementById('form-owner'); if (ownerSel) ownerSel.value = PRIMARY_OWNER;
             renderDistrictOptions();
             multiClients = []; document.getElementById('group-single-client').classList.remove('hidden'); document.getElementById('group-multi-client').classList.add('hidden');
+            toggleRecoveryBanner(false);
             renderCommitteeCheckboxes(); showView('form', '新增訪視案件', false); triggerAutoResize();
         });
 
@@ -2666,7 +2764,7 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                 const name = (typeof p === 'string' ? `現場照片_${index+1}` : (p.name || `現場照片_${index+1}`));
 
                 return `
-                    <div class="snap-center shrink-0 w-full">
+                    <div class="snap-center shrink-0 w-full" data-photo-idx="${index}">
                         <div class="relative w-full aspect-[4/3] md:aspect-video bg-black flex items-center justify-center">
                             <img src="${src}" class="w-full h-full object-contain cursor-pointer select-none" alt="${name}"
                                  onclick="window.openPreview('${previewUrl}', '${downloadUrl}', 'image/jpeg', '${sanitizeFileName(name)}')">
@@ -2690,6 +2788,17 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                 `;
             }).join('');
 
+            const thumbsHtml = arr.map((p, index) => {
+                const previewUrl = typeof p === 'string' ? p : (p.previewUrl || '');
+                const downloadUrl = typeof p === 'string' ? p : (p.downloadUrl || p.previewUrl || '');
+                const src = downloadUrl || previewUrl;
+                return `
+                    <button type="button" data-thumb-idx="${index}" class="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 border-transparent hover:border-blue-400 transition-colors shrink-0">
+                        <img src="${src}" class="w-full h-full object-cover" alt="縮圖_${index+1}">
+                    </button>
+                `;
+            }).join('');
+
             container.innerHTML = `
                 <div class="relative">
                     <div id="photo-snap-track" class="flex overflow-x-auto snap-x snap-mandatory no-scrollbar rounded-2xl border border-slate-200 bg-black/90" style="scroll-behavior:smooth;">
@@ -2708,6 +2817,9 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                         <span class="text-slate-300 mx-2">•</span>
                         <span class="text-slate-500 font-bold">可左右滑動切換</span>
                     </div>
+                    <div id="photo-thumbs" class="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+                        ${thumbsHtml}
+                    </div>
                 </div>
             `;
 
@@ -2715,6 +2827,7 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
             const indicator = document.getElementById('photo-page-indicator');
             const prevBtn = document.getElementById('photo-prev-btn');
             const nextBtn = document.getElementById('photo-next-btn');
+            const thumbBtns = container.querySelectorAll('[data-thumb-idx]');
 
             if (!track || !indicator || !prevBtn || !nextBtn) return;
 
@@ -2726,6 +2839,14 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                 const idx = Math.round(track.scrollLeft / w);
                 currentIndex = Math.max(0, Math.min(idx, arr.length - 1));
                 indicator.textContent = `${currentIndex + 1} / ${arr.length}`;
+                thumbBtns.forEach(btn => {
+                    const idxNum = Number(btn.getAttribute('data-thumb-idx'));
+                    if (idxNum === currentIndex) {
+                        btn.classList.add('border-blue-500');
+                    } else {
+                        btn.classList.remove('border-blue-500');
+                    }
+                });
             };
 
             const goToIndex = (idx) => {
@@ -2742,6 +2863,12 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
 
             prevBtn.addEventListener('click', (e) => { e.preventDefault(); goToIndex(currentIndex - 1); });
             nextBtn.addEventListener('click', (e) => { e.preventDefault(); goToIndex(currentIndex + 1); });
+            thumbBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const idx = Number(btn.getAttribute('data-thumb-idx'));
+                    goToIndex(idx);
+                });
+            });
 
             // 初始更新
             updateIndicator();
@@ -2797,6 +2924,70 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
         // ==========================================
         const btnRecord = document.getElementById('btn-record-audio');
         let mediaRecorder; let audioChunks = []; let isRecording = false;
+        let recordingStream = null;
+
+        function createRecMeta() {
+            return {
+                sessionId: `rec_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+                caseId: currentEditingCaseId || '',
+                mimeType: 'audio/webm',
+                startedAt: Date.now()
+            };
+        }
+
+        async function recoverCachedRecording() {
+            const meta = readRecMeta();
+            if (!meta?.sessionId || !meta?.caseId) return;
+            if (!currentEditingCaseId || meta.caseId !== currentEditingCaseId) {
+                alert("偵測到的暫存錄音屬於其他案件，請先開啟原案件再恢復。");
+                return;
+            }
+            const chunks = await getCachedChunks(meta.sessionId);
+            if (!chunks.length) {
+                await clearCachedSession(meta.sessionId);
+                writeRecMeta(null);
+                toggleRecoveryBanner(false);
+                return;
+            }
+
+            const blob = new Blob(chunks, { type: meta.mimeType || 'audio/webm' });
+            const fileName = `recover_${meta.startedAt || Date.now()}.webm`;
+            const result = await uploadToGoogleDrive(blob, fileName);
+            const c = casesData.find(x => x.id === currentEditingCaseId);
+            if (!c) return;
+            const newAudios = [...(c.audios || []), {
+                name: fileName,
+                displayName: `恢復錄音 ${new Date(meta.startedAt || Date.now()).toLocaleString()}`,
+                previewUrl: result.previewUrl,
+                downloadUrl: result.downloadUrl,
+                transcript: ''
+            }];
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
+            renderAudios(newAudios);
+            await clearCachedSession(meta.sessionId);
+            writeRecMeta(null);
+            toggleRecoveryBanner(false);
+            showToast("已恢復並上傳上次錄音");
+        }
+
+        async function discardCachedRecording() {
+            const meta = readRecMeta();
+            if (meta?.sessionId) await clearCachedSession(meta.sessionId);
+            writeRecMeta(null);
+            toggleRecoveryBanner(false);
+            showToast("已捨棄暫存錄音");
+        }
+
+        document.getElementById('btn-recover-recording')?.addEventListener('click', async () => {
+            try {
+                await recoverCachedRecording();
+            } catch (err) {
+                alert("恢復錄音失敗：" + err.message);
+            }
+        });
+        document.getElementById('btn-discard-recording')?.addEventListener('click', async () => {
+            await discardCachedRecording();
+        });
 
         btnRecord.addEventListener('click', async () => {
             if (isRecording) {
@@ -2808,10 +2999,24 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                 document.getElementById('recording-status').classList.add('hidden');
             } else {
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
+                    recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(recordingStream);
                     audioChunks = [];
-                    mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
+                    recChunkSeq = 0;
+                    activeRecMeta = createRecMeta();
+                    writeRecMeta(activeRecMeta);
+
+                    mediaRecorder.ondataavailable = async (e) => {
+                        if(e.data.size > 0) {
+                            audioChunks.push(e.data);
+                            recChunkSeq += 1;
+                            try {
+                                await cacheRecordingChunk(activeRecMeta.sessionId, recChunkSeq, e.data);
+                            } catch (cacheErr) {
+                                console.warn("錄音暫存寫入失敗：", cacheErr);
+                            }
+                        }
+                    };
                     mediaRecorder.onstop = async () => {
                         btnRecord.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 錄音存檔上傳中...';
                         btnRecord.classList.add('opacity-50', 'pointer-events-none');
@@ -2837,15 +3042,21 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                             await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), { audios: newAudios });
                             renderAudios(newAudios);
                             showToast("錄音已安全上傳至雲端！");
+                            if (activeRecMeta?.sessionId) await clearCachedSession(activeRecMeta.sessionId);
+                            writeRecMeta(null);
+                            toggleRecoveryBanner(false);
                         } catch(err) { 
                             alert("錄音存檔失敗：" + err.message);
+                            toggleRecoveryBanner(true);
                         } finally {
                             btnRecord.innerHTML = '<i class="fa-solid fa-circle text-xs mr-1"></i> <span class="btn-text">開始錄音</span>';
                             btnRecord.classList.remove('opacity-50', 'pointer-events-none');
+                            activeRecMeta = null;
                         }
-                        stream.getTracks().forEach(track => track.stop());
+                        if (recordingStream) recordingStream.getTracks().forEach(track => track.stop());
+                        recordingStream = null;
                     };
-                    mediaRecorder.start();
+                    mediaRecorder.start(1000);
                     isRecording = true;
                     btnRecord.innerHTML = '<i class="fa-solid fa-stop mr-2"></i> 停止錄音';
                     btnRecord.classList.replace('bg-red-50', 'bg-slate-100');
@@ -2855,19 +3066,60 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
             }
         });
 
+        window.addEventListener('beforeunload', (e) => {
+            if (!isRecording) return;
+            e.preventDefault();
+            e.returnValue = '';
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (!isRecording) return;
+            const key = String(e.key || '').toLowerCase();
+            if (key === 'f5' || ((e.ctrlKey || e.metaKey) && key === 'r')) {
+                e.preventDefault();
+                showToast("錄音中，已暫時阻擋重新整理");
+            }
+        });
+
         // 手動觸發 AI 轉文字
-        window.startTranscription = async (fileName) => {
+        window.startTranscription = async (fileNameEncoded) => {
+            const fileName = decodeURIComponent(String(fileNameEncoded || ''));
             const btnId = 'btn-transcribe-' + fileName.replace(/[^a-zA-Z0-9]/g, '');
             const btn = document.getElementById(btnId);
+            let started = false;
 
-            const blob = audioBlobCache[fileName];
+            let blob = audioBlobCache[fileName];
             if (!blob) {
-                alert("⚠️ 安全限制：您只能對「剛剛錄製」的音檔執行 AI 轉譯。\n如果網頁已重新整理，請使用上方的「上傳音檔並 AI 轉文字」功能，將您手機/電腦裡的錄音檔直接上傳給 AI 辨識。");
-                return;
+                const c = casesData.find(x => x.id === currentEditingCaseId);
+                const audioItem = (c?.audios || []).find(a => a.name === fileName);
+                const url = audioItem?.downloadUrl || audioItem?.previewUrl || audioItem?.url || '';
+                if (!url) {
+                    alert("找不到音檔來源，請重新上傳後再試。");
+                    return;
+                }
+                try {
+                    if (btn) {
+                        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> 下載音檔中...';
+                        btn.classList.add('opacity-50', 'pointer-events-none');
+                    }
+                    const res = await fetch(url);
+                    if (!res.ok) throw new Error(`下載音檔失敗 (${res.status})`);
+                    blob = await res.blob();
+                } catch (err) {
+                    alert("無法讀取既有音檔，請改用「上傳音檔並 AI 轉文字」：\n" + err.message);
+                    if (btn) {
+                        btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 重新轉譯';
+                        btn.classList.remove('opacity-50', 'pointer-events-none');
+                    }
+                    return;
+                }
             }
 
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> AI 轉譯中...';
-            btn.classList.add('opacity-50', 'pointer-events-none');
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> AI 轉譯中...';
+                btn.classList.add('opacity-50', 'pointer-events-none');
+                started = true;
+            }
 
             try {
                 const transcript = await transcribeAudioWithAI(blob);
@@ -2880,8 +3132,14 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                 showToast("✅ 逐字稿生成成功！");
             } catch(e) {
                 alert("轉譯失敗: " + e.message);
-                btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 重新轉譯';
-                btn.classList.remove('opacity-50', 'pointer-events-none');
+                if (btn) {
+                    btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 重新轉譯';
+                    btn.classList.remove('opacity-50', 'pointer-events-none');
+                }
+            } finally {
+                if (btn && started) {
+                    btn.classList.remove('opacity-50', 'pointer-events-none');
+                }
             }
         };
 
@@ -2927,7 +3185,8 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
         });
 
         // 🌟 新增：當使用者編輯逐字稿時自動存檔
-        window.updateTranscript = async (fileName, newText) => {
+        window.updateTranscript = async (fileNameEncoded, newText) => {
+            const fileName = decodeURIComponent(String(fileNameEncoded || ''));
             if (!currentEditingCaseId) return;
             try {
                 const c = casesData.find(x => x.id === currentEditingCaseId);
@@ -2954,8 +3213,9 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                 container.innerHTML = '<p class="text-sm text-slate-400">尚無錄音。</p>'; return;
             }
             container.innerHTML = audiosArr.map((audio, index) => {
-                const dUrl = audio.downloadUrl || audio.url;
+                const dUrl = audio.downloadUrl || audio.previewUrl || audio.url;
                 const safeBtnId = 'btn-transcribe-' + audio.name.replace(/[^a-zA-Z0-9]/g, '');
+                const encodedName = encodeURIComponent(audio.name || '');
                 
                 let transcriptSection = '';
                 if (audio.transcript) {
@@ -2966,13 +3226,13 @@ p{margin:0 0 8px 0;white-space:pre-wrap;}
                                 <span class="text-sm font-bold text-purple-700"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> AI 逐字稿 (可直接點擊修改)</span>
                                 <button onclick="window.copyTranscript(document.getElementById('ts-${index}').value)" class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-3 py-1.5 rounded-lg font-bold transition-colors shadow-sm"><i class="fa-solid fa-copy mr-1"></i> 複製</button>
                             </div>
-                            <textarea id="ts-${index}" onchange="window.updateTranscript('${audio.name}', this.value)" class="auto-resize w-full p-2 text-base text-slate-700 bg-transparent focus:bg-slate-50 border border-transparent focus:border-purple-300 rounded-lg outline-none resize-none leading-relaxed transition-colors">${audio.transcript}</textarea>
+                            <textarea id="ts-${index}" onchange="window.updateTranscript('${encodedName}', this.value)" class="auto-resize w-full p-2 text-base text-slate-700 bg-transparent focus:bg-slate-50 border border-transparent focus:border-purple-300 rounded-lg outline-none resize-none leading-relaxed transition-colors">${audio.transcript}</textarea>
                         </div>
                     `;
                 } else {
                     transcriptSection = `
                         <div class="mt-2 text-right">
-                            <button id="${safeBtnId}" onclick="window.startTranscription('${audio.name}')" class="text-sm bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-sm">
+                            <button id="${safeBtnId}" onclick="window.startTranscription('${encodedName}')" class="text-sm bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-sm">
                                 <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 針對此錄音產生逐字稿
                             </button>
                         </div>
