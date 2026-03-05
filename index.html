@@ -1105,6 +1105,303 @@
         </div>
     </main>
 
+    <!-- ================= 身障案件工作區（全螢幕，獨立於 main 之外） ================= -->
+    <div id="view-dis-case" class="hidden fixed inset-0 bg-slate-100 z-50 flex flex-col">
+        <!-- Top bar -->
+        <header class="bg-blue-700 text-white shadow-md px-4 py-3 flex items-center gap-3 shrink-0 z-10">
+            <button id="dis-btn-back" class="text-white hover:text-blue-200 p-2 -ml-2 text-2xl"><i class="fa-solid fa-arrow-left"></i></button>
+            <h1 id="dis-app-title" class="text-xl font-bold tracking-wide flex-1 truncate">身障個案</h1>
+            <span id="dis-autosave-indicator" class="text-xs bg-blue-800 px-3 py-1 rounded-full font-bold flex items-center gap-1">
+                <i class="fa-solid fa-cloud text-blue-300"></i> 自動儲存
+            </span>
+        </header>
+
+        <!-- Body: sidebar + main -->
+        <div class="flex-1 flex overflow-hidden">
+
+            <!-- ⬅️ 左側欄 -->
+            <div class="w-72 md:w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col h-full overflow-y-auto no-scrollbar z-20 shadow-sm">
+
+                <!-- 個案摘要（常駐） -->
+                <div class="p-4 border-b border-slate-100">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex-1 min-w-0">
+                            <h2 id="dis-client-name" class="text-lg font-black text-slate-800 leading-snug truncate">個案姓名</h2>
+                            <p id="dis-client-meta" class="text-xs text-slate-500 mt-0.5">性別 / 年齡</p>
+                            <p id="dis-company-name" class="text-sm font-bold text-blue-700 mt-1 truncate">申請單位</p>
+                            <p id="dis-category-badge" class="text-xs text-slate-500 mt-0.5">對象別</p>
+                        </div>
+                        <div class="flex flex-col gap-1 shrink-0">
+                            <button id="dis-btn-edit" class="text-xs text-blue-700 bg-white border border-blue-200 px-2 py-1 rounded-lg font-bold hover:bg-blue-50"><i class="fa-solid fa-pen mr-1"></i>編輯</button>
+                            <button id="dis-btn-delete" class="text-xs text-red-600 bg-white border border-red-200 px-2 py-1 rounded-lg font-bold hover:bg-red-50"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-lg p-2.5 cursor-pointer mt-3">
+                        <input type="checkbox" id="dis-report-completed" class="w-4 h-4 text-rose-600 rounded">
+                        <span class="text-xs font-bold text-rose-800">已完成報告</span>
+                    </label>
+                </div>
+
+                <!-- 可折疊：詳細資料 accordion -->
+                <div class="border-b border-slate-100">
+                    <button onclick="document.getElementById('dis-detail-panel').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors">
+                        <span><i class="fa-solid fa-id-card text-slate-400 mr-2"></i>詳細個案資料</span>
+                        <i class="fa-solid fa-chevron-down text-slate-400 transition-transform text-xs"></i>
+                    </button>
+                    <div id="dis-detail-panel" class="hidden px-4 pb-4 space-y-3 text-sm">
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-1">障礙資訊</p>
+                            <p class="text-xs font-bold text-slate-600 mb-0.5">障礙類別</p>
+                            <p id="dis-disability" class="text-sm text-slate-800">-</p>
+                            <p class="text-xs font-bold text-slate-600 mt-2 mb-0.5">致障原因</p>
+                            <p id="dis-cause" class="text-sm text-slate-800">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-1">工作資訊</p>
+                            <p class="text-xs font-bold text-slate-600 mb-0.5">職稱</p>
+                            <p id="dis-title" class="text-sm text-slate-800">-</p>
+                            <p class="text-xs font-bold text-slate-600 mt-1 mb-0.5">年資 / 到職日</p>
+                            <p id="dis-seniority" class="text-sm text-slate-800">-</p>
+                            <p class="text-xs font-bold text-slate-600 mt-1 mb-0.5">教育程度</p>
+                            <p id="dis-education" class="text-sm text-slate-800">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-1">現場資訊</p>
+                            <p class="text-xs font-bold text-slate-600 mb-0.5">實際工作地點</p>
+                            <p id="dis-location" class="text-sm text-slate-800">-</p>
+                            <p class="text-xs font-bold text-slate-600 mt-2 mb-0.5">個人障礙情形/工作內容</p>
+                            <p id="dis-condition" class="text-sm text-slate-800 leading-relaxed">-</p>
+                            <p class="text-xs font-bold text-slate-600 mt-2 mb-0.5">遭遇問題與期待改善</p>
+                            <p id="dis-problems" class="text-sm text-slate-800 leading-relaxed">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-1">聯絡方式</p>
+                            <p id="dis-contact" class="text-sm text-slate-800">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase mb-1">時間</p>
+                            <p id="dis-dates" class="text-sm text-slate-800">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 下載文字檔 -->
+                <div class="p-4 border-t border-slate-100 mt-auto shrink-0">
+                    <button id="dis-btn-download-text" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shadow">
+                        <i class="fa-solid fa-file-lines mr-2"></i>下載文字檔
+                    </button>
+                </div>
+            </div>
+
+            <!-- ➡️ 右側主要區 (scrollable, no canvas) -->
+            <div id="dis-main-area" class="flex-1 overflow-y-auto p-4 md:p-6 pb-24 space-y-5">
+
+                <!-- 訪視開場白 -->
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200 shadow-sm overflow-hidden">
+                    <button onclick="document.getElementById('dis-opening-body').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-4 hover:bg-blue-100 transition-colors">
+                        <span class="font-bold text-blue-800 flex items-center gap-2"><i class="fa-solid fa-microphone-lines text-blue-500"></i>訪視開場白稿</span>
+                        <i class="fa-solid fa-chevron-down text-blue-500 transition-transform text-sm"></i>
+                    </button>
+                    <div id="dis-opening-body" class="hidden px-5 pb-5">
+                        <div id="dis-opening-script" class="bg-white rounded-xl p-4 border border-blue-200 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-medium"></div>
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('dis-opening-script').textContent).then(()=>window.showToast('已複製開場白'))" class="mt-3 text-xs text-blue-700 bg-blue-100 hover:bg-blue-200 px-3 py-1.5 rounded-lg font-bold transition-colors">
+                            <i class="fa-regular fa-copy mr-1"></i>複製全文
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 現場照片 -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-5 flex justify-between items-center border-b border-slate-100">
+                        <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-camera text-blue-500 mr-2"></i>現場照片</h3>
+                        <div class="flex gap-2 items-center">
+                            <p class="text-xs text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded hidden md:block"><i class="fa-solid fa-triangle-exclamation mr-1"></i>拍完記得確認上傳</p>
+                            <label class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-pointer hover:bg-blue-700 transition-colors">
+                                <i class="fa-solid fa-plus mr-1"></i>拍照/選圖
+                                <input type="file" id="dis-photo-upload" accept="image/*" capture="environment" multiple class="hidden">
+                            </label>
+                        </div>
+                    </div>
+                    <div id="dis-pending-photos" class="hidden mx-5 mt-4 p-4 bg-amber-50 rounded-xl border-2 border-dashed border-amber-300">
+                        <h4 class="text-xs font-bold text-amber-800 mb-2"><i class="fa-solid fa-hourglass-half mr-1"></i>待上傳</h4>
+                        <div id="dis-pending-grid" class="grid grid-cols-3 md:grid-cols-5 gap-2 mb-3"></div>
+                        <button id="dis-btn-upload-photos" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 text-sm">
+                            <i class="fa-solid fa-cloud-arrow-up mr-2"></i>確認上傳全部照片
+                        </button>
+                    </div>
+                    <div id="dis-photos-container" class="p-5 space-y-2">
+                        <p class="text-sm text-slate-400">尚無照片。</p>
+                    </div>
+                </div>
+
+                <!-- 訪談錄音 -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-5 flex justify-between items-center border-b border-slate-100">
+                        <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-microphone text-red-500 mr-2"></i>訪談錄音 & AI 逐字稿</h3>
+                        <button id="dis-btn-record" class="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors">
+                            <i class="fa-solid fa-circle mr-1 text-xs"></i>開始錄音
+                        </button>
+                    </div>
+                    <p id="dis-recording-status" class="hidden mx-5 mt-3 text-sm text-red-600 font-bold animate-pulse">● 錄音中...</p>
+                    <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 border-b border-slate-100">
+                        <label class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors flex justify-center items-center cursor-pointer">
+                            <i class="fa-solid fa-cloud-arrow-up mr-2"></i>上傳音檔並 AI 轉文字
+                            <input type="file" id="dis-audio-upload" accept="audio/*,video/mp4" class="hidden">
+                        </label>
+                        <p class="text-xs text-slate-400 self-center">支援 mp3, m4a, wav（建議 &lt;15MB）</p>
+                    </div>
+                    <div id="dis-audios-container" class="p-5 space-y-2">
+                        <p class="text-sm text-slate-400">尚無錄音。</p>
+                    </div>
+                </div>
+
+                <!-- 一、個案就業狀況 -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center pb-2">
+                        <h3 class="font-bold text-xl text-blue-800">一、個案之就業狀況</h3>
+                        <div class="flex gap-2">
+                            <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-status-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
+                            <button class="dis-btn-ai text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-status-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI</button>
+                        </div>
+                    </div>
+                    <details class="border-b-2 border-blue-100 pb-3 mb-4">
+                        <summary class="cursor-pointer text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full font-bold select-none inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
+                        <div class="mt-2 p-3 bg-blue-50 rounded-xl text-sm text-slate-700 border border-blue-100 leading-relaxed">「可以先跟我們說說看，您在公司主要是負責哪些工作嗎？工作的流程大概是怎麼走的？一天的上班時間是幾點到幾點呢？如果以一週來看，有沒有什麼比較固定的作業內容或是輪班的安排？平常一天大概要完成多少的工作量呢？」</div>
+                    </details>
+                    <textarea id="dis-status-text" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed bg-slate-50 focus:bg-white" rows="4" placeholder="工作時間、主要工作內容、操作流程..."></textarea>
+                </div>
+
+                <!-- 二、生理限制 -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center pb-2">
+                        <h3 class="font-bold text-xl text-blue-800">二、個案之生理限制</h3>
+                        <div class="flex gap-2">
+                            <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-limits-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
+                            <button class="dis-btn-ai text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-limits-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI</button>
+                        </div>
+                    </div>
+                    <details class="border-b-2 border-blue-100 pb-3 mb-4">
+                        <summary class="cursor-pointer text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full font-bold select-none inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
+                        <div class="mt-2 p-3 bg-blue-50 rounded-xl text-sm text-slate-700 border border-blue-100 leading-relaxed">「我想多了解一下您身體上的狀況，方便的話可以說說看嗎？平常在工作的時候，有沒有哪些動作或姿勢會讓您感到比較吃力或不舒服？比如說，長時間站著、拿重物，或是彎腰低頭這類的？您目前有沒有在醫院定期追蹤，或是有在用什麼輔具協助工作呢？」</div>
+                    </details>
+                    <textarea id="dis-limits-text" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed bg-slate-50 focus:bg-white" rows="4" placeholder="聽力/視力數據、中高齡體能退化情形..."></textarea>
+                </div>
+
+                <!-- 三、問題診斷與分析 -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center pb-2">
+                        <h3 class="font-bold text-xl text-blue-800">三、個案就業問題診斷與分析</h3>
+                        <div class="flex gap-2">
+                            <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-analysis-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
+                            <button class="dis-btn-ai text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-analysis-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI</button>
+                        </div>
+                    </div>
+                    <details class="border-b-2 border-blue-100 pb-3 mb-4">
+                        <summary class="cursor-pointer text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full font-bold select-none inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
+                        <div class="mt-2 p-3 bg-blue-50 rounded-xl text-sm text-slate-700 border border-blue-100 leading-relaxed">「根據您剛才說的，我想更深入了解幾個地方。您在工作中覺得最困難、最費力的是哪個部分呢？這樣的情況大概多久會遇到一次？有沒有什麼事情是因為這樣，讓您覺得工作上做得比別人辛苦，或是需要多花一些時間？這對您的工作情緒或體力有沒有影響？」</div>
+                    </details>
+                    <textarea id="dis-analysis-text" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed bg-slate-50 focus:bg-white" rows="4" placeholder="描述生理限制與工作環境衝突所導致的困難..."></textarea>
+                </div>
+
+                <!-- 改善建議（新增） -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200">
+                    <div class="flex justify-between items-center pb-2">
+                        <h3 class="font-bold text-xl text-emerald-700"><i class="fa-solid fa-lightbulb text-emerald-500 mr-2"></i>改善建議</h3>
+                    </div>
+                    <details class="border-b-2 border-emerald-100 pb-3 mb-4">
+                        <summary class="cursor-pointer text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded-full font-bold select-none inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
+                        <div class="mt-2 p-3 bg-emerald-50 rounded-xl text-sm text-slate-700 border border-emerald-100 leading-relaxed">「如果可以的話，我想問您，您覺得在工作上，有沒有什麼樣的調整或工具，會讓您做起來比較輕鬆、比較方便呢？不管是工作桌的高度、使用的工具，或是工作的方式，只要是您覺得有幫助的，都可以跟我說說看。」</div>
+                    </details>
+                    <textarea id="dis-improvements" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base leading-relaxed bg-slate-50 focus:bg-white" rows="3" placeholder="現場觀察後建議的改善方向、所需輔具..."></textarea>
+                </div>
+
+                <!-- 四、改善方式/輔具建議 -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center pb-2">
+                        <h3 class="font-bold text-xl text-blue-800">四、改善方式、內容及輔具建議</h3>
+                        <div class="flex gap-2">
+                            <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-strategy-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
+                            <button class="dis-btn-ai text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-strategy-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI</button>
+                        </div>
+                    </div>
+                    <details class="border-b-2 border-blue-100 pb-3 mb-4">
+                        <summary class="cursor-pointer text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full font-bold select-none inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
+                        <div class="mt-2 p-3 bg-blue-50 rounded-xl text-sm text-slate-700 border border-blue-100 leading-relaxed">「根據今天的現場評估，我們初步想了幾個可能的協助方向，我來跟您說明一下。第一個是……（說明方向）。您覺得這樣的方式對您的工作會有幫助嗎？有沒有什麼您覺得我們可能還沒想到的地方，或是您覺得更有需要的？」</div>
+                    </details>
+                    <textarea id="dis-strategy-text" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed bg-slate-50 focus:bg-white" rows="4" placeholder="預計提供的輔具規格、人力協助時數規劃..."></textarea>
+                </div>
+
+                <!-- 客觀數據 -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xl text-slate-700 border-b pb-3 mb-4"><i class="fa-solid fa-ruler-combined text-blue-500 mr-2"></i>現場客觀數據</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div><label class="block text-sm font-bold text-slate-600 mb-1">照度 (Lux)</label><input type="number" id="dis-env-lux" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-lg"></div>
+                        <div><label class="block text-sm font-bold text-slate-600 mb-1">噪音 (dB)</label><input type="number" id="dis-env-noise" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-lg"></div>
+                        <div><label class="block text-sm font-bold text-slate-600 mb-1">檯面高度 (cm)</label><input type="number" id="dis-env-height" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-lg"></div>
+                        <div><label class="block text-sm font-bold text-slate-600 mb-1">搬運重量 (kg)</label><input type="number" id="dis-env-weight" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 text-lg"></div>
+                    </div>
+                </div>
+
+                <!-- 現場環境與能力檢核 -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xl text-slate-700 border-b pb-3 mb-4"><i class="fa-solid fa-clipboard-check text-blue-500 mr-2"></i>現場環境與能力檢核</h3>
+                    <div id="dis-checklist-container" class="space-y-5"></div>
+                </div>
+
+                <!-- 成果報告 五~八 -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200">
+                    <h3 class="font-bold text-xl text-emerald-800 border-b-2 border-emerald-100 pb-3 mb-5"><i class="fa-solid fa-chart-line text-emerald-600 mr-2"></i>成果報告</h3>
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block font-bold text-emerald-700 mb-2">五、審查會決議</label>
+                            <textarea id="dis-outcome-resolution" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base bg-slate-50 focus:bg-white" rows="3" placeholder="申請項目、申請金額、核准金額..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-emerald-700 mb-2">六、輔具試用、訓練及驗收</label>
+                            <textarea id="dis-outcome-acceptance" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base bg-slate-50 focus:bg-white" rows="3" placeholder="輔具試用狀況、教育訓練或驗收期程..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-emerald-700 mb-2">七、職務再設計前後效益評估</label>
+                            <textarea id="dis-outcome-benefit" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base bg-slate-50 focus:bg-white" rows="3" placeholder="解決之困難、工作便利性評分..."></textarea>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-emerald-700 mb-2">八、結案日期</label>
+                            <input type="date" id="dis-outcome-date" class="p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 bg-slate-50 focus:bg-white text-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 聽力評估 -->
+                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-purple-200">
+                    <h3 class="font-bold text-xl text-purple-800 border-b-2 border-purple-100 pb-3 mb-5"><i class="fa-solid fa-ear-listen text-purple-500 mr-2"></i>聽覺需求評估（選填）</h3>
+                    <p class="text-sm text-slate-500 mb-4">若為聽力相關個案，請填寫以下指標。</p>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-bold text-base text-slate-700 mb-2">指標一、職場聆聽需求</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-1" value="4" class="accent-purple-600"> 4分（&gt;75%）</label>
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-1" value="3" class="accent-purple-600"> 3分（50-74%）</label>
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-1" value="2" class="accent-purple-600"> 2分（25-49%）</label>
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-1" value="1" class="accent-purple-600"> 1分（&lt;24%）</label>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-base text-slate-700 mb-2">指標二、職場溝通需求</h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-2" value="4" class="accent-purple-600"> 4分（&gt;70%）</label>
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-2" value="3" class="accent-purple-600"> 3分（40-69%）</label>
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-2" value="2" class="accent-purple-600"> 2分（10-39%）</label>
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-2" value="1" class="accent-purple-600"> 1分（&lt;10%）</label>
+                            </div>
+                        </div>
+                        <p class="text-right font-bold text-slate-600">聽力總分：<span id="dis-hearing-score" class="text-2xl text-purple-700">0</span> 分</p>
+                    </div>
+                </div>
+
+            </div><!-- end dis-main-area -->
+        </div><!-- end body -->
+    </div><!-- end view-dis-case -->
+
     <!-- ================= 中高齡工作站工作區（全螢幕，獨立於 main 之外） ================= -->
     <div id="view-ws-elder" class="hidden fixed inset-0 bg-slate-100 z-50 flex flex-col">
         <!-- Top bar -->
@@ -1141,6 +1438,21 @@
                     <button id="elder-btn-save-equipment" class="mt-2 w-full bg-amber-500 text-white py-1.5 rounded-lg text-xs font-bold hover:bg-amber-600 transition-colors"><i class="fa-solid fa-floppy-disk mr-1"></i>儲存設備</button>
                 </div>
 
+                <!-- 單位人員清單 -->
+                <div class="p-4 border-b border-slate-100">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="font-bold text-sm text-slate-700"><i class="fa-solid fa-users text-emerald-500 mr-1"></i>單位人員清單</h3>
+                        <label class="bg-emerald-600 text-white px-2 py-1 rounded-lg text-xs font-bold cursor-pointer hover:bg-emerald-700">
+                            <i class="fa-solid fa-file-excel mr-1"></i>匯入 Excel
+                            <input type="file" id="elder-company-excel" accept=".xlsx,.xls" class="hidden">
+                        </label>
+                    </div>
+                    <p class="text-xs text-slate-400 mb-2">匯入後可在各工作站勾選納編人員</p>
+                    <div id="elder-company-personnel-list" class="space-y-1 max-h-40 overflow-y-auto no-scrollbar">
+                        <p class="text-xs text-slate-400 text-center py-2">尚未匯入人員</p>
+                    </div>
+                </div>
+
                 <!-- 工作站列表 -->
                 <div class="p-4 flex-1 flex flex-col min-h-0">
                     <div class="flex justify-between items-center mb-3">
@@ -1163,6 +1475,20 @@
             <!-- ➡️ 右側主工作區 -->
             <div id="elder-main-area" class="flex-1 overflow-y-auto p-4 md:p-6 pb-20">
 
+                <!-- 訪視開場白（中高齡） -->
+                <div class="bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl border border-amber-200 shadow-sm overflow-hidden mb-4">
+                    <button onclick="document.getElementById('elder-opening-body').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-4 hover:bg-amber-100 transition-colors">
+                        <span class="font-bold text-amber-800 flex items-center gap-2"><i class="fa-solid fa-microphone-lines text-amber-500"></i>訪視開場白稿</span>
+                        <i class="fa-solid fa-chevron-down text-amber-500 transition-transform text-sm"></i>
+                    </button>
+                    <div id="elder-opening-body" class="hidden px-5 pb-5">
+                        <div id="elder-opening-script" class="bg-white rounded-xl p-4 border border-amber-200 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-medium"></div>
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('elder-opening-script').textContent).then(()=>window.showToast('已複製開場白'))" class="mt-3 text-xs text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg font-bold transition-colors">
+                            <i class="fa-regular fa-copy mr-1"></i>複製全文
+                        </button>
+                    </div>
+                </div>
+
                 <!-- 空白提示 -->
                 <div id="elder-empty-state" class="flex flex-col items-center justify-center h-full text-slate-400 select-none">
                     <i class="fa-solid fa-layer-group text-6xl mb-4 opacity-20"></i>
@@ -1174,6 +1500,7 @@
                 <div id="elder-ws-detail" class="hidden max-w-4xl mx-auto space-y-5">
 
                     <!-- 工作站標頭 -->
+
                     <div class="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm">
                         <div class="flex items-center gap-3 mb-5">
                             <input type="text" id="elder-ws-name" class="flex-1 text-xl md:text-2xl font-black text-slate-800 bg-transparent border-b-2 border-amber-300 focus:outline-none focus:border-amber-500 pb-1" placeholder="工作站名稱（如：包裝作業區）">
@@ -1183,15 +1510,33 @@
                         </div>
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-bold text-slate-600 mb-1">主要工作內容</label>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-sm font-bold text-slate-600">主要工作內容</label>
+                                    <details class="shrink-0">
+                                        <summary class="cursor-pointer text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded-full font-bold select-none inline-flex items-center gap-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
+                                        <div class="mt-1 p-3 bg-amber-50 rounded-xl text-xs text-slate-700 border border-amber-100 leading-relaxed max-w-xs">「可以說說看，這個工作站的人員主要是負責哪些工作嗎？一天下來，大概有哪些固定的流程或操作步驟？工作量大概是怎樣的程度？」</div>
+                                    </details>
+                                </div>
                                 <textarea id="elder-work-content" rows="3" class="auto-resize w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-base" placeholder="說明此工作站的主要作業內容、操作流程..."></textarea>
                             </div>
                             <div>
-                                <label class="block text-sm font-bold text-slate-600 mb-1">工作困難</label>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-sm font-bold text-slate-600">工作困難</label>
+                                    <details class="shrink-0">
+                                        <summary class="cursor-pointer text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2 py-1 rounded-full font-bold select-none inline-flex items-center gap-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
+                                        <div class="mt-1 p-3 bg-amber-50 rounded-xl text-xs text-slate-700 border border-amber-100 leading-relaxed max-w-xs">「在這個工作站，工作人員有沒有遇到什麼比較費力或不方便的地方？比如說，搬東西太重、需要長時間彎腰或站立、或是某些操作姿勢讓人不舒服？這樣的狀況多久出現一次呢？」</div>
+                                    </details>
+                                </div>
                                 <textarea id="elder-difficulties" rows="3" class="auto-resize w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-400 text-base" placeholder="描述目前遭遇的工作困難與不便之處..."></textarea>
                             </div>
                             <div>
-                                <label class="block text-sm font-bold text-slate-600 mb-1">改善建議</label>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-sm font-bold text-slate-600">改善建議</label>
+                                    <details class="shrink-0">
+                                        <summary class="cursor-pointer text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-full font-bold select-none inline-flex items-center gap-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
+                                        <div class="mt-1 p-3 bg-emerald-50 rounded-xl text-xs text-slate-700 border border-emerald-100 leading-relaxed max-w-xs">「如果可以的話，您覺得怎樣的改變或工具，能讓這個工作站的人員工作起來更省力、更安全呢？比如升降桌、台車、或是工作流程的調整，都可以說說看。」</div>
+                                    </details>
+                                </div>
                                 <textarea id="elder-improvements" rows="3" class="auto-resize w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-green-400 text-base" placeholder="建議的改善方式、輔具規格..."></textarea>
                             </div>
                         </div>
@@ -1200,18 +1545,14 @@
                         </button>
                     </div>
 
-                    <!-- 人員名單 -->
+                    <!-- 人員名單 (checkbox selection from company pool) -->
                     <div class="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-users text-amber-500 mr-2"></i>人員名單</h3>
-                            <label class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-pointer hover:bg-emerald-700 transition-colors">
-                                <i class="fa-solid fa-file-excel mr-1"></i>匯入 Excel
-                                <input type="file" id="elder-excel-import" accept=".xlsx,.xls" class="hidden">
-                            </label>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-users text-amber-500 mr-2"></i>納編人員</h3>
+                            <span class="text-xs text-slate-400">從左側人員清單勾選</span>
                         </div>
-                        <p class="text-xs text-slate-400 mb-3">Excel 欄位需含：<span class="font-bold text-slate-600">姓名、性別、年齡、職稱、年資、工作說明、期待申請項目</span></p>
                         <div id="elder-personnel-container">
-                            <p class="text-sm text-slate-400">尚未匯入人員資料。</p>
+                            <p class="text-sm text-slate-400">請先在左側欄匯入單位人員清單，再勾選此工作站人員。</p>
                         </div>
                     </div>
 
@@ -2449,7 +2790,11 @@
                     openElderWorkspace(id);
                     return;
                 }
-                
+
+                // 其他類別（身障等）走新的身障工作區
+                openDisWorkspace(id);
+                return;
+
                 document.getElementById('ws-category').textContent = c.category || '未分類';
                 document.getElementById('ws-company').textContent = c.company || '未命名企業';
                 
@@ -2559,6 +2904,612 @@
         }
         window.openWorkspace = openWorkspace;
 
+        // ============================================================
+        // 身障案件工作區
+        // ============================================================
+        let currentDisCaseId = null;
+        let disAutoSaveTimer = null;
+        let disPendingPhotosQueue = [];
+        let disIsRecording = false;
+        let disSegmentInterval = null;
+        let disSegmentIndex = 0;
+        let disRecordingStartTime = null;
+        let disMediaRecorder = null;
+        let disAudioChunks = [];
+
+        function setDisAutosaveIndicator(state) {
+            const el = document.getElementById('dis-autosave-indicator');
+            if (!el) return;
+            if (state === 'saving') {
+                el.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-300"></i> 儲存中...';
+            } else if (state === 'saved') {
+                el.innerHTML = '<i class="fa-solid fa-cloud-check text-green-300"></i> 已自動儲存';
+                setTimeout(() => { el.innerHTML = '<i class="fa-solid fa-cloud text-blue-300"></i> 自動儲存'; }, 2000);
+            } else if (state === 'error') {
+                el.innerHTML = '<i class="fa-solid fa-cloud-exclamation text-red-300"></i> 儲存失敗';
+            } else {
+                el.innerHTML = '<i class="fa-solid fa-cloud text-blue-300"></i> 自動儲存';
+            }
+        }
+
+        function collectDisData() {
+            const checklist = {};
+            document.querySelectorAll('#dis-checklist-container .chk-dis').forEach(cb => {
+                if (cb.dataset.chkkey) checklist[cb.dataset.chkkey] = cb.checked;
+            });
+            return {
+                report: {
+                    status: document.getElementById('dis-status-text')?.value || '',
+                    limits: document.getElementById('dis-limits-text')?.value || '',
+                    analysis: document.getElementById('dis-analysis-text')?.value || '',
+                    improvements: document.getElementById('dis-improvements')?.value || '',
+                    strategy: document.getElementById('dis-strategy-text')?.value || ''
+                },
+                outcome: {
+                    resolution: document.getElementById('dis-outcome-resolution')?.value || '',
+                    acceptance: document.getElementById('dis-outcome-acceptance')?.value || '',
+                    benefit: document.getElementById('dis-outcome-benefit')?.value || '',
+                    closeDate: document.getElementById('dis-outcome-date')?.value || ''
+                },
+                env: {
+                    lux: document.getElementById('dis-env-lux')?.value || '',
+                    noise: document.getElementById('dis-env-noise')?.value || '',
+                    height: document.getElementById('dis-env-height')?.value || '',
+                    weight: document.getElementById('dis-env-weight')?.value || ''
+                },
+                hearing: {
+                    ind1: document.querySelector('input[name="dis-hearing-ind-1"]:checked')?.value || '',
+                    ind2: document.querySelector('input[name="dis-hearing-ind-2"]:checked')?.value || ''
+                },
+                checklist
+            };
+        }
+
+        function triggerDisAutoSave() {
+            if (!currentDisCaseId || !currentUser) return;
+            setDisAutosaveIndicator('saving');
+            clearTimeout(disAutoSaveTimer);
+            disAutoSaveTimer = setTimeout(async () => {
+                try {
+                    await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId), {
+                        ...collectDisData(),
+                        updatedAt: serverTimestamp()
+                    });
+                    setDisAutosaveIndicator('saved');
+                } catch (e) {
+                    console.error('dis autosave error', e);
+                    setDisAutosaveIndicator('error');
+                }
+            }, 1500);
+        }
+
+        function renderDisPhotos(photos) {
+            const container = document.getElementById('dis-photos-container');
+            if (!photos || photos.length === 0) { container.innerHTML = '<p class="text-sm text-slate-400">尚無照片。</p>'; return; }
+            container.innerHTML = photos.map((p, i) => `
+                <div class="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-xl border border-slate-200">
+                    <img src="${p.previewUrl||p.downloadUrl}" class="w-14 h-14 object-cover rounded-lg shrink-0 cursor-pointer" onclick="window.open('${p.downloadUrl||p.previewUrl}','_blank')">
+                    <p class="flex-1 text-sm font-medium text-slate-700 truncate">${p.displayName||p.name}</p>
+                    <a href="${p.downloadUrl||p.previewUrl}" target="_blank" class="text-slate-400 hover:text-blue-600 p-1.5"><i class="fa-solid fa-download text-sm"></i></a>
+                    <button onclick="window.deleteDisPhoto(${i})" class="text-red-400 hover:text-red-600 p-1.5"><i class="fa-solid fa-trash text-sm"></i></button>
+                </div>`).join('');
+        }
+
+        window.deleteDisPhoto = async (idx) => {
+            if (!confirm('確定刪除此照片？')) return;
+            const c = casesData.find(x => x.id === currentDisCaseId);
+            if (!c) return;
+            const photos = [...(c.photos || [])];
+            photos.splice(idx, 1);
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId), { photos, updatedAt: serverTimestamp() });
+            renderDisPhotos(photos);
+        };
+
+        function renderDisAudios(audios) {
+            const container = document.getElementById('dis-audios-container');
+            if (!audios || audios.length === 0) { container.innerHTML = '<p class="text-sm text-slate-400">尚無錄音。</p>'; return; }
+            container.innerHTML = audios.map((a, i) => `
+                <div class="space-y-2">
+                    <div class="flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                        <i class="fa-solid fa-file-audio text-blue-400 shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-bold text-slate-700 truncate">${a.displayName||a.name}</p>
+                            <p class="text-xs text-slate-400"><i class="fa-regular fa-clock mr-1"></i><span id="dis-dur-${i}">--:--</span></p>
+                        </div>
+                        <a href="${a.downloadUrl||a.previewUrl}" target="_blank" class="text-slate-400 hover:text-blue-600 p-1.5"><i class="fa-solid fa-download text-sm"></i></a>
+                        <button onclick="window.deleteDisAudio(${i})" class="text-red-400 hover:text-red-600 p-1.5"><i class="fa-solid fa-trash text-sm"></i></button>
+                    </div>
+                    ${a.transcript ? `<div class="ml-4 p-3 bg-blue-50 rounded-xl border border-blue-100 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">${a.transcript}</div>` : ''}
+                </div>`).join('');
+            audios.forEach((a, i) => {
+                if (!a.previewUrl && !a.downloadUrl) return;
+                const audio = new Audio(a.previewUrl || a.downloadUrl);
+                audio.addEventListener('loadedmetadata', () => {
+                    const el = document.getElementById(`dis-dur-${i}`);
+                    if (el) { const s = audio.duration; el.textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`; }
+                });
+            });
+        }
+
+        window.deleteDisAudio = async (idx) => {
+            if (!confirm('確定刪除此錄音？')) return;
+            const c = casesData.find(x => x.id === currentDisCaseId);
+            if (!c) return;
+            const audios = [...(c.audios || [])];
+            audios.splice(idx, 1);
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId), { audios, updatedAt: serverTimestamp() });
+            renderDisAudios(audios);
+        };
+
+        function openDisWorkspace(id) {
+            currentDisCaseId = id;
+            const c = casesData.find(x => x.id === id);
+            if (!c) return;
+
+            // Fill sidebar info
+            document.getElementById('dis-client-name').textContent = c.clientName || c.client || '未命名個案';
+            document.getElementById('dis-client-meta').textContent = [c.clientGender, c.clientAge ? c.clientAge+'歲' : ''].filter(Boolean).join(' / ') || '-';
+            document.getElementById('dis-company-name').textContent = c.company || '未命名企業';
+            document.getElementById('dis-category-badge').textContent = c.category || '身心障礙者';
+            document.getElementById('dis-disability').textContent = c.disability || '-';
+            document.getElementById('dis-cause').textContent = c.disabilityCause || '-';
+            document.getElementById('dis-title').textContent = c.clientTitle || c.jobTitle || '-';
+            document.getElementById('dis-seniority').textContent = [c.seniority, c.hireDate ? '到職：'+c.hireDate : ''].filter(Boolean).join('  /  ') || '-';
+            document.getElementById('dis-education').textContent = c.education || '-';
+            document.getElementById('dis-location').textContent = c.workLocation || '-';
+            document.getElementById('dis-condition').textContent = c.clientCondition || '-';
+            document.getElementById('dis-problems').textContent = c.initialProblems || '-';
+            document.getElementById('dis-contact').textContent = [c.clientMobile, c.clientEmail].filter(Boolean).join('  /  ') || '-';
+            document.getElementById('dis-dates').textContent = `接案：${c.intakeDate||'-'}  初訪：${c.visitDate||c.date||'-'}`;
+            document.getElementById('dis-app-title').textContent = `${c.clientName||'個案'}｜${c.company||''}`;
+
+            // 生成開場白
+            const ownerName = getCaseOwner(c) || '蔡凱宇';
+            const visitorsName = c.visitors || '訪視委員';
+            const clientName = c.clientName || c.client || '個案';
+            const companyName = c.company || '貴公司';
+            const district = c.district ? `${c.district}轄區` : '';
+            const openingScript = `大家好！我是${district ? district + '的' : ''}職務再設計專員${ownerName}，今天特地來拜訪，是要針對 ${clientName} 在工作上的狀況，進行一個職務再設計的現場評估。
+
+跟我一起來的，還有我們的訪視委員${visitorsName}，兩位都非常熟悉這個領域，您不用緊張，今天我們就是輕鬆地聊一聊、了解一下現場的情形。
+
+整個過程大概需要一個小時左右，我們會做一些文字記錄，這些資料只用來協助您申請職務再設計的相關補助，不會對外公開，請放心。
+
+那請問我們可以開始了嗎？`;
+            const scriptEl = document.getElementById('dis-opening-script');
+            if (scriptEl) scriptEl.textContent = openingScript;
+
+            const rc = document.getElementById('dis-report-completed');
+            if (rc) rc.checked = isReportCompleted(c);
+
+            // Fill report fields
+            const rpt = c.report || {};
+            document.getElementById('dis-status-text').value = rpt.status || c.notes || '';
+            document.getElementById('dis-limits-text').value = rpt.limits || '';
+            document.getElementById('dis-analysis-text').value = rpt.analysis || '';
+            document.getElementById('dis-improvements').value = rpt.improvements || '';
+            document.getElementById('dis-strategy-text').value = rpt.strategy || c.strategy || '';
+
+            const outcome = c.outcome || {};
+            document.getElementById('dis-outcome-resolution').value = outcome.resolution || '';
+            document.getElementById('dis-outcome-acceptance').value = outcome.acceptance || '';
+            document.getElementById('dis-outcome-benefit').value = outcome.benefit || '';
+            document.getElementById('dis-outcome-date').value = outcome.closeDate || '';
+
+            const env = c.env || {};
+            document.getElementById('dis-env-lux').value = env.lux || '';
+            document.getElementById('dis-env-noise').value = env.noise || '';
+            document.getElementById('dis-env-height').value = env.height || '';
+            document.getElementById('dis-env-weight').value = env.weight || '';
+
+            // Hearing
+            document.querySelectorAll('input[name="dis-hearing-ind-1"], input[name="dis-hearing-ind-2"]').forEach(r => r.checked = false);
+            const hearing = c.hearing || {};
+            if (hearing.ind1) { const r = document.querySelector(`input[name="dis-hearing-ind-1"][value="${hearing.ind1}"]`); if (r) r.checked = true; }
+            if (hearing.ind2) { const r = document.querySelector(`input[name="dis-hearing-ind-2"][value="${hearing.ind2}"]`); if (r) r.checked = true; }
+            updateDisHearingScore();
+
+            // Checklist
+            const disChkContainer = document.getElementById('dis-checklist-container');
+            disChkContainer.innerHTML = '';
+            const safeChecklists = settings.checklists || {};
+            for (const [category, items] of Object.entries(safeChecklists)) {
+                let html = `<div class="mb-5"><h4 class="text-base font-bold text-blue-800 bg-blue-50 p-2.5 rounded-xl mb-3">${category}</h4><div class="space-y-2">`;
+                items.forEach(item => {
+                    const safeKey = String(item).replace(/[.#$/[\]]/g, '_');
+                    const isChecked = c.checklist && c.checklist[safeKey] ? 'checked' : '';
+                    html += `<label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" data-chkkey="${safeKey}" class="chk-dis peer mt-1 w-5 h-5 text-red-600 rounded border-slate-300 focus:ring-red-500" ${isChecked}>
+                        <span class="flex-1 p-3 rounded-xl border-2 border-slate-100 bg-slate-50 hover:bg-white peer-checked:bg-red-50 peer-checked:border-red-200 text-sm text-slate-700 font-medium">${item}</span>
+                    </label>`;
+                });
+                html += `</div></div>`;
+                disChkContainer.innerHTML += html;
+            }
+            // Bind auto-save to checklists
+            disChkContainer.querySelectorAll('.chk-dis').forEach(cb => cb.addEventListener('change', triggerDisAutoSave));
+
+            // Photos and audios
+            renderDisPhotos(Array.isArray(c.photos) ? c.photos : []);
+            renderDisAudios(Array.isArray(c.audios) ? c.audios : []);
+
+            // Auto-save bindings
+            ['dis-status-text','dis-limits-text','dis-analysis-text','dis-improvements','dis-strategy-text',
+             'dis-outcome-resolution','dis-outcome-acceptance','dis-outcome-benefit','dis-outcome-date',
+             'dis-env-lux','dis-env-noise','dis-env-height','dis-env-weight'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.oninput = triggerDisAutoSave; el.onchange = triggerDisAutoSave; }
+            });
+            document.querySelectorAll('input[name="dis-hearing-ind-1"], input[name="dis-hearing-ind-2"]').forEach(r => {
+                r.addEventListener('change', () => { updateDisHearingScore(); triggerDisAutoSave(); });
+            });
+
+            // Show view
+            document.getElementById('view-container-standard').classList.add('hidden');
+            if (DOM && DOM.views && DOM.views.workspace) DOM.views.workspace.classList.add('hidden');
+            document.getElementById('view-dis-case').classList.remove('hidden');
+
+            setDisAutosaveIndicator('idle');
+            triggerAutoResize();
+        }
+        window.openDisWorkspace = openDisWorkspace;
+
+        function updateDisHearingScore() {
+            const v1 = Number(document.querySelector('input[name="dis-hearing-ind-1"]:checked')?.value || 0);
+            const v2 = Number(document.querySelector('input[name="dis-hearing-ind-2"]:checked')?.value || 0);
+            const el = document.getElementById('dis-hearing-score');
+            if (el) el.textContent = v1 + v2;
+        }
+
+        // Dis back button
+        document.getElementById('dis-btn-back')?.addEventListener('click', () => {
+            document.getElementById('view-dis-case').classList.add('hidden');
+            document.getElementById('view-container-standard').classList.remove('hidden');
+            currentDisCaseId = null;
+            showView('list', '訪視案件管理');
+        });
+
+        // Dis report completed
+        document.getElementById('dis-report-completed')?.addEventListener('change', async (e) => {
+            if (!currentDisCaseId || !currentUser) return;
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId), {
+                    reportCompleted: e.target.checked,
+                    reportCompletedAt: e.target.checked ? new Date().toLocaleString('zh-TW') : null,
+                    updatedAt: serverTimestamp()
+                });
+                showToast(e.target.checked ? '已標記完成報告' : '已取消完成報告標記');
+            } catch(err) { alert('更新失敗：'+err.message); }
+        });
+
+        // Dis edit basic info
+        document.getElementById('dis-btn-edit')?.addEventListener('click', () => {
+            if (!currentDisCaseId) return;
+            window.editCase(currentDisCaseId);
+        });
+
+        // Dis delete case
+        document.getElementById('dis-btn-delete')?.addEventListener('click', async () => {
+            if (!currentDisCaseId || !confirm('確定要刪除這個個案？此操作無法復原。')) return;
+            try {
+                await deleteDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId));
+                document.getElementById('view-dis-case').classList.add('hidden');
+                document.getElementById('view-container-standard').classList.remove('hidden');
+                showView('list', '訪視案件管理');
+                showToast('已刪除個案');
+            } catch(err) { alert('刪除失敗：'+err.message); }
+        });
+
+        // Dis photo upload
+        document.getElementById('dis-photo-upload')?.addEventListener('change', async (e) => {
+            if (!currentDisCaseId || !currentUser) return;
+            const files = Array.from(e.target.files);
+            e.target.value = '';
+            if (!files.length) return;
+            const pendingContainer = document.getElementById('dis-pending-photos');
+            const pendingGrid = document.getElementById('dis-pending-grid');
+            pendingContainer.classList.remove('hidden');
+            files.forEach(file => {
+                const url = URL.createObjectURL(file);
+                disPendingPhotosQueue.push({ file, url });
+                const div = document.createElement('div');
+                div.className = 'relative aspect-square';
+                div.innerHTML = `<img src="${url}" class="w-full h-full object-cover rounded-lg">`;
+                pendingGrid.appendChild(div);
+            });
+        });
+
+        document.getElementById('dis-btn-upload-photos')?.addEventListener('click', async () => {
+            if (!disPendingPhotosQueue.length || !currentDisCaseId) return;
+            const btn = document.getElementById('dis-btn-upload-photos');
+            btn.textContent = '上傳中...'; btn.disabled = true;
+            try {
+                const c = casesData.find(x => x.id === currentDisCaseId);
+                const existingPhotos = Array.isArray(c?.photos) ? [...c.photos] : [];
+                for (const item of disPendingPhotosQueue) {
+                    const fileName = `photo_${Date.now()}_${item.file.name}`;
+                    const result = await uploadToGoogleDrive(item.file, fileName);
+                    existingPhotos.push({ name: fileName, displayName: item.file.name, previewUrl: result.previewUrl, downloadUrl: result.downloadUrl });
+                    URL.revokeObjectURL(item.url);
+                }
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId), { photos: existingPhotos, updatedAt: serverTimestamp() });
+                disPendingPhotosQueue = [];
+                document.getElementById('dis-pending-photos').classList.add('hidden');
+                document.getElementById('dis-pending-grid').innerHTML = '';
+                renderDisPhotos(existingPhotos);
+                showToast(`✓ 已上傳 ${existingPhotos.length} 張照片`);
+            } catch(err) { alert('上傳失敗：'+err.message); } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>確認上傳全部照片';
+            }
+        });
+
+        // Dis audio upload
+        document.getElementById('dis-audio-upload')?.addEventListener('change', async (e) => {
+            if (!currentDisCaseId || !currentUser) return;
+            const file = e.target.files[0];
+            e.target.value = '';
+            if (!file) return;
+            const label = document.getElementById('dis-audio-upload')?.closest('label');
+            const origText = label ? label.querySelector('span')?.textContent : '';
+            try {
+                showToast('⏳ 上傳音檔中，請稍候...');
+                const fileName = `audio_${Date.now()}_${file.name}`;
+                const result = await uploadToGoogleDrive(file, fileName);
+                const c = casesData.find(x => x.id === currentDisCaseId);
+                const newAudios = [...(c?.audios||[]), { name: fileName, displayName: file.name, previewUrl: result.previewUrl, downloadUrl: result.downloadUrl, transcript: '' }];
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId), { audios: newAudios, updatedAt: serverTimestamp() });
+                renderDisAudios(newAudios);
+                showToast('✓ 音檔已上傳，正在 AI 轉譯...');
+                try {
+                    const blob = await fetch(result.previewUrl || result.downloadUrl).then(r => r.blob());
+                    const transcript = await transcribeAudioWithAI(blob);
+                    const updatedAudios = casesData.find(x=>x.id===currentDisCaseId)?.audios?.map(a => a.name===fileName ? {...a,transcript} : a) || newAudios;
+                    await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId), { audios: updatedAudios });
+                    renderDisAudios(updatedAudios);
+                    showToast('✓ AI 逐字稿已完成');
+                } catch(te) { console.warn('AI transcription failed', te); }
+            } catch(err) { alert('上傳失敗：'+err.message); }
+        });
+
+        // Dis recording button
+        document.getElementById('dis-btn-record')?.addEventListener('click', async () => {
+            if (!currentDisCaseId) return;
+            const btn = document.getElementById('dis-btn-record');
+            const statusEl = document.getElementById('dis-recording-status');
+            if (disIsRecording) {
+                // Stop
+                disIsRecording = false;
+                clearInterval(disSegmentInterval);
+                if (disMediaRecorder && disMediaRecorder.state !== 'inactive') disMediaRecorder.stop();
+                btn.innerHTML = '<i class="fa-solid fa-circle mr-1 text-xs"></i>開始錄音';
+                statusEl.classList.add('hidden');
+            } else {
+                // Start
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    disAudioChunks = [];
+                    disSegmentIndex = 0;
+                    disIsRecording = true;
+                    disRecordingStartTime = Date.now();
+                    disMediaRecorder = new MediaRecorder(stream);
+                    disMediaRecorder.ondataavailable = e => { if (e.data.size > 0) disAudioChunks.push(e.data); };
+                    disMediaRecorder.onstop = async () => {
+                        if (disAudioChunks.length === 0) return;
+                        const blob = new Blob(disAudioChunks, { type: disMediaRecorder.mimeType || 'audio/webm' });
+                        disAudioChunks = [];
+                        const fileName = `audio_${Date.now()}_dis_final.webm`;
+                        await uploadAudioAndSave(blob, fileName, currentDisCaseId, new Date().toLocaleString('zh-TW'));
+                        const c = casesData.find(x=>x.id===currentDisCaseId);
+                        renderDisAudios(c?.audios || []);
+                        stream.getTracks().forEach(t => t.stop());
+                    };
+                    disMediaRecorder.start(1000);
+                    disSegmentInterval = setInterval(async () => {
+                        if (!disIsRecording || !disAudioChunks.length) return;
+                        disSegmentIndex++;
+                        const chunks = [...disAudioChunks]; disAudioChunks = [];
+                        const segBlob = new Blob(chunks, { type: disMediaRecorder.mimeType || 'audio/webm' });
+                        const segName = `audio_${Date.now()}_dis_part${disSegmentIndex}.webm`;
+                        await uploadAudioAndSave(segBlob, segName, currentDisCaseId, `${new Date().toLocaleString('zh-TW')} 第${disSegmentIndex}段`);
+                        const c = casesData.find(x=>x.id===currentDisCaseId);
+                        renderDisAudios(c?.audios || []);
+                    }, 5 * 60 * 1000);
+                    btn.innerHTML = '<i class="fa-solid fa-stop mr-1"></i>停止錄音';
+                    statusEl.classList.remove('hidden');
+                } catch(err) { alert('無法開啟麥克風：'+err.message); }
+            }
+        });
+
+        // Download text file for dis case
+        document.getElementById('dis-btn-download-text')?.addEventListener('click', () => {
+            if (!currentDisCaseId) return;
+            const c = casesData.find(x => x.id === currentDisCaseId);
+            if (!c) return;
+            const data = collectDisData();
+            const lines = [];
+            const sec = (t) => { lines.push(''); lines.push(`【${t}】`); };
+            const row = (label, val) => { const v=(val||'').toString().trim(); if(v) lines.push(`${label}：${v}`); };
+
+            lines.push('【身心障礙者職務再設計訪視紀錄】');
+            lines.push('─'.repeat(40));
+
+            sec('個案基本資料');
+            row('個案姓名', c.clientName||c.client);
+            row('性別', c.clientGender);
+            row('年齡', c.clientAge ? c.clientAge+'歲' : '');
+            row('出生年月日', c.clientDob);
+            row('申請單位', c.company);
+            row('聯絡電話', c.phone);
+            row('個案手機', c.clientMobile);
+            row('個案Email', c.clientEmail);
+            row('教育程度', c.education);
+            row('職稱', c.clientTitle||c.jobTitle);
+            row('年資', c.seniority);
+            row('到職日', c.hireDate);
+            row('對象別', c.category);
+            row('轄區', c.district);
+            row('主責人員', getCaseOwner(c));
+            row('訪視委員', c.visitors);
+            row('接案日', c.intakeDate);
+            row('初訪日', c.visitDate||c.date);
+
+            sec('障礙資訊');
+            row('障礙類別', c.disability);
+            row('致障原因', c.disabilityCause);
+            row('個人特質', c.clientTraits);
+            row('個人障礙情形/工作內容', c.clientCondition);
+            row('實際工作地點', c.workLocation);
+            row('遭遇問題及期待改善', c.initialProblems);
+
+            sec('評估撰寫');
+            row('一、個案之就業狀況', data.report.status);
+            row('二、個案之生理限制', data.report.limits);
+            row('三、個案就業問題診斷與分析', data.report.analysis);
+            row('改善建議', data.report.improvements);
+            row('四、改善方式、內容及輔具建議', data.report.strategy);
+
+            sec('成果報告');
+            row('五、審查會決議', data.outcome.resolution);
+            row('六、輔具試用、訓練及驗收', data.outcome.acceptance);
+            row('七、職務再設計前後效益評估', data.outcome.benefit);
+            row('八、結案日期', data.outcome.closeDate);
+
+            sec('客觀數據');
+            row('環境照度(Lux)', data.env.lux);
+            row('環境噪音(dB)', data.env.noise);
+            row('操作檯面高度(cm)', data.env.height);
+            row('搬運物重量(kg)', data.env.weight);
+
+            sec('現場環境與能力檢核');
+            const safeChecklists = settings.checklists || {};
+            let hasChk = false;
+            for (const [cat, items] of Object.entries(safeChecklists)) {
+                const catLines = [];
+                items.forEach(item => {
+                    const key = String(item).replace(/[.#$/[\]]/g,'_');
+                    if (data.checklist[key] || (c.checklist && c.checklist[key])) catLines.push(`■ ${item}`);
+                });
+                if (catLines.length) { hasChk = true; lines.push(`${cat}：`); lines.push(...catLines); }
+            }
+            if (!hasChk) lines.push('（無勾選項目）');
+
+            if (data.hearing.ind1 || data.hearing.ind2) {
+                sec('聽覺需求評估表');
+                row('指標一', data.hearing.ind1);
+                row('指標二', data.hearing.ind2);
+                row('總分', String(Number(data.hearing.ind1||0)+Number(data.hearing.ind2||0)));
+            }
+
+            const audios = c.audios || [];
+            const withTranscript = audios.filter(a=>(a.transcript||'').trim());
+            if (withTranscript.length) {
+                sec('訪談錄音逐字稿');
+                withTranscript.forEach((a,i) => {
+                    lines.push(`─── ${a.displayName||a.name} ───`);
+                    lines.push(a.transcript.trim());
+                    if (i < withTranscript.length-1) lines.push('');
+                });
+            }
+            if (audios.length) {
+                sec('錄音檔清單');
+                audios.forEach((a,i) => lines.push(`${i+1}. ${a.displayName||a.name} ${(a.transcript||'').trim() ? '（有逐字稿）' : '（無逐字稿）'}`));
+            }
+
+            const text = lines.join('\n');
+            const fileName = `${sanitizeFileName(c.company||'未知')}_${sanitizeFileName(c.clientName||'未命名')}_訪視紀錄.txt`;
+            const blob = new Blob(['\ufeff', text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href=url; a.download=fileName;
+            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+            showToast('已下載身障案件文字檔');
+        });
+
+        // ============================================================
+        // 中高齡 公司級人員管理
+        // ============================================================
+        function renderElderCompanyPersonnel(companyPersonnel, workstations) {
+            const container = document.getElementById('elder-company-personnel-list');
+            if (!container) return;
+            if (!companyPersonnel || companyPersonnel.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">尚未匯入人員</p>';
+                return;
+            }
+            // Build assignment map: personId -> [workstationNames]
+            const assignMap = {};
+            (workstations || []).forEach(ws => {
+                (ws.personnelIds || []).forEach(pid => {
+                    if (!assignMap[pid]) assignMap[pid] = [];
+                    assignMap[pid].push(ws.name || '未命名');
+                });
+            });
+            container.innerHTML = companyPersonnel.map(p => {
+                const assigned = assignMap[p.id] || [];
+                const isAssigned = assigned.length > 0;
+                const wsLabel = assigned.map(n => n.length > 5 ? n.slice(0,4)+'…' : n).join('、');
+                return `<div class="flex items-center gap-1.5 py-1 px-1 rounded-lg ${isAssigned ? '' : 'bg-orange-50'}">
+                    <span class="text-xs font-bold truncate flex-1 ${isAssigned ? 'text-slate-700' : 'text-orange-600'}">${p.name}</span>
+                    ${isAssigned ? `<span class="text-xs text-slate-400 truncate max-w-[80px]">${wsLabel}</span>` : '<span class="text-xs text-orange-400">未指派</span>'}
+                </div>`;
+            }).join('');
+        }
+
+        function renderElderPersonnelCheckboxes(companyPersonnel, currentPersonnelIds) {
+            const container = document.getElementById('elder-personnel-container');
+            if (!container) return;
+            if (!companyPersonnel || companyPersonnel.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400">請先在左側欄匯入單位人員清單，再勾選此工作站人員。</p>';
+                return;
+            }
+            const ids = new Set(currentPersonnelIds || []);
+            container.innerHTML = `
+                <div class="space-y-2">
+                    ${companyPersonnel.map(p => `
+                        <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${ids.has(p.id) ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white hover:border-amber-200'}">
+                            <input type="checkbox" class="elder-personnel-chk w-5 h-5 accent-amber-600 shrink-0" data-pid="${p.id}" ${ids.has(p.id) ? 'checked' : ''}>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-bold text-slate-800">${p.name} <span class="font-normal text-slate-500">${p.gender||''} ${p.age ? p.age+'歲' : ''}</span></p>
+                                <p class="text-xs text-slate-500 truncate">${[p.title, p.seniority ? p.seniority+'年資' : ''].filter(Boolean).join(' · ')}</p>
+                            </div>
+                        </label>`).join('')}
+                </div>`;
+        }
+
+        // Company Excel import (left sidebar)
+        document.getElementById('elder-company-excel')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !currentElderCaseId) return;
+            e.target.value = '';
+            try {
+                const data = await file.arrayBuffer();
+                const wb = XLSX.read(data);
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+                if (rows.length === 0) { alert('Excel 沒有資料'); return; }
+                const find = (row, ...cands) => { const k = Object.keys(row).find(k => cands.some(c => k.includes(c))); return k ? String(row[k]||'').trim() : ''; };
+                const personnel = rows.map(row => ({
+                    id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+                    name: find(row,'姓名','名字'),
+                    gender: find(row,'性別'),
+                    age: find(row,'年齡','歲'),
+                    title: find(row,'職稱','職位'),
+                    seniority: find(row,'年資','資歷'),
+                    workDesc: find(row,'工作說明','工作內容','說明'),
+                    expectedItems: find(row,'期待','申請項目','申請')
+                })).filter(p => p.name);
+                if (!personnel.length) { alert('找不到有效人員，請確認 Excel 有「姓名」欄位'); return; }
+                const c = casesData.find(x => x.id === currentElderCaseId);
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { companyPersonnel: personnel, updatedAt: serverTimestamp() });
+                renderElderCompanyPersonnel(personnel, c?.workstations || []);
+                // refresh current workstation checkbox list if open
+                if (currentWorkstationId) {
+                    const ws = (c?.workstations||[]).find(w => w.id === currentWorkstationId);
+                    renderElderPersonnelCheckboxes(personnel, ws?.personnelIds || []);
+                }
+                showToast(`✓ 已匯入 ${personnel.length} 位單位人員`);
+            } catch(err) { alert('匯入失敗：' + err.message); }
+        });
+
         // ==========================================
         // 🌟 中高齡（工作站）專屬邏輯
         // ==========================================
@@ -2587,8 +3538,24 @@
             document.getElementById('elder-app-title').textContent = c.company || '中高齡工作站';
 
             renderElderWorkstationList(c.workstations || []);
+            renderElderCompanyPersonnel(c.companyPersonnel || [], c.workstations || []);
             document.getElementById('elder-empty-state').classList.remove('hidden');
             document.getElementById('elder-ws-detail').classList.add('hidden');
+
+            // 生成中高齡開場白
+            const eOwner = getCaseOwner(c) || '蔡凱宇';
+            const eVisitors = c.visitors || '訪視委員';
+            const eDistrict = c.district ? `${c.district}轄區` : '';
+            const eCompany = c.company || '貴公司';
+            const elderOpening = `大家好！我是${eDistrict ? eDistrict + '的' : ''}職務再設計專員${eOwner}，今天來到 ${eCompany} 做職務再設計的現場訪視。
+
+跟我一起來的，還有訪視委員${eVisitors}，很感謝公司今天給我們這個機會來了解現場的工作狀況。
+
+我們今天的目的，是想深入了解各個工作站的工作流程、現場環境，以及人員在工作上可能遭遇到的困難，看看有沒有辦法透過職務再設計或輔具的申請，讓工作人員做起來更省力、更舒適、更安全。
+
+整個訪視大概需要一到兩個小時，過程中我們會在各工作站巡視並做些記錄，請各位主管和工作人員放心配合，謝謝大家！`;
+            const elderScriptEl = document.getElementById('elder-opening-script');
+            if (elderScriptEl) elderScriptEl.textContent = elderOpening;
 
             // 顯示視圖
             document.getElementById('view-container-standard').classList.add('hidden');
@@ -2630,7 +3597,8 @@
             document.getElementById('elder-difficulties').value = ws.difficulties || '';
             document.getElementById('elder-improvements').value = ws.improvements || '';
 
-            renderElderPersonnel(ws.personnel || []);
+            const elderCase = casesData.find(x => x.id === currentElderCaseId);
+            renderElderPersonnelCheckboxes(elderCase?.companyPersonnel || [], ws.personnelIds || []);
             elderPendingPhotos = [];
             renderElderPendingPhotos();
             renderElderPhotos(ws.photos || []);
@@ -2663,7 +3631,7 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>儲存中...';
             const workstations = (c.workstations || []).map(ws => {
                 if (ws.id !== currentWorkstationId) return ws;
-                return { ...ws, name: document.getElementById('elder-ws-name').value.trim() || ws.name, workContent: document.getElementById('elder-work-content').value, difficulties: document.getElementById('elder-difficulties').value, improvements: document.getElementById('elder-improvements').value };
+                return { ...ws, name: document.getElementById('elder-ws-name').value.trim() || ws.name, workContent: document.getElementById('elder-work-content').value, difficulties: document.getElementById('elder-difficulties').value, improvements: document.getElementById('elder-improvements').value, personnelIds: Array.from(document.querySelectorAll('.elder-personnel-chk:checked')).map(cb => cb.dataset.pid) };
             });
             try {
                 await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
@@ -2970,35 +3938,73 @@
             const c = casesData.find(x => x.id === currentElderCaseId);
             if (!c) return;
             const lines = [];
+            const sep = '─'.repeat(40);
+
+            // ── 公司基本資料 ──
             lines.push('【中高齡職務再設計訪視紀錄】');
-            lines.push(`公司：${c.company || ''}`);
-            lines.push(`初訪日期：${c.visitDate || ''}　主責：${c.owner || ''}`);
-            if (c.phone) lines.push(`聯絡電話：${c.phone}`);
+            lines.push(sep);
+            lines.push(`申請單位：${c.company || ''}`);
+            if (c.phone)       lines.push(`聯絡電話：${c.phone}`);
+            if (c.district)    lines.push(`轄　　區：${c.district}`);
+            lines.push(`接案日期：${c.intakeDate || ''}`);
+            lines.push(`初訪日期：${c.visitDate || ''}`);
+            lines.push(`主責人員：${c.owner || ''}`);
+            if (c.visitors)    lines.push(`訪視人員：${c.visitors}`);
             lines.push('');
-            if (c.sharedEquipment) {
+
+            // ── 共用申請設備 ──
+            if (c.sharedEquipment && c.sharedEquipment.trim()) {
                 lines.push('【共用申請設備】');
-                c.sharedEquipment.split('\n').filter(l => l.trim()).forEach(l => lines.push('・' + l.trim()));
+                c.sharedEquipment.split('\n').filter(l => l.trim()).forEach(l => lines.push(`  ・${l.trim()}`));
                 lines.push('');
             }
+
+            // ── 各工作站 ──
+            const companyPersonnel = c.companyPersonnel || [];
             (c.workstations || []).forEach((ws, idx) => {
-                lines.push(`${'='.repeat(50)}`);
-                lines.push(`【工作站${idx+1}：${ws.name || '未命名'}】（共 ${(ws.personnel||[]).length} 人）`);
+                // Resolve personnel: use companyPersonnel filtered by personnelIds, fallback to ws.personnel for old data
+                const wsPersonnel = companyPersonnel.filter(p => (ws.personnelIds || []).includes(p.id));
+                const personnelToShow = wsPersonnel.length > 0 ? wsPersonnel : (ws.personnel || []);
+
                 lines.push('');
-                if (ws.personnel && ws.personnel.length > 0) {
-                    lines.push('　人員名單：');
-                    lines.push(`　${'姓名'.padEnd(6)}${'性別'.padEnd(4)}${'年齡'.padEnd(4)}${'職稱'.padEnd(8)}${'年資'.padEnd(6)}工作說明　期待申請項目`);
-                    ws.personnel.forEach(p => lines.push(`　${String(p.name||'').padEnd(6)}${String(p.gender||'').padEnd(4)}${String(p.age||'').padEnd(4)}${String(p.title||'').padEnd(8)}${String(p.seniority||'').padEnd(6)}${p.workDesc||''}　${p.expectedItems||''}`));
+                lines.push(`${'═'.repeat(50)}`);
+                lines.push(`【工作站 ${idx + 1}：${ws.name || '未命名'}】（共 ${personnelToShow.length} 人）`);
+                lines.push(`${'═'.repeat(50)}`);
+                lines.push('');
+
+                // 人員基本資料（僅姓名/性別/年齡/職稱/年資）
+                if (personnelToShow.length > 0) {
+                    lines.push('  ▌人員基本資料');
+                    lines.push(`  ${'姓名'.padEnd(8)}${'性別'.padEnd(6)}${'年齡'.padEnd(6)}${'職稱'.padEnd(10)}年資`);
+                    lines.push(`  ${'─'.repeat(42)}`);
+                    personnelToShow.forEach(p => {
+                        lines.push(`  ${String(p.name || '').padEnd(8)}${String(p.gender || '').padEnd(6)}${String(p.age || '').padEnd(6)}${String(p.title || '').padEnd(10)}${p.seniority || ''}`);
+                    });
                     lines.push('');
                 }
-                if (ws.workContent) { lines.push('　【主要工作內容】'); lines.push('　' + ws.workContent.replace(/\n/g, '\n　')); lines.push(''); }
-                if (ws.difficulties) { lines.push('　【工作困難】'); lines.push('　' + ws.difficulties.replace(/\n/g, '\n　')); lines.push(''); }
-                if (ws.improvements) { lines.push('　【改善建議】'); lines.push('　' + ws.improvements.replace(/\n/g, '\n　')); lines.push(''); }
+
+                // 工作站內容
+                if (ws.workContent && ws.workContent.trim()) {
+                    lines.push('  ▌主要工作內容');
+                    ws.workContent.split('\n').forEach(l => lines.push(`  ${l}`));
+                    lines.push('');
+                }
+
+                // 工作困難
+                if (ws.difficulties && ws.difficulties.trim()) {
+                    lines.push('  ▌遭遇困難');
+                    ws.difficulties.split('\n').forEach(l => lines.push(`  ${l}`));
+                    lines.push('');
+                }
             });
+
             const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = `中高齡訪視紀錄_${c.company||'未命名'}_${c.visitDate||''}.txt`;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            a.href = url;
+            a.download = `中高齡訪視紀錄_${c.company || '未命名'}_${c.visitDate || ''}.txt`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
             showToast('文字檔已下載');
         });
 
@@ -3421,6 +4427,26 @@
                 addIf('指標一', hearing.ind1);
                 addIf('指標二', hearing.ind2);
                 addIf('總分', String(Number(hearing.ind1 || 0) + Number(hearing.ind2 || 0)));
+            }
+
+            // 錄音逐字稿
+            const audios = c.audios || [];
+            const audiosWithTranscript = audios.filter(a => (a.transcript || '').trim());
+            if (audiosWithTranscript.length > 0) {
+                addSection('訪談錄音逐字稿');
+                audiosWithTranscript.forEach((a, idx) => {
+                    lines.push(`─── ${a.displayName || a.name} ───`);
+                    lines.push((a.transcript || '').trim());
+                    if (idx < audiosWithTranscript.length - 1) lines.push('');
+                });
+            }
+            // 列出所有錄音檔（含無逐字稿者）
+            if (audios.length > 0) {
+                addSection('錄音檔清單');
+                audios.forEach((a, idx) => {
+                    const hasT = (a.transcript || '').trim() ? '（有逐字稿）' : '（無逐字稿）';
+                    lines.push(`${idx + 1}. ${a.displayName || a.name} ${hasT}`);
+                });
             }
 
             const textContent = lines.join('\n');
@@ -4855,6 +5881,56 @@ ${rawDraft}
             }
         });
 
+    </script>
+
+    <!-- LINE QR 名片 Modal -->
+    <div id="qr-modal" class="hidden fixed inset-0 bg-black/60 z-[300] flex items-center justify-center p-4" onclick="if(event.target===this)document.getElementById('qr-modal').classList.add('hidden')">
+        <div class="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full flex flex-col items-center gap-4 relative">
+            <button onclick="document.getElementById('qr-modal').classList.add('hidden')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="font-black text-slate-800 text-lg">掃描 LINE 加好友</h2>
+            <div id="qr-img-wrap" class="w-56 h-56 bg-slate-100 rounded-2xl flex items-center justify-center border-2 border-dashed border-slate-300">
+                <p id="qr-placeholder" class="text-sm text-slate-400 text-center px-4">尚未設定 QR 名片<br>請點下方上傳</p>
+                <img id="qr-img" class="hidden w-full h-full object-contain rounded-2xl">
+            </div>
+            <p class="text-sm text-slate-500 font-medium">請個案長按或掃描 QR Code</p>
+            <label class="mt-1 cursor-pointer text-xs text-slate-500 hover:text-blue-600 font-bold underline">
+                更換 QR 名片圖片
+                <input type="file" id="qr-upload" accept="image/*" class="hidden">
+            </label>
+        </div>
+    </div>
+
+    <!-- LINE QR 浮動按鈕（在身障/中高齡工作區以外也可用） -->
+    <button id="btn-show-qr" onclick="document.getElementById('qr-modal').classList.remove('hidden')"
+        class="fixed bottom-8 left-8 z-40 w-14 h-14 bg-[#06C755] text-white rounded-full shadow-xl flex items-center justify-center text-2xl hover:bg-[#05a847] active:scale-95 transition-all"
+        title="顯示 LINE QR 名片">
+        <svg viewBox="0 0 24 24" class="w-7 h-7 fill-white" xmlns="http://www.w3.org/2000/svg"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+    </button>
+
+    <script>
+    // QR Code 名片功能
+    (function() {
+        const stored = localStorage.getItem('lineQrImage');
+        if (stored) {
+            document.getElementById('qr-img').src = stored;
+            document.getElementById('qr-img').classList.remove('hidden');
+            document.getElementById('qr-placeholder').classList.add('hidden');
+        }
+        document.getElementById('qr-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                const data = ev.target.result;
+                localStorage.setItem('lineQrImage', data);
+                document.getElementById('qr-img').src = data;
+                document.getElementById('qr-img').classList.remove('hidden');
+                document.getElementById('qr-placeholder').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        });
+    })();
     </script>
 </body>
 </html>
