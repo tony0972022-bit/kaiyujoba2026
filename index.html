@@ -2775,6 +2775,8 @@
         // ==========================================
         // 開啟工作區 (強化防呆機制與詳細錯誤報告)
         // ==========================================
+        // 提前宣告錄音狀態變數，避免 Firestore 快速回傳時的 TDZ 錯誤
+        let isRecording = false;
         async function openWorkspace(id) {
             try {
                 if (isRecording && currentEditingCaseId && currentEditingCaseId !== id) {
@@ -3720,34 +3722,7 @@
             `;
         }
 
-        document.getElementById('elder-excel-import').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file || !currentElderCaseId || !currentWorkstationId) return;
-            e.target.value = '';
-            try {
-                const data = await file.arrayBuffer();
-                const wb = XLSX.read(data);
-                const ws = wb.Sheets[wb.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-                if (rows.length === 0) { alert('Excel 沒有資料'); return; }
-                const find = (row, ...candidates) => {
-                    const k = Object.keys(row).find(k => candidates.some(c => k.includes(c)));
-                    return k ? String(row[k] || '').trim() : '';
-                };
-                const personnel = rows.map(row => ({
-                    name: find(row,'姓名','名字'), gender: find(row,'性別'), age: find(row,'年齡','歲'),
-                    title: find(row,'職稱','職位'), seniority: find(row,'年資','資歷'),
-                    workDesc: find(row,'工作說明','工作內容','說明'), expectedItems: find(row,'期待','申請項目','申請')
-                })).filter(p => p.name);
-                if (personnel.length === 0) { alert('找不到有效人員，請確認 Excel 欄位含：姓名、性別、年齡、職稱、年資、工作說明、期待申請項目'); return; }
-                const c = casesData.find(x => x.id === currentElderCaseId);
-                const workstations = (c.workstations || []).map(w => w.id === currentWorkstationId ? { ...w, personnel } : w);
-                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
-                renderElderPersonnel(personnel);
-                renderElderWorkstationList(workstations);
-                showToast(`✓ 已匯入 ${personnel.length} 位人員`);
-            } catch(err) { alert('匯入失敗：' + err.message); }
-        });
+        // elder-excel-import 已移除（改為公司級人員匯入 elder-company-excel）
 
         window.clearElderPersonnel = async () => {
             if (!confirm('確定清除此工作站所有人員？')) return;
@@ -4898,7 +4873,7 @@
         // ==========================================
         const btnRecord = document.getElementById('btn-record-audio');
         const btnRecordFloating = document.getElementById('btn-record-floating');
-        let mediaRecorder; let audioChunks = []; let isRecording = false;
+        let mediaRecorder; let audioChunks = []; isRecording = false;
         let recordingStream = null;
         let recordingCaseId = null;
         let stopRecordingResolver = null;
