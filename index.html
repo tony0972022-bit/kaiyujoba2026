@@ -1185,6 +1185,24 @@
                     </div>
                 </div>
 
+                <!-- 錄音區 -->
+                <div class="p-4 border-b border-slate-100">
+                    <h3 class="font-bold text-sm text-slate-700 mb-2"><i class="fa-solid fa-microphone text-red-500 mr-1"></i>訪談錄音</h3>
+                    <div class="flex gap-2 mb-2">
+                        <button id="dis-btn-record" class="flex-1 bg-red-50 text-red-600 border border-red-200 px-2 py-2 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors">
+                            <i class="fa-solid fa-circle mr-1 text-xs"></i>開始錄音
+                        </button>
+                        <label class="flex-1 bg-purple-600 text-white px-2 py-2 rounded-lg text-xs font-bold flex justify-center items-center cursor-pointer hover:bg-purple-700">
+                            <i class="fa-solid fa-cloud-arrow-up mr-1"></i>上傳音檔
+                            <input type="file" id="dis-audio-upload" accept="audio/*,video/mp4" class="hidden">
+                        </label>
+                    </div>
+                    <p id="dis-recording-status" class="hidden text-xs text-red-600 font-bold animate-pulse mb-2">● 錄音中...</p>
+                    <div id="dis-audios-container" class="space-y-1 max-h-48 overflow-y-auto no-scrollbar">
+                        <p class="text-xs text-slate-400">尚無錄音。</p>
+                    </div>
+                </div>
+
                 <!-- 下載文字檔 -->
                 <div class="p-4 border-t border-slate-100 mt-auto shrink-0">
                     <button id="dis-btn-download-text" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shadow">
@@ -1234,35 +1252,11 @@
                     </div>
                 </div>
 
-                <!-- 訪談錄音 -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="p-5 flex justify-between items-center border-b border-slate-100">
-                        <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-microphone text-red-500 mr-2"></i>訪談錄音 & AI 逐字稿</h3>
-                        <button id="dis-btn-record" class="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors">
-                            <i class="fa-solid fa-circle mr-1 text-xs"></i>開始錄音
-                        </button>
-                    </div>
-                    <p id="dis-recording-status" class="hidden mx-5 mt-3 text-sm text-red-600 font-bold animate-pulse">● 錄音中...</p>
-                    <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 border-b border-slate-100">
-                        <label class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors flex justify-center items-center cursor-pointer">
-                            <i class="fa-solid fa-cloud-arrow-up mr-2"></i>上傳音檔並 AI 轉文字
-                            <input type="file" id="dis-audio-upload" accept="audio/*,video/mp4" class="hidden">
-                        </label>
-                        <p class="text-xs text-slate-400 self-center">支援 mp3, m4a, wav（建議 &lt;15MB）</p>
-                    </div>
-                    <div id="dis-audios-container" class="p-5 space-y-2">
-                        <p class="text-sm text-slate-400">尚無錄音。</p>
-                    </div>
-                </div>
-
                 <!-- 一、個案就業狀況 -->
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center pb-2">
                         <h3 class="font-bold text-xl text-blue-800">一、個案之就業狀況</h3>
-                        <div class="flex gap-2">
-                            <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-status-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
-                            <button class="dis-btn-ai text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-status-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI</button>
-                        </div>
+                        <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-status-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
                     </div>
                     <details class="border-b-2 border-blue-100 pb-3 mb-4">
                         <summary class="cursor-pointer text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full font-bold select-none inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
@@ -1275,10 +1269,7 @@
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center pb-2">
                         <h3 class="font-bold text-xl text-blue-800">二、個案之生理限制</h3>
-                        <div class="flex gap-2">
-                            <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-limits-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
-                            <button class="dis-btn-ai text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-limits-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI</button>
-                        </div>
+                        <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-limits-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
                     </div>
                     <details class="border-b-2 border-blue-100 pb-3 mb-4">
                         <summary class="cursor-pointer text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full font-bold select-none inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
@@ -1291,10 +1282,7 @@
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center pb-2">
                         <h3 class="font-bold text-xl text-blue-800">三、個案就業問題診斷與分析</h3>
-                        <div class="flex gap-2">
-                            <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-analysis-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
-                            <button class="dis-btn-ai text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-analysis-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI</button>
-                        </div>
+                        <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-analysis-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
                     </div>
                     <details class="border-b-2 border-blue-100 pb-3 mb-4">
                         <summary class="cursor-pointer text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full font-bold select-none inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
@@ -1319,10 +1307,7 @@
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center pb-2">
                         <h3 class="font-bold text-xl text-blue-800">四、改善方式、內容及輔具建議</h3>
-                        <div class="flex gap-2">
-                            <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-strategy-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
-                            <button class="dis-btn-ai text-purple-600 bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-strategy-text"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>AI</button>
-                        </div>
+                        <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-strategy-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
                     </div>
                     <details class="border-b-2 border-blue-100 pb-3 mb-4">
                         <summary class="cursor-pointer text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full font-bold select-none inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
@@ -1348,55 +1333,8 @@
                     <div id="dis-checklist-container" class="space-y-5"></div>
                 </div>
 
-                <!-- 成果報告 五~八 -->
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-emerald-200">
-                    <h3 class="font-bold text-xl text-emerald-800 border-b-2 border-emerald-100 pb-3 mb-5"><i class="fa-solid fa-chart-line text-emerald-600 mr-2"></i>成果報告</h3>
-                    <div class="space-y-5">
-                        <div>
-                            <label class="block font-bold text-emerald-700 mb-2">五、審查會決議</label>
-                            <textarea id="dis-outcome-resolution" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base bg-slate-50 focus:bg-white" rows="3" placeholder="申請項目、申請金額、核准金額..."></textarea>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-emerald-700 mb-2">六、輔具試用、訓練及驗收</label>
-                            <textarea id="dis-outcome-acceptance" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base bg-slate-50 focus:bg-white" rows="3" placeholder="輔具試用狀況、教育訓練或驗收期程..."></textarea>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-emerald-700 mb-2">七、職務再設計前後效益評估</label>
-                            <textarea id="dis-outcome-benefit" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base bg-slate-50 focus:bg-white" rows="3" placeholder="解決之困難、工作便利性評分..."></textarea>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-emerald-700 mb-2">八、結案日期</label>
-                            <input type="date" id="dis-outcome-date" class="p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 bg-slate-50 focus:bg-white text-lg">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 聽力評估 -->
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-purple-200">
-                    <h3 class="font-bold text-xl text-purple-800 border-b-2 border-purple-100 pb-3 mb-5"><i class="fa-solid fa-ear-listen text-purple-500 mr-2"></i>聽覺需求評估（選填）</h3>
-                    <p class="text-sm text-slate-500 mb-4">若為聽力相關個案，請填寫以下指標。</p>
-                    <div class="space-y-6">
-                        <div>
-                            <h4 class="font-bold text-base text-slate-700 mb-2">指標一、職場聆聽需求</h4>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-1" value="4" class="accent-purple-600"> 4分（&gt;75%）</label>
-                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-1" value="3" class="accent-purple-600"> 3分（50-74%）</label>
-                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-1" value="2" class="accent-purple-600"> 2分（25-49%）</label>
-                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-1" value="1" class="accent-purple-600"> 1分（&lt;24%）</label>
-                            </div>
-                        </div>
-                        <div>
-                            <h4 class="font-bold text-base text-slate-700 mb-2">指標二、職場溝通需求</h4>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-2" value="4" class="accent-purple-600"> 4分（&gt;70%）</label>
-                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-2" value="3" class="accent-purple-600"> 3分（40-69%）</label>
-                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-2" value="2" class="accent-purple-600"> 2分（10-39%）</label>
-                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:border-purple-400 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50 text-sm font-medium"><input type="radio" name="dis-hearing-ind-2" value="1" class="accent-purple-600"> 1分（&lt;10%）</label>
-                            </div>
-                        </div>
-                        <p class="text-right font-bold text-slate-600">聽力總分：<span id="dis-hearing-score" class="text-2xl text-purple-700">0</span> 分</p>
-                    </div>
-                </div>
+                <!-- 聽力評估（完整問卷由 JS 搬移 tab-hearing 至此） -->
+                <div id="dis-hearing-section" class="space-y-5"></div>
 
             </div><!-- end dis-main-area -->
         </div><!-- end body -->
@@ -2947,12 +2885,6 @@
                     improvements: document.getElementById('dis-improvements')?.value || '',
                     strategy: document.getElementById('dis-strategy-text')?.value || ''
                 },
-                outcome: {
-                    resolution: document.getElementById('dis-outcome-resolution')?.value || '',
-                    acceptance: document.getElementById('dis-outcome-acceptance')?.value || '',
-                    benefit: document.getElementById('dis-outcome-benefit')?.value || '',
-                    closeDate: document.getElementById('dis-outcome-date')?.value || ''
-                },
                 env: {
                     lux: document.getElementById('dis-env-lux')?.value || '',
                     noise: document.getElementById('dis-env-noise')?.value || '',
@@ -2960,8 +2892,8 @@
                     weight: document.getElementById('dis-env-weight')?.value || ''
                 },
                 hearing: {
-                    ind1: document.querySelector('input[name="dis-hearing-ind-1"]:checked')?.value || '',
-                    ind2: document.querySelector('input[name="dis-hearing-ind-2"]:checked')?.value || ''
+                    ind1: document.querySelector('input[name="hearing-ind-1"]:checked')?.value || '',
+                    ind2: document.querySelector('input[name="hearing-ind-2"]:checked')?.value || ''
                 },
                 checklist
             };
@@ -3092,29 +3024,31 @@
             document.getElementById('dis-improvements').value = rpt.improvements || '';
             document.getElementById('dis-strategy-text').value = rpt.strategy || c.strategy || '';
 
-            const outcome = c.outcome || {};
-            document.getElementById('dis-outcome-resolution').value = outcome.resolution || '';
-            document.getElementById('dis-outcome-acceptance').value = outcome.acceptance || '';
-            document.getElementById('dis-outcome-benefit').value = outcome.benefit || '';
-            document.getElementById('dis-outcome-date').value = outcome.closeDate || '';
-
             const env = c.env || {};
             document.getElementById('dis-env-lux').value = env.lux || '';
             document.getElementById('dis-env-noise').value = env.noise || '';
             document.getElementById('dis-env-height').value = env.height || '';
             document.getElementById('dis-env-weight').value = env.weight || '';
 
-            // Hearing
-            document.querySelectorAll('input[name="dis-hearing-ind-1"], input[name="dis-hearing-ind-2"]').forEach(r => r.checked = false);
+            // Hearing: 將完整 tab-hearing 搬入 dis-hearing-section
+            const tabHearing = document.getElementById('tab-hearing');
+            const disHearingSection = document.getElementById('dis-hearing-section');
+            if (tabHearing && disHearingSection) {
+                disHearingSection.appendChild(tabHearing);
+                tabHearing.classList.remove('hidden', 'ws-tab-content');
+            }
+            // 填入聽力資料（使用 tab-hearing 原始欄位）
+            document.querySelectorAll('input[name="hearing-ind-1"], input[name="hearing-ind-2"]').forEach(r => r.checked = false);
             const hearing = c.hearing || {};
-            if (hearing.ind1) { const r = document.querySelector(`input[name="dis-hearing-ind-1"][value="${hearing.ind1}"]`); if (r) r.checked = true; }
-            if (hearing.ind2) { const r = document.querySelector(`input[name="dis-hearing-ind-2"][value="${hearing.ind2}"]`); if (r) r.checked = true; }
-            updateDisHearingScore();
+            if (hearing.ind1) { const r = document.querySelector(`input[name="hearing-ind-1"][value="${hearing.ind1}"]`); if (r) r.checked = true; }
+            if (hearing.ind2) { const r = document.querySelector(`input[name="hearing-ind-2"][value="${hearing.ind2}"]`); if (r) r.checked = true; }
 
             // Checklist
             const disChkContainer = document.getElementById('dis-checklist-container');
             disChkContainer.innerHTML = '';
-            const safeChecklists = settings.checklists || {};
+            const safeChecklists = Object.fromEntries(
+                Object.entries(settings.checklists || {}).filter(([k]) => !k.includes('中高齡') && !k.includes('人因工程'))
+            );
             for (const [category, items] of Object.entries(safeChecklists)) {
                 let html = `<div class="mb-5"><h4 class="text-base font-bold text-blue-800 bg-blue-50 p-2.5 rounded-xl mb-3">${category}</h4><div class="space-y-2">`;
                 items.forEach(item => {
@@ -3137,13 +3071,12 @@
 
             // Auto-save bindings
             ['dis-status-text','dis-limits-text','dis-analysis-text','dis-improvements','dis-strategy-text',
-             'dis-outcome-resolution','dis-outcome-acceptance','dis-outcome-benefit','dis-outcome-date',
              'dis-env-lux','dis-env-noise','dis-env-height','dis-env-weight'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) { el.oninput = triggerDisAutoSave; el.onchange = triggerDisAutoSave; }
             });
-            document.querySelectorAll('input[name="dis-hearing-ind-1"], input[name="dis-hearing-ind-2"]').forEach(r => {
-                r.addEventListener('change', () => { updateDisHearingScore(); triggerDisAutoSave(); });
+            document.querySelectorAll('input[name="hearing-ind-1"], input[name="hearing-ind-2"]').forEach(r => {
+                r.addEventListener('change', triggerDisAutoSave);
             });
 
             // Show view
@@ -3165,6 +3098,13 @@
 
         // Dis back button
         document.getElementById('dis-btn-back')?.addEventListener('click', () => {
+            // 將 tab-hearing 還原到 view-workspace 的 tab-assess 旁邊
+            const tabHearing = document.getElementById('tab-hearing');
+            const tabAssess = document.getElementById('tab-assess');
+            if (tabHearing && tabAssess && tabAssess.parentNode) {
+                tabAssess.parentNode.appendChild(tabHearing);
+                tabHearing.classList.add('hidden', 'ws-tab-content');
+            }
             document.getElementById('view-dis-case').classList.add('hidden');
             document.getElementById('view-container-standard').classList.remove('hidden');
             currentDisCaseId = null;
