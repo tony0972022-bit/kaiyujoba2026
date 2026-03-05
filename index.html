@@ -651,256 +651,357 @@
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
                         <div class="flex justify-between items-center border-b pb-4 mb-5">
                             <h3 class="font-bold text-xl text-slate-700">現場環境與能力檢核</h3>
-                            <button id="btn-toggle-hearing" class="text-blue-600 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg font-bold text-sm shadow-sm border border-blue-200 transition-colors">
-                                <i class="fa-solid fa-ear-listen mr-1"></i> 展開/收合聽覺評估表
-                            </button>
                         </div>
                         <div class="space-y-6" id="checklist-container">
                         </div>
                         
-                        <!-- 🌟 聽覺需求評估表 -->
-                        <div id="hearing-assessment-section" class="hidden mt-8 border-t border-slate-200 pt-8">
-                            <div class="flex justify-between items-center mb-5">
-                                <h3 class="font-bold text-xl text-slate-700"><i class="fa-solid fa-ear-listen text-blue-500 mr-2"></i>聽覺需求評估表 (聽障個案專用)</h3>
-                            </div>
-
-                            <!-- 指標一 -->
-                            <div class="mb-6">
-                                <h4 class="font-bold text-lg text-slate-800 mb-2">指標一、職場聆聽需求：<span class="text-base font-normal">個案在職務上需要以聆聽功能接收及理解聲音的需求。</span></h4>
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-0 border border-slate-800 rounded-lg overflow-hidden">
-                                    <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
-                                        <input type="radio" name="hearing-ind-1" value="4" class="peer hidden">
-                                        <div class="bg-[#d97706] peer-checked:bg-[#b45309] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
-                                            <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 4 分
-                                        </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
-                                            大多數的情境下，個案需運用純聽覺功能執行職務活動（聆聽 >75%）
-                                        </div>
-                                    </label>
-                                    <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
-                                        <input type="radio" name="hearing-ind-1" value="3" class="peer hidden">
-                                        <div class="bg-[#f59e0b] peer-checked:bg-[#d97706] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
-                                            <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 3 分
-                                        </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
-                                            多數情境下，個案需運用聽覺功能執行職務活動，但有時可運用其他知覺功能協助執行（聆聽 50%~74%）
-                                        </div>
-                                    </label>
-                                    <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
-                                        <input type="radio" name="hearing-ind-1" value="2" class="peer hidden">
-                                        <div class="bg-[#fcd34d] peer-checked:bg-[#fbbf24] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
-                                            <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 2 分
-                                        </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
-                                            半數情境下，個案需運用聽覺功能執行職務活動，但經常可運用其他知覺功能協助執行（聆聽 25%-49%）
-                                        </div>
-                                    </label>
-                                    <label class="block cursor-pointer relative group">
-                                        <input type="radio" name="hearing-ind-1" value="1" class="peer hidden">
-                                        <div class="bg-[#fef3c7] peer-checked:bg-[#fde68a] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
-                                            <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 1 分
-                                        </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
-                                            大多數的情境下，個案不需運用聽覺功能也能執行職務活動（聆聽 &lt;24%）
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- 指標二 -->
-                            <div class="mb-6">
-                                <h4 class="font-bold text-lg text-slate-800 mb-2">指標二、職場溝通需求：<span class="text-base font-normal">溝通需求佔工作內容比例</span></h4>
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-0 border border-slate-800 rounded-lg overflow-hidden">
-                                    <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
-                                        <input type="radio" name="hearing-ind-2" value="4" class="peer hidden">
-                                        <div class="bg-[#d97706] peer-checked:bg-[#b45309] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
-                                            <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 4 分
-                                        </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
-                                            有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例 70%以上
-                                        </div>
-                                    </label>
-                                    <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
-                                        <input type="radio" name="hearing-ind-2" value="3" class="peer hidden">
-                                        <div class="bg-[#f59e0b] peer-checked:bg-[#d97706] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
-                                            <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 3 分
-                                        </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
-                                            有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例 40%-69%之間
-                                        </div>
-                                    </label>
-                                    <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
-                                        <input type="radio" name="hearing-ind-2" value="2" class="peer hidden">
-                                        <div class="bg-[#fcd34d] peer-checked:bg-[#fbbf24] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
-                                            <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 2 分
-                                        </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
-                                            有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例 10%-39%之間
-                                        </div>
-                                    </label>
-                                    <label class="block cursor-pointer relative group">
-                                        <input type="radio" name="hearing-ind-2" value="1" class="peer hidden">
-                                        <div class="bg-[#fef3c7] peer-checked:bg-[#fde68a] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
-                                            <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 1 分
-                                        </div>
-                                        <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
-                                            有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例小於 10%
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- 結果 -->
-                            <div>
-                                <h4 class="font-bold text-lg text-slate-800 mb-2">新購助聽器之必要性：<span class="text-base font-normal">由指標一和指標二的分數加總</span></h4>
-                                <div class="grid grid-cols-3 gap-0 border border-slate-800 rounded-lg overflow-hidden">
-                                    <div id="hearing-result-high" class="text-center transition-colors">
-                                        <div class="bg-[#d97706] py-2 font-bold text-lg border-b border-r border-slate-800 flex items-center justify-center gap-2">
-                                            <i class="fa-regular fa-square text-black res-chk"></i><i class="fa-solid fa-square-check text-black res-checked hidden"></i> 6-8 分
-                                        </div>
-                                        <div class="p-3 font-bold text-xl bg-white border-r border-slate-800 text-slate-800">高</div>
-                                    </div>
-                                    <div id="hearing-result-mid" class="text-center transition-colors">
-                                        <div class="bg-[#fcd34d] py-2 font-bold text-lg border-b border-r border-slate-800 flex items-center justify-center gap-2">
-                                            <i class="fa-regular fa-square text-black res-chk"></i><i class="fa-solid fa-square-check text-black res-checked hidden"></i> 3-5 分
-                                        </div>
-                                        <div class="p-3 font-bold text-xl bg-white border-r border-slate-800 text-slate-800">中</div>
-                                    </div>
-                                    <div id="hearing-result-low" class="text-center transition-colors">
-                                        <div class="bg-[#fef3c7] py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2">
-                                            <i class="fa-regular fa-square text-black res-chk"></i><i class="fa-solid fa-square-check text-black res-checked hidden"></i> 2 分
-                                        </div>
-                                        <div class="p-3 font-bold text-xl bg-white text-slate-800">低</div>
-                                    </div>
-                                </div>
-                                <p class="text-right mt-3 text-lg font-bold text-slate-600">目前總分：<span id="hearing-total-score" class="text-2xl text-blue-700">0</span> 分</p>
-                            </div>
-                        </div>
-
                         <button class="btn-save-ws w-full mt-10 bg-slate-800 text-white py-4 md:py-5 rounded-xl shadow-xl font-bold text-xl hover:bg-slate-700 transition-transform active:scale-[0.98]">
                             <i class="fa-solid fa-check-double mr-2"></i>儲存檢核與數據
                         </button>
                     </div>
                 </div>
 
-                <!-- 頁籤 2-2: 聽力案檢核 -->
+                <!-- 頁籤: 聽力案檢核 -->
                 <div id="tab-hearing" class="ws-tab-content hidden max-w-4xl mx-auto w-full space-y-6">
+
+                    <!-- 自動儲存狀態列 -->
+                    <div class="sticky top-0 z-20 bg-white/90 backdrop-blur border border-slate-200 rounded-xl px-4 py-2 flex items-center justify-between shadow-sm">
+                        <span class="text-sm font-bold text-slate-700"><i class="fa-solid fa-ear-listen text-purple-500 mr-2"></i>聽力案檢核</span>
+                        <span id="hearing-autosave-indicator" class="text-xs text-slate-400 font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-cloud text-slate-300"></i> 填寫後將自動儲存
+                        </span>
+                    </div>
+
+                    <!-- 區塊一: 助聽器使用問卷 -->
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-xl text-slate-700 border-b pb-4 mb-5"><i class="fa-solid fa-comments text-blue-500 mr-2"></i>區塊一：聽力訪談問卷</h3>
+                        <h3 class="font-bold text-xl text-slate-700 border-b pb-4 mb-6"><i class="fa-solid fa-ear-listen text-purple-500 mr-3"></i>區塊一：助聽器使用問卷</h3>
 
-                        <div class="space-y-6">
-                            <div>
-                                <label class="block text-base font-bold text-slate-700 mb-2">您目前是否戴過助聽器？</label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <label class="p-3 border rounded-lg"><input type="radio" name="hearing-aid-status" value="是-目前已配戴助聽器" class="mr-2">是 目前已配戴助聽器</label>
-                                    <label class="p-3 border rounded-lg"><input type="radio" name="hearing-aid-status" value="是-已有一段時間沒配戴" class="mr-2">是 但已有一段時間沒配戴</label>
-                                    <label class="p-3 border rounded-lg"><input type="radio" name="hearing-aid-status" value="否-從未配戴過助聽器" class="mr-2">否 從未配戴過助聽器</label>
-                                    <label class="p-3 border rounded-lg"><input type="radio" name="hearing-aid-status" value="否-有先去試用過助聽器" class="mr-2">否 但有先去試用過助聽器</label>
-                                </div>
-                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">先想了解您過去跟助聽器的使用經驗，這會影響後續我幫您評估職場上最合適的調整方式。</p></details>
+                        <!-- Q1: 是否配戴助聽器 -->
+                        <div class="mb-8">
+                            <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                                <label class="block text-base font-bold text-slate-700">1. 目前是否有配戴助聽器？</label>
+                                <details class="shrink-0">
+                                    <summary class="cursor-pointer text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full font-bold select-none"><i class="fa-solid fa-comments mr-1"></i>訪談範本</summary>
+                                    <div class="mt-2 p-3 bg-purple-50 rounded-xl text-sm text-slate-700 border border-purple-100 leading-relaxed">「請問您目前有在配戴助聽器嗎？是一直在戴，還是偶爾戴，或者之前試過但後來就沒在戴了？」</div>
+                                </details>
                             </div>
-
-                            <div>
-                                <label class="block text-base font-bold text-slate-700 mb-2">聽損原因</label>
-                                <textarea id="hearing-loss-cause" rows="2" class="w-full p-3 border rounded-lg" placeholder="例：發現聽損年齡、疾病導致聽損"></textarea>
-                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">您大概是什麼時候開始發現聽力變化？醫師有沒有提到比較可能的原因？</p></details>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-500"><input type="radio" name="h-exp" value="never" class="accent-purple-600"> <span class="text-sm font-medium">從未配戴</span></label>
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-500"><input type="radio" name="h-exp" value="tried" class="accent-purple-600"> <span class="text-sm font-medium">曾嘗試但放棄</span></label>
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-500"><input type="radio" name="h-exp" value="current" class="accent-purple-600"> <span class="text-sm font-medium">目前規律配戴</span></label>
+                                <label class="flex items-center gap-2 p-3 border-2 border-slate-200 rounded-xl cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-500"><input type="radio" name="h-exp" value="irregular" class="accent-purple-600"> <span class="text-sm font-medium">配戴不規律</span></label>
                             </div>
+                        </div>
 
-                            <div>
-                                <label class="block text-base font-bold text-slate-700 mb-2">目前聽力狀況</label>
-                                <textarea id="hearing-current-status" rows="2" class="w-full p-3 border rounded-lg" placeholder="例：近期聽力加重"></textarea>
-                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">最近三到六個月，您覺得聽力有沒有變化？在什麼情境最容易聽不清楚？</p></details>
+                        <!-- Q2: 聽損原因 -->
+                        <div class="mb-8">
+                            <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                                <label class="block text-base font-bold text-slate-700">2. 聽損原因</label>
+                                <details class="shrink-0">
+                                    <summary class="cursor-pointer text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full font-bold select-none"><i class="fa-solid fa-comments mr-1"></i>訪談範本</summary>
+                                    <div class="mt-2 p-3 bg-purple-50 rounded-xl text-sm text-slate-700 border border-purple-100 leading-relaxed">「請問您知道自己聽力損失的原因嗎？是從小就這樣，還是後天造成的？有沒有印象什麼時候開始聽力比較不好？」<br><br>常見原因：先天性、噪音性聽損（長期暴露噪音環境）、老年性聽損、疾病或藥物、突發性聽損、外傷。</div>
+                                </details>
                             </div>
+                            <textarea id="h-cause" rows="2" class="w-full p-4 border border-slate-200 rounded-xl bg-slate-50 text-base focus:bg-white focus:ring-2 focus:ring-purple-400" placeholder="例：先天性聽損 / 從事噪音環境工作20年導致職業性聽損 / 突發性聽損..."></textarea>
+                        </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-base font-bold text-slate-700 mb-2">使用助聽器經驗約幾年？</label>
-                                    <input id="hearing-aid-years" type="text" class="w-full p-3 border rounded-lg" placeholder="例如：3年、半年">
-                                    <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">如果含中間停戴的時間，大約累積使用多久？目前每天大概戴幾小時？</p></details>
-                                </div>
-                                <div>
-                                    <label class="block text-base font-bold text-slate-700 mb-2">目前配戴助聽器的品牌與型號</label>
-                                    <input id="hearing-brand-model" type="text" class="w-full p-3 border rounded-lg" placeholder="品牌 / 型號">
-                                    <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">方便的話請提供品牌和型號，之後才能更精準評估是否需要調整或升級。</p></details>
-                                </div>
+                        <!-- Q3: 目前聽力狀況 -->
+                        <div class="mb-8">
+                            <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                                <label class="block text-base font-bold text-slate-700">3. 目前聽力狀況說明</label>
+                                <details class="shrink-0">
+                                    <summary class="cursor-pointer text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full font-bold select-none"><i class="fa-solid fa-comments mr-1"></i>訪談範本</summary>
+                                    <div class="mt-2 p-3 bg-purple-50 rounded-xl text-sm text-slate-700 border border-purple-100 leading-relaxed">「請問您兩耳的狀況一樣嗎？哪一耳比較差？在安靜環境下聽別人說話有困難嗎？在比較吵的地方呢？電話講起來呢？」<br><br>記錄要點：雙耳差異、裸耳聽閾（若知道）、言語辨識能力、是否有耳鳴或眩暈。</div>
+                                </details>
                             </div>
+                            <textarea id="h-status" rows="3" class="w-full p-4 border border-slate-200 rounded-xl bg-slate-50 text-base focus:bg-white focus:ring-2 focus:ring-purple-400" placeholder="例：雙耳重度聽損，右耳較左耳略差，安靜環境下可聽懂部分，嘈雜環境完全無法..."></textarea>
+                        </div>
 
-                            <div>
-                                <label class="block text-base font-bold text-slate-700 mb-2">目前配戴的助聽器型式</label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-type" value="耳掛型(BTE/RITE/RIC)">耳掛型【含 BTE/RITE/RIC】</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-type" value="訂製型(ITE/ITC/CIC)">訂製型【含 ITE/ITC/CIC】</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-type" value="CROS/BiCROS收音麥克風">CROS/BiCROS 收音麥克風</label>
-                                </div>
-                                <input id="hearing-aid-type-other" type="text" class="w-full mt-2 p-3 border rounded-lg" placeholder="其他型式">
-                                <div class="mt-2 text-xs text-slate-600 bg-slate-50 border rounded-lg p-3">型式示意：耳掛型（機身在耳後）｜訂製型（機身在耳道內）｜CROS/BiCROS（單側收音跨耳傳輸）</div>
-                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">您目前是耳掛式、耳內式，還是跨耳收音型？平常是單耳還是雙耳使用？</p></details>
+                        <!-- Q4: 使用年數 -->
+                        <div class="mb-8">
+                            <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                                <label class="block text-base font-bold text-slate-700">4. 使用助聽器年數</label>
+                                <details class="shrink-0">
+                                    <summary class="cursor-pointer text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full font-bold select-none"><i class="fa-solid fa-comments mr-1"></i>訪談範本</summary>
+                                    <div class="mt-2 p-3 bg-purple-50 rounded-xl text-sm text-slate-700 border border-purple-100 leading-relaxed">「您大概從幾歲開始戴助聽器？到現在用了幾年了？現在這副是什麼時候買的？」<br><br>一般助聽器建議換新年限為5～7年，可作為評估換新必要性的依據之一。</div>
+                                </details>
                             </div>
-
-                            <div>
-                                <label class="block text-base font-bold text-slate-700 mb-2">目前配戴的助聽器狀況（可複選）</label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="已使用多年">已使用多年</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="損壞">損壞</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="損壞故障">損壞故障</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="聆聽狀況不穩定">聆聽狀況不穩定</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="音量太小不符職場使用">音量太小不符職場使用</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="有雜音">有雜音</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="有回音">有回音</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="聲音不自然">聲音不自然</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="兩耳助聽器聲音不平均">兩耳助聽器聲音不平均</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="音量太大">音量太大</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-aid-issue" value="其他">其他</label>
-                                </div>
-                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">目前最困擾的狀況是什麼？這些狀況最常在工作哪個時間點或地點出現？</p></details>
+                            <div class="flex items-center gap-3">
+                                <input type="number" id="h-years" min="0" max="60" class="w-40 p-4 border border-slate-200 rounded-xl bg-slate-50 text-xl focus:bg-white focus:ring-2 focus:ring-purple-400" placeholder="0">
+                                <span class="text-slate-600 font-medium text-lg">年</span>
                             </div>
+                        </div>
 
-                            <div>
-                                <label class="block text-base font-bold text-slate-700 mb-2">工作職場聆聽需求（可複選）</label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="面對面溝通(安靜環境)">面對面溝通(安靜環境)</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="面對面溝通(吵雜環境)">面對面溝通(吵雜環境)</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="線上會議">線上會議</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="主持會議">主持會議</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="參與會議">參與會議</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="駕駛交通工具">駕駛交通工具</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="聆聽機器運作聲音">聆聽機器運作聲音</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="使用市內電話溝通">使用市內電話溝通</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="手機聆聽溝通(含LINE通話)">手機聆聽溝通(含LINE通話)</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="本身為主管需管理下屬">本身為主管需管理下屬</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="使用手持對講機溝通">使用手持對講機溝通</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="聆聽周遭環境聲音">聆聽周遭環境聲音</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="內部教育訓練課程或職涯進修">內部教育訓練課程或職涯進修</label>
-                                    <label class="p-3 border rounded-lg"><input type="checkbox" class="mr-2 hearing-work-need" value="其他">其他</label>
-                                </div>
-                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">你一天工作流程中，最需要聽得準、回應快的前三個情境是哪些？</p></details>
+                        <!-- Q5: 助聽器型式 -->
+                        <div class="mb-8">
+                            <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                                <label class="block text-base font-bold text-slate-700">5. 助聽器型式</label>
+                                <details class="shrink-0">
+                                    <summary class="cursor-pointer text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full font-bold select-none"><i class="fa-solid fa-comments mr-1"></i>訪談範本</summary>
+                                    <div class="mt-2 p-3 bg-purple-50 rounded-xl text-sm text-slate-700 border border-purple-100 leading-relaxed">「您現在戴的是掛在耳朵後面那種，還是放進耳道裡面的？如果不確定，可以拿給我看看。」<br><br>耳掛型(BTE/RITE/RIC)：最常見，掛於耳後。訂製型(ITE/ITC/CIC)：放入耳道，較隱形。CROS：單側聽損專用，將聲音傳到好耳。</div>
+                                </details>
                             </div>
-
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="md:col-span-2">
-                                    <label class="block text-base font-bold text-slate-700 mb-2">溝通情境(一) 情境簡述說明</label>
-                                    <textarea id="hearing-scenario1-desc" rows="2" class="w-full p-3 border rounded-lg" placeholder="範例：主管、同事、客戶"></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-base font-bold text-slate-700 mb-2">溝通情境(一) 溝通頻率</label>
-                                    <input id="hearing-scenario1-freq" type="text" class="w-full p-3 border rounded-lg" placeholder="範例：每周 人數約5~10人">
-                                </div>
+                                <label class="flex flex-col items-center p-5 border-2 border-slate-200 rounded-2xl cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors has-[:checked]:border-purple-500 has-[:checked]:bg-purple-100">
+                                    <input type="radio" name="h-type" value="BTE" class="sr-only">
+                                    <svg viewBox="0 0 100 130" class="w-24 h-28 mb-3" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="40" y="10" width="22" height="48" rx="11" fill="#7c3aed" opacity="0.75"/>
+                                        <rect x="44" y="12" width="6" height="4" rx="2" fill="#a78bfa"/>
+                                        <circle cx="51" cy="57" r="7" fill="#5b21b6"/>
+                                        <path d="M51 64 Q51 82 40 94" stroke="#7c3aed" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                        <ellipse cx="37" cy="96" rx="9" ry="6" fill="#a78bfa" opacity="0.9"/>
+                                        <circle cx="37" cy="96" r="3" fill="#7c3aed"/>
+                                        <path d="M68 38 Q78 28 75 52 Q73 66 68 72" stroke="#cbd5e1" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+                                    </svg>
+                                    <span class="font-bold text-slate-700 text-sm text-center">耳掛型</span>
+                                    <span class="text-xs text-slate-500 text-center mt-1">BTE / RITE / RIC</span>
+                                </label>
+                                <label class="flex flex-col items-center p-5 border-2 border-slate-200 rounded-2xl cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors has-[:checked]:border-purple-500 has-[:checked]:bg-purple-100">
+                                    <input type="radio" name="h-type" value="ITE" class="sr-only">
+                                    <svg viewBox="0 0 100 130" class="w-24 h-28 mb-3" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M67 38 Q80 24 78 52 Q76 72 67 78" stroke="#cbd5e1" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+                                        <ellipse cx="54" cy="58" rx="17" ry="22" fill="#7c3aed" opacity="0.7"/>
+                                        <ellipse cx="51" cy="54" rx="9" ry="13" fill="#5b21b6"/>
+                                        <circle cx="50" cy="46" r="4" fill="#a78bfa"/>
+                                        <circle cx="50" cy="46" r="2" fill="#7c3aed"/>
+                                        <text x="51" y="72" text-anchor="middle" font-size="8" fill="white" font-weight="bold" opacity="0.9">ITC</text>
+                                    </svg>
+                                    <span class="font-bold text-slate-700 text-sm text-center">訂製型</span>
+                                    <span class="text-xs text-slate-500 text-center mt-1">ITE / ITC / CIC</span>
+                                </label>
+                                <label class="flex flex-col items-center p-5 border-2 border-slate-200 rounded-2xl cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors has-[:checked]:border-purple-500 has-[:checked]:bg-purple-100">
+                                    <input type="radio" name="h-type" value="CROS" class="sr-only">
+                                    <svg viewBox="0 0 130 130" class="w-24 h-28 mb-3" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="4" y="32" width="20" height="40" rx="10" fill="#7c3aed" opacity="0.55"/>
+                                        <rect x="106" y="32" width="20" height="40" rx="10" fill="#7c3aed" opacity="0.9"/>
+                                        <path d="M28 52 L102 52" stroke="#7c3aed" stroke-width="2.5" stroke-dasharray="6,4"/>
+                                        <polygon points="100,46 110,52 100,58" fill="#7c3aed"/>
+                                        <path d="M24 36 Q33 25 31 50 Q30 62 24 68" stroke="#cbd5e1" stroke-width="4" fill="none" stroke-linecap="round"/>
+                                        <path d="M106 36 Q97 25 99 50 Q100 62 106 68" stroke="#cbd5e1" stroke-width="4" fill="none" stroke-linecap="round"/>
+                                        <text x="65" y="94" text-anchor="middle" font-size="9" fill="#5b21b6" font-weight="bold">聲音傳輸</text>
+                                        <text x="14" y="84" text-anchor="middle" font-size="7" fill="#9333ea" opacity="0.8">差耳</text>
+                                        <text x="116" y="84" text-anchor="middle" font-size="7" fill="#7c3aed">好耳</text>
+                                    </svg>
+                                    <span class="font-bold text-slate-700 text-sm text-center">CROS / BiCROS</span>
+                                    <span class="text-xs text-slate-500 text-center mt-1">單側聽損專用</span>
+                                </label>
                             </div>
-                            <details class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">我們先挑一個你最常遇到、也最吃力的溝通場景，先把情境跟頻率釐清。</p></details>
+                        </div>
 
-                            <div>
-                                <label class="block text-base font-bold text-slate-700 mb-2">在溝通情境(一)下，可聆聽字句完整程度（1~10分）</label>
-                                <div class="flex items-center gap-3">
-                                    <input id="hearing-scenario1-score" type="range" min="1" max="10" value="5" class="w-full accent-blue-600">
-                                    <span id="hearing-scenario1-score-val" class="w-8 text-center font-bold text-blue-700">5</span>
+                        <!-- Q6: 品牌與型號 -->
+                        <div class="mb-8">
+                            <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                                <label class="block text-base font-bold text-slate-700">6. 品牌與型號</label>
+                                <details class="shrink-0">
+                                    <summary class="cursor-pointer text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full font-bold select-none"><i class="fa-solid fa-comments mr-1"></i>訪談範本</summary>
+                                    <div class="mt-2 p-3 bg-purple-50 rounded-xl text-sm text-slate-700 border border-purple-100 leading-relaxed">「您的助聽器是哪個牌子的？有沒有記得型號？或者可以讓我看一下助聽器本體或盒子？」<br><br>常見品牌：Oticon（奧迪康）、Phonak（峰力）、Signia（西嘉）、Starkey、ReSound（瑞聲達）、Widex（唯聽）、Bernafon、松恩 Sonnet（骨導）。</div>
+                                </details>
+                            </div>
+                            <input type="text" id="h-brand" class="w-full p-4 border border-slate-200 rounded-xl bg-slate-50 text-base focus:bg-white focus:ring-2 focus:ring-purple-400" placeholder="例：Oticon OPN 2 / Phonak Naida / 西嘉 Insio...">
+                        </div>
+
+                        <!-- Q7: 助聽器狀況 (複選) -->
+                        <div class="mb-8">
+                            <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                                <label class="block text-base font-bold text-slate-700">7. 助聽器目前狀況（可複選）</label>
+                                <details class="shrink-0">
+                                    <summary class="cursor-pointer text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full font-bold select-none"><i class="fa-solid fa-comments mr-1"></i>訪談範本</summary>
+                                    <div class="mt-2 p-3 bg-purple-50 rounded-xl text-sm text-slate-700 border border-purple-100 leading-relaxed">「您現在這副助聽器用起來感覺怎麼樣？有沒有什麼問題，像是聲音不夠清楚、有雜音，或者本身壞掉了？有去維修過嗎？結果怎樣？」</div>
+                                </details>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-condition" value="已使用多年損壞" class="accent-purple-600"> <span class="font-medium">已使用多年損壞</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-condition" value="故障/停產" class="accent-purple-600"> <span class="font-medium">故障/停產</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-condition" value="聆聽不穩" class="accent-purple-600"> <span class="font-medium">聆聽不穩</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-condition" value="音量太小" class="accent-purple-600"> <span class="font-medium">音量太小</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-condition" value="有雜音" class="accent-purple-600"> <span class="font-medium">有雜音</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-condition" value="有回音" class="accent-purple-600"> <span class="font-medium">有回音</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-condition" value="聲音不自然" class="accent-purple-600"> <span class="font-medium">聲音不自然</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-condition" value="左右不平均" class="accent-purple-600"> <span class="font-medium">左右不平均</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-condition" value="音量太大" class="accent-purple-600"> <span class="font-medium">音量太大</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-condition" value="其他" class="accent-purple-600"> <span class="font-medium">其他</span></label>
+                            </div>
+                        </div>
+
+                        <!-- Q8: 工作職場聆聽需求 (複選) -->
+                        <div class="mb-8">
+                            <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                                <label class="block text-base font-bold text-slate-700">8. 工作職場聆聽需求（可複選）</label>
+                                <details class="shrink-0">
+                                    <summary class="cursor-pointer text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full font-bold select-none"><i class="fa-solid fa-comments mr-1"></i>訪談範本</summary>
+                                    <div class="mt-2 p-3 bg-purple-50 rounded-xl text-sm text-slate-700 border border-purple-100 leading-relaxed">「在工作當中，您需要聽什麼？比如說要跟同事面對面講話，還是要接電話、開會、或是注意機器的聲音？哪些情境您覺得最困難？」</div>
+                                </details>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="面對面（安靜）" class="accent-purple-600"> <span class="font-medium">面對面（安靜）</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="面對面（吵雜）" class="accent-purple-600"> <span class="font-medium">面對面（吵雜）</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="線上視訊會議" class="accent-purple-600"> <span class="font-medium">線上視訊會議</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="主持會議" class="accent-purple-600"> <span class="font-medium">主持會議</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="參與會議" class="accent-purple-600"> <span class="font-medium">參與會議</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="駕駛/開車" class="accent-purple-600"> <span class="font-medium">駕駛/開車</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="機械設備聲" class="accent-purple-600"> <span class="font-medium">機械設備聲</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="市內電話" class="accent-purple-600"> <span class="font-medium">市內電話</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="手機通話" class="accent-purple-600"> <span class="font-medium">手機通話</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="聆聽主管指示" class="accent-purple-600"> <span class="font-medium">聆聽主管指示</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="對講機通訊" class="accent-purple-600"> <span class="font-medium">對講機通訊</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="環境警示音" class="accent-purple-600"> <span class="font-medium">環境警示音</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="教育訓練" class="accent-purple-600"> <span class="font-medium">教育訓練</span></label>
+                                <label class="flex items-center gap-2 p-2.5 border border-slate-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 transition-colors has-[:checked]:bg-purple-100 has-[:checked]:border-purple-400 text-sm"><input type="checkbox" name="h-need" value="其他" class="accent-purple-600"> <span class="font-medium">其他</span></label>
+                            </div>
+                        </div>
+
+                        <!-- Q9: 溝通情境 -->
+                        <div class="mb-2">
+                            <div class="flex items-start justify-between mb-3 flex-wrap gap-2">
+                                <label class="block text-base font-bold text-slate-700">9. 溝通情境補充說明</label>
+                                <details class="shrink-0">
+                                    <summary class="cursor-pointer text-xs bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-full font-bold select-none"><i class="fa-solid fa-comments mr-1"></i>訪談範本</summary>
+                                    <div class="mt-2 p-3 bg-purple-50 rounded-xl text-sm text-slate-700 border border-purple-100 leading-relaxed">「在工作中，您一天大概有多少時間需要用聽力來溝通或接受指令？如果要您給自己聆聽完整度打分數，10分是完全沒問題，1分是完全聽不到，您會給幾分？」</div>
+                                </details>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">情境說明</label>
+                                    <textarea id="h-context-desc" rows="2" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 text-base focus:bg-white focus:ring-2 focus:ring-purple-400" placeholder="說明主要溝通情境、對象、頻率等..."></textarea>
                                 </div>
-                                <p class="text-xs text-slate-500 mt-1">1=完全沒辦法聽清楚；10=可以聽得很清楚</p>
-                                <details class="mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-sm"><summary class="cursor-pointer font-bold text-blue-700">訪談引導範本</summary><p class="mt-2 text-slate-700">如果10分是完全聽得清楚，你會給目前幾分？為什麼不是更高或更低？</p></details>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">溝通頻率</label>
+                                        <input type="text" id="h-context-freq" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" placeholder="例：每日約6-8次，每次5-10分鐘">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">聆聽完整度自評（1-10 分）</label>
+                                        <div class="flex items-center gap-3 mt-2">
+                                            <input type="range" id="h-context-score" min="1" max="10" value="5" class="flex-1 accent-purple-600">
+                                            <span id="h-score-label" class="text-2xl font-bold text-purple-700 w-10 text-center">5</span>
+                                        </div>
+                                        <div class="flex justify-between text-xs text-slate-400 mt-1"><span>1（完全聽不到）</span><span>10（完全沒問題）</span></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div id="hearing-tab-table-slot" class="space-y-6"></div>
+                    <!-- 區塊二: 溝通聆聽需求檢核 -->
+                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-xl text-slate-700 border-b pb-4 mb-6"><i class="fa-solid fa-clipboard-list text-blue-500 mr-3"></i>區塊二：溝通聆聽需求檢核</h3>
+
+                        <!-- 指標一 -->
+                        <div class="mb-6">
+                            <h4 class="font-bold text-lg text-slate-800 mb-2">指標一、職場聆聽需求：<span class="text-base font-normal">個案在職務上需要以聆聽功能接收及理解聲音的需求。</span></h4>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-0 border border-slate-800 rounded-lg overflow-hidden">
+                                <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
+                                    <input type="radio" name="hearing-ind-1" value="4" class="peer hidden">
+                                    <div class="bg-[#d97706] peer-checked:bg-[#b45309] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
+                                        <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 4 分
+                                    </div>
+                                    <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
+                                        大多數的情境下，個案需運用純聽覺功能執行職務活動（聆聽 >75%）
+                                    </div>
+                                </label>
+                                <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
+                                    <input type="radio" name="hearing-ind-1" value="3" class="peer hidden">
+                                    <div class="bg-[#f59e0b] peer-checked:bg-[#d97706] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
+                                        <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 3 分
+                                    </div>
+                                    <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
+                                        多數情境下，個案需運用聽覺功能執行職務活動，但有時可運用其他知覺功能協助執行（聆聽 50%~74%）
+                                    </div>
+                                </label>
+                                <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
+                                    <input type="radio" name="hearing-ind-1" value="2" class="peer hidden">
+                                    <div class="bg-[#fcd34d] peer-checked:bg-[#fbbf24] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
+                                        <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 2 分
+                                    </div>
+                                    <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
+                                        半數情境下，個案需運用聽覺功能執行職務活動，但經常可運用其他知覺功能協助執行（聆聽 25%-49%）
+                                    </div>
+                                </label>
+                                <label class="block cursor-pointer relative group">
+                                    <input type="radio" name="hearing-ind-1" value="1" class="peer hidden">
+                                    <div class="bg-[#fef3c7] peer-checked:bg-[#fde68a] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
+                                        <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 1 分
+                                    </div>
+                                    <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
+                                        大多數的情境下，個案不需運用聽覺功能也能執行職務活動（聆聽 &lt;24%）
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 指標二 -->
+                        <div class="mb-6">
+                            <h4 class="font-bold text-lg text-slate-800 mb-2">指標二、職場溝通需求：<span class="text-base font-normal">溝通需求佔工作內容比例</span></h4>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-0 border border-slate-800 rounded-lg overflow-hidden">
+                                <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
+                                    <input type="radio" name="hearing-ind-2" value="4" class="peer hidden">
+                                    <div class="bg-[#d97706] peer-checked:bg-[#b45309] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
+                                        <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 4 分
+                                    </div>
+                                    <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
+                                        有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例 70%以上
+                                    </div>
+                                </label>
+                                <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
+                                    <input type="radio" name="hearing-ind-2" value="3" class="peer hidden">
+                                    <div class="bg-[#f59e0b] peer-checked:bg-[#d97706] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
+                                        <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 3 分
+                                    </div>
+                                    <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
+                                        有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例 40%-69%之間
+                                    </div>
+                                </label>
+                                <label class="block cursor-pointer border-b md:border-b-0 md:border-r border-slate-800 relative group">
+                                    <input type="radio" name="hearing-ind-2" value="2" class="peer hidden">
+                                    <div class="bg-[#fcd34d] peer-checked:bg-[#fbbf24] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
+                                        <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 2 分
+                                    </div>
+                                    <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
+                                        有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例 10%-39%之間
+                                    </div>
+                                </label>
+                                <label class="block cursor-pointer relative group">
+                                    <input type="radio" name="hearing-ind-2" value="1" class="peer hidden">
+                                    <div class="bg-[#fef3c7] peer-checked:bg-[#fde68a] text-center py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2 transition-all">
+                                        <i class="fa-regular fa-square text-black peer-checked:hidden"></i><i class="fa-solid fa-square-check text-black hidden peer-checked:inline-block"></i> 1 分
+                                    </div>
+                                    <div class="p-3 text-sm bg-white h-full peer-checked:bg-red-100 leading-relaxed font-medium text-slate-800">
+                                        有固定的面對面溝通需求及其他語音溝通模式，溝通需求占整體工作比例小於 10%
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 結果 -->
+                        <div>
+                            <h4 class="font-bold text-lg text-slate-800 mb-2">新購助聽器之必要性：<span class="text-base font-normal">由指標一和指標二的分數加總</span></h4>
+                            <div class="grid grid-cols-3 gap-0 border border-slate-800 rounded-lg overflow-hidden">
+                                <div id="hearing-result-high" class="text-center transition-colors">
+                                    <div class="bg-[#d97706] py-2 font-bold text-lg border-b border-r border-slate-800 flex items-center justify-center gap-2">
+                                        <i class="fa-regular fa-square text-black res-chk"></i><i class="fa-solid fa-square-check text-black res-checked hidden"></i> 6-8 分
+                                    </div>
+                                    <div class="p-3 font-bold text-xl bg-white border-r border-slate-800 text-slate-800">高</div>
+                                </div>
+                                <div id="hearing-result-mid" class="text-center transition-colors">
+                                    <div class="bg-[#fcd34d] py-2 font-bold text-lg border-b border-r border-slate-800 flex items-center justify-center gap-2">
+                                        <i class="fa-regular fa-square text-black res-chk"></i><i class="fa-solid fa-square-check text-black res-checked hidden"></i> 3-5 分
+                                    </div>
+                                    <div class="p-3 font-bold text-xl bg-white border-r border-slate-800 text-slate-800">中</div>
+                                </div>
+                                <div id="hearing-result-low" class="text-center transition-colors">
+                                    <div class="bg-[#fef3c7] py-2 font-bold text-lg border-b border-slate-800 flex items-center justify-center gap-2">
+                                        <i class="fa-regular fa-square text-black res-chk"></i><i class="fa-solid fa-square-check text-black res-checked hidden"></i> 2 分
+                                    </div>
+                                    <div class="p-3 font-bold text-xl bg-white text-slate-800">低</div>
+                                </div>
+                            </div>
+                            <p class="text-right mt-3 text-lg font-bold text-slate-600">目前總分：<span id="hearing-total-score" class="text-2xl text-blue-700">0</span> 分</p>
+                        </div>
+
+                        <button class="btn-save-ws w-full mt-8 bg-purple-700 text-white py-4 md:py-5 rounded-xl shadow-xl font-bold text-xl hover:bg-purple-800 transition-transform active:scale-[0.98]">
+                            <i class="fa-solid fa-check-double mr-2"></i>儲存聽力案檢核
+                        </button>
+                    </div>
                 </div>
 
                 <!-- 頁籤 3: 評估撰寫 -->
@@ -2252,33 +2353,22 @@
                 }
                 if (window.calculateHearingScore) window.calculateHearingScore();
 
-                const hearingSection = document.getElementById('hearing-assessment-section');
-                if (hearingSection) hearingSection.classList.remove('hidden');
-
-                document.querySelectorAll('input[name="hearing-aid-status"]').forEach(r => r.checked = false);
-                if (hearing.aidStatus) {
-                    const aidStatusRadio = document.querySelector(`input[name="hearing-aid-status"][value="${hearing.aidStatus}"]`);
-                    if (aidStatusRadio) aidStatusRadio.checked = true;
-                }
-                const setVal = (id, v = '') => { const el = document.getElementById(id); if (el) el.value = v || ''; };
-                setVal('hearing-loss-cause', hearing.lossCause);
-                setVal('hearing-current-status', hearing.currentStatus);
-                setVal('hearing-aid-years', hearing.aidYears);
-                setVal('hearing-aid-type-other', hearing.aidTypeOther);
-                setVal('hearing-brand-model', hearing.brandModel);
-                setVal('hearing-scenario1-desc', hearing.scenario1Desc);
-                setVal('hearing-scenario1-freq', hearing.scenario1Freq);
-                setVal('hearing-scenario1-score', hearing.scenario1Score || '5');
-                const scoreVal = document.getElementById('hearing-scenario1-score-val');
-                if (scoreVal) scoreVal.textContent = String(hearing.scenario1Score || 5);
-
-                const toArr = (v) => Array.isArray(v) ? v : (v ? String(v).split('|').filter(Boolean) : []);
-                const aidTypes = toArr(hearing.aidTypes);
-                const aidIssues = toArr(hearing.aidIssues);
-                const workNeeds = toArr(hearing.workNeeds);
-                document.querySelectorAll('.hearing-aid-type').forEach(cb => cb.checked = aidTypes.includes(cb.value));
-                document.querySelectorAll('.hearing-aid-issue').forEach(cb => cb.checked = aidIssues.includes(cb.value));
-                document.querySelectorAll('.hearing-work-need').forEach(cb => cb.checked = workNeeds.includes(cb.value));
+                // 載入聽力案問卷欄位
+                if (hearing.exp) { const r = document.querySelector(`input[name="h-exp"][value="${hearing.exp}"]`); if (r) r.checked = true; }
+                if (hearing.htype) { const r = document.querySelector(`input[name="h-type"][value="${hearing.htype}"]`); if (r) r.checked = true; }
+                document.querySelectorAll('input[name="h-condition"]').forEach(ch => ch.checked = false);
+                if (Array.isArray(hearing.condition)) hearing.condition.forEach(v => { const ch = document.querySelector(`input[name="h-condition"][value="${v}"]`); if (ch) ch.checked = true; });
+                document.querySelectorAll('input[name="h-need"]').forEach(ch => ch.checked = false);
+                if (Array.isArray(hearing.need)) hearing.need.forEach(v => { const ch = document.querySelector(`input[name="h-need"][value="${v}"]`); if (ch) ch.checked = true; });
+                if (document.getElementById('h-cause')) document.getElementById('h-cause').value = hearing.cause || '';
+                if (document.getElementById('h-status')) document.getElementById('h-status').value = hearing.status || '';
+                if (document.getElementById('h-years')) document.getElementById('h-years').value = hearing.years || '';
+                if (document.getElementById('h-brand')) document.getElementById('h-brand').value = hearing.brand || '';
+                if (document.getElementById('h-context-desc')) document.getElementById('h-context-desc').value = hearing.ctxDesc || '';
+                if (document.getElementById('h-context-freq')) document.getElementById('h-context-freq').value = hearing.ctxFreq || '';
+                const scoreEl = document.getElementById('h-context-score');
+                const scoreLblEl = document.getElementById('h-score-label');
+                if (scoreEl) { scoreEl.value = hearing.ctxScore || '5'; if (scoreLblEl) scoreLblEl.textContent = scoreEl.value; }
 
                 pendingPhotosQueue = [];
                 renderPendingPhotos();
@@ -2411,18 +2501,17 @@
                     hearing: {
                         ind1: document.querySelector('input[name="hearing-ind-1"]:checked')?.value || '',
                         ind2: document.querySelector('input[name="hearing-ind-2"]:checked')?.value || '',
-                        aidStatus: document.querySelector('input[name="hearing-aid-status"]:checked')?.value || '',
-                        lossCause: document.getElementById('hearing-loss-cause')?.value || '',
-                        currentStatus: document.getElementById('hearing-current-status')?.value || '',
-                        aidYears: document.getElementById('hearing-aid-years')?.value || '',
-                        aidTypes: Array.from(document.querySelectorAll('.hearing-aid-type:checked')).map(el => el.value),
-                        aidTypeOther: document.getElementById('hearing-aid-type-other')?.value || '',
-                        brandModel: document.getElementById('hearing-brand-model')?.value || '',
-                        aidIssues: Array.from(document.querySelectorAll('.hearing-aid-issue:checked')).map(el => el.value),
-                        workNeeds: Array.from(document.querySelectorAll('.hearing-work-need:checked')).map(el => el.value),
-                        scenario1Desc: document.getElementById('hearing-scenario1-desc')?.value || '',
-                        scenario1Freq: document.getElementById('hearing-scenario1-freq')?.value || '',
-                        scenario1Score: document.getElementById('hearing-scenario1-score')?.value || '5'
+                        exp: document.querySelector('input[name="h-exp"]:checked')?.value || '',
+                        htype: document.querySelector('input[name="h-type"]:checked')?.value || '',
+                        cause: document.getElementById('h-cause')?.value || '',
+                        status: document.getElementById('h-status')?.value || '',
+                        years: document.getElementById('h-years')?.value || '',
+                        brand: document.getElementById('h-brand')?.value || '',
+                        condition: Array.from(document.querySelectorAll('input[name="h-condition"]:checked')).map(x => x.value),
+                        need: Array.from(document.querySelectorAll('input[name="h-need"]:checked')).map(x => x.value),
+                        ctxDesc: document.getElementById('h-context-desc')?.value || '',
+                        ctxFreq: document.getElementById('h-context-freq')?.value || '',
+                        ctxScore: document.getElementById('h-context-score')?.value || '5'
                     },
                     checklist: {}, 
                     updatedAt: serverTimestamp()
@@ -3133,6 +3222,44 @@
         }
 
         // ==========================================
+        // ==========================================
+        // 共用：上傳音檔至雲端，失敗則自動下載到本機備份
+        // ==========================================
+        async function uploadAudioAndSave(audioBlob, fileName, targetCaseId, displayLabel) {
+            try {
+                const result = await uploadToGoogleDrive(audioBlob, fileName);
+                const targetCase = casesData.find(x => x.id === targetCaseId);
+                if (targetCase) {
+                    const newAudios = [...(targetCase.audios || []), {
+                        name: fileName,
+                        displayName: displayLabel || new Date().toLocaleString(),
+                        previewUrl: result.previewUrl,
+                        downloadUrl: result.downloadUrl,
+                        transcript: ''
+                    }];
+                    await updateDoc(doc(db, 'users', currentUser.uid, 'cases', targetCaseId), { audios: newAudios });
+                    if (currentEditingCaseId === targetCaseId) renderAudios(newAudios);
+                }
+                showToast(`✓ ${displayLabel || '錄音'} 已上傳雲端`);
+            } catch (err) {
+                // 雲端上傳失敗 → 自動下載到本機，絕不讓錄音消失
+                try {
+                    const url = URL.createObjectURL(audioBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    alert(`⚠️ 雲端上傳失敗，已自動下載備份到本機：\n${fileName}\n\n失敗原因：${err.message}\n\n請手動上傳此檔案至案件。`);
+                } catch (dlErr) {
+                    alert(`錄音上傳失敗且無法自動下載：${err.message}`);
+                    toggleRecoveryBanner(true);
+                }
+            }
+        }
+
         // 🌟 新版：錄音與手動 AI 轉譯分離 (恢復遺失的區塊)
         // ==========================================
         const btnRecord = document.getElementById('btn-record-audio');
@@ -3141,6 +3268,11 @@
         let recordingStream = null;
         let recordingCaseId = null;
         let stopRecordingResolver = null;
+        let segmentInterval = null;
+        let segmentIndex = 0;
+        let recordingTimerInterval = null;
+        let recordingStartTime = null;
+        const SEGMENT_MINUTES = 5; // 每 5 分鐘自動分段上傳
 
         function createRecMeta() {
             return {
@@ -3269,45 +3401,71 @@
             };
 
             mediaRecorder.onstop = async () => {
+                // 清除分段計時器和顯示計時器
+                if (segmentInterval) { clearInterval(segmentInterval); segmentInterval = null; }
+                if (recordingTimerInterval) { clearInterval(recordingTimerInterval); recordingTimerInterval = null; }
+
                 syncRecordingUi('uploading');
                 const targetCaseId = recordingCaseId || currentEditingCaseId;
-                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                const fileName = `audio_${Date.now()}.webm`;
-                audioBlobCache[fileName] = audioBlob;
+
+                // 上傳最後一段（可能是不足 SEGMENT_MINUTES 分鐘的尾段）
+                if (audioChunks.length > 0) {
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    const fileName = `audio_${Date.now()}.webm`;
+                    audioBlobCache[fileName] = audioBlob;
+                    const label = segmentIndex > 0
+                        ? `${new Date().toLocaleString()} 第${segmentIndex + 1}段(尾)`
+                        : new Date().toLocaleString();
+                    await uploadAudioAndSave(audioBlob, fileName, targetCaseId, label);
+                }
 
                 try {
-                    const result = await uploadToGoogleDrive(audioBlob, fileName);
-                    const targetCase = casesData.find(x => x.id === targetCaseId);
-                    if (targetCase) {
-                        const newAudios = [...(targetCase.audios || []), {
-                            name: fileName,
-                            displayName: new Date().toLocaleString(),
-                            previewUrl: result.previewUrl,
-                            downloadUrl: result.downloadUrl,
-                            transcript: ''
-                        }];
-                        await updateDoc(doc(db, 'users', currentUser.uid, 'cases', targetCaseId), { audios: newAudios });
-                        if (currentEditingCaseId === targetCaseId) renderAudios(newAudios);
-                    }
-                    showToast("錄音已安全上傳至雲端！");
                     if (activeRecMeta?.sessionId) await clearCachedSession(activeRecMeta.sessionId);
                     writeRecMeta(null);
                     toggleRecoveryBanner(false);
-                } catch(err) {
-                    alert("錄音存檔失敗：" + err.message);
-                    toggleRecoveryBanner(true);
-                } finally {
-                    if (recordingStream) recordingStream.getTracks().forEach(track => track.stop());
-                    recordingStream = null;
-                    activeRecMeta = null;
-                    recordingCaseId = null;
-                    syncRecordingUi('idle');
-                    if (stopRecordingResolver) { stopRecordingResolver(); stopRecordingResolver = null; }
-                }
+                } catch(_) {}
+
+                if (recordingStream) recordingStream.getTracks().forEach(track => track.stop());
+                recordingStream = null;
+                activeRecMeta = null;
+                recordingCaseId = null;
+                recordingStartTime = null;
+                segmentIndex = 0;
+                syncRecordingUi('idle');
+                if (stopRecordingResolver) { stopRecordingResolver(); stopRecordingResolver = null; }
             };
 
             mediaRecorder.start(1000);
             isRecording = true;
+            recordingStartTime = Date.now();
+            segmentIndex = 0;
+
+            // 每 SEGMENT_MINUTES 分鐘自動分段上傳
+            segmentInterval = setInterval(async () => {
+                if (!isRecording || !audioChunks.length) return;
+                segmentIndex++;
+                const segChunks = [...audioChunks];
+                audioChunks = []; // 清空，繼續錄下一段
+                const segBlob = new Blob(segChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                const segFileName = `audio_${Date.now()}_part${segmentIndex}.webm`;
+                audioBlobCache[segFileName] = segBlob;
+                showToast(`第 ${segmentIndex} 段（${SEGMENT_MINUTES}分鐘）上傳中...`);
+                await uploadAudioAndSave(segBlob, segFileName, recordingCaseId, `${new Date().toLocaleString()} 第${segmentIndex}段`);
+            }, SEGMENT_MINUTES * 60 * 1000);
+
+            // 錄音計時顯示
+            recordingTimerInterval = setInterval(() => {
+                if (!recordingStartTime) return;
+                const sec = Math.floor((Date.now() - recordingStartTime) / 1000);
+                const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+                const ss = String(sec % 60).padStart(2, '0');
+                const statusMain = document.getElementById('recording-status');
+                const statusFloat = document.getElementById('recording-floating-status');
+                const timeStr = `● 錄音中 ${mm}:${ss}（每${SEGMENT_MINUTES}分鐘自動分段）`;
+                if (statusMain) statusMain.textContent = timeStr;
+                if (statusFloat) statusFloat.textContent = `● ${mm}:${ss}`;
+            }, 1000);
+
             syncRecordingUi('recording');
         }
 
@@ -3478,6 +3636,13 @@
             }).catch(err => alert("複製失敗"));
         };
 
+        function formatDuration(sec) {
+            if (!sec || isNaN(sec) || !isFinite(sec)) return '--:--';
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
         function renderAudios(audiosArr) {
             const container = document.getElementById('audios-container');
             if (audiosArr.length === 0) {
@@ -3487,10 +3652,11 @@
                 const dUrl = audio.downloadUrl || audio.previewUrl || audio.url;
                 const safeBtnId = 'btn-transcribe-' + audio.name.replace(/[^a-zA-Z0-9]/g, '');
                 const encodedName = encodeURIComponent(audio.name || '');
-                
+                const durId = `audio-dur-${index}`;
+                const durDisplay = audio.duration ? formatDuration(audio.duration) : '<span class="animate-pulse">偵測中...</span>';
+
                 let transcriptSection = '';
                 if (audio.transcript) {
-                    // 🌟 修改：將靜態文字改為可編輯的 textarea
                     transcriptSection = `
                         <div class="mt-3 p-4 bg-white rounded-xl border border-purple-200 shadow-inner">
                             <div class="flex justify-between items-center mb-2 border-b border-purple-100 pb-2">
@@ -3502,31 +3668,53 @@
                     `;
                 } else {
                     transcriptSection = `
-                        <div class="mt-2 text-right">
+                        <div class="mt-1 text-right">
                             <button id="${safeBtnId}" onclick="window.startTranscription('${encodedName}')" class="text-sm bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-bold transition-colors shadow-sm">
-                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 針對此錄音產生逐字稿
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 產生逐字稿
                             </button>
                         </div>
                     `;
                 }
 
-                // 🌟 修改：加入提示，告知 Google Drive 音檔可能需點擊下載圖示播放
                 return `
-                <div class="bg-slate-50 p-5 border border-slate-200 rounded-2xl flex flex-col gap-3 shadow-sm relative group">
-                    <div class="flex justify-between items-center">
-                        <span class="text-base md:text-lg text-slate-700 font-bold truncate pr-2"><i class="fa-solid fa-headphones text-blue-500 mr-2"></i>${audio.displayName || audio.name}</span>
+                <div class="bg-slate-50 px-4 py-3 border border-slate-200 rounded-xl flex flex-col gap-2 shadow-sm">
+                    <div class="flex justify-between items-center gap-2">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <i class="fa-solid fa-file-audio text-blue-400 text-lg shrink-0"></i>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-slate-700 truncate">${audio.displayName || audio.name}</p>
+                                <p class="text-xs text-slate-400 mt-0.5"><i class="fa-regular fa-clock mr-1"></i><span id="${durId}">${durDisplay}</span></p>
+                            </div>
+                        </div>
                         <div class="flex gap-2 shrink-0">
-                            <!-- 🗑️ 刪除按鈕 -->
-                            <button onclick="window.deleteMedia('audios', ${index})" class="text-red-500 hover:text-red-700 bg-red-100 hover:bg-red-200 px-3 py-1.5 rounded-lg transition-colors"><i class="fa-solid fa-trash"></i></button>
-                            <a href="${dUrl}" target="_blank" class="text-emerald-600 hover:text-emerald-800 text-sm bg-emerald-100 hover:bg-emerald-200 px-3 py-1.5 rounded-lg font-bold transition-colors flex items-center" title="另開視窗播放/下載"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> 下載</a>
+                            <a href="${dUrl}" target="_blank" class="text-slate-500 hover:text-blue-600 bg-white hover:bg-blue-50 border border-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold transition-colors flex items-center gap-1"><i class="fa-solid fa-download"></i></a>
+                            <button onclick="window.deleteMedia('audios', ${index})" class="text-red-400 hover:text-red-600 bg-white hover:bg-red-50 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                    <p class="text-xs text-slate-400">若下方播放器無法播放，請點擊右上角綠色按鈕開啟音檔。</p>
-                    <audio controls src="${dUrl}" class="w-full h-12 mt-1"></audio>
                     ${transcriptSection}
-                </div>`}).join('');
-                
-            // 觸發重新計算高度
+                </div>`;
+            }).join('');
+
+            // 對沒有儲存 duration 的音檔，嘗試從 URL 偵測長度
+            audiosArr.forEach((audio, index) => {
+                if (audio.duration) return; // 已有紀錄就跳過
+                const dUrl = audio.downloadUrl || audio.previewUrl || audio.url;
+                if (!dUrl) return;
+                const durId = `audio-dur-${index}`;
+                const hidden = new Audio();
+                hidden.preload = 'metadata';
+                hidden.onloadedmetadata = () => {
+                    const el = document.getElementById(durId);
+                    if (el) el.textContent = formatDuration(hidden.duration);
+                    hidden.src = '';
+                };
+                hidden.onerror = () => {
+                    const el = document.getElementById(durId);
+                    if (el) el.textContent = '--:--';
+                };
+                hidden.src = dUrl;
+            });
+
             setTimeout(() => triggerAutoResize(), 100);
         }
 
@@ -3826,21 +4014,10 @@ ${rawDraft}
         let drawColor = '#0f172a'; let drawSize = 3; let isEraser = false;
 
         // 聽覺需求評估表相關函式
-        (() => {
-            const assessSection = document.getElementById('tab-assess');
-            const hearingSection = document.getElementById('hearing-assessment-section');
-            const hearingSlot = document.getElementById('hearing-tab-table-slot');
-            const toggleBtn = document.getElementById('btn-toggle-hearing');
-            if (toggleBtn) toggleBtn.remove();
-            if (hearingSection && hearingSlot) hearingSlot.appendChild(hearingSection);
-            if (assessSection) {
-                const desc = assessSection.querySelector('.bg-white .flex.justify-between.items-center.border-b.pb-4.mb-5');
-                if (desc) {
-                    const title = desc.querySelector('h3');
-                    if (title) title.textContent = '現場環境與能力檢核';
-                }
-            }
-        })();
+        document.getElementById('h-context-score')?.addEventListener('input', function() {
+            const lbl = document.getElementById('h-score-label');
+            if (lbl) lbl.textContent = this.value;
+        });
 
         window.calculateHearingScore = () => {
             const ind1 = document.querySelector('input[name="hearing-ind-1"]:checked');
@@ -3881,10 +4058,74 @@ ${rawDraft}
         document.querySelectorAll('input[name="hearing-ind-1"], input[name="hearing-ind-2"]').forEach(radio => {
             radio.addEventListener('change', window.calculateHearingScore);
         });
-        document.getElementById('hearing-scenario1-score')?.addEventListener('input', (e) => {
-            const v = e.target.value || '5';
-            const show = document.getElementById('hearing-scenario1-score-val');
-            if (show) show.textContent = String(v);
+
+        // ==========================================
+        // 🎧 聽力案檢核：自動儲存
+        // ==========================================
+        let hearingAutoSaveTimer = null;
+
+        function collectHearingData() {
+            return {
+                exp: document.querySelector('input[name="h-exp"]:checked')?.value || '',
+                htype: document.querySelector('input[name="h-type"]:checked')?.value || '',
+                cause: document.getElementById('h-cause')?.value || '',
+                status: document.getElementById('h-status')?.value || '',
+                years: document.getElementById('h-years')?.value || '',
+                brand: document.getElementById('h-brand')?.value || '',
+                condition: Array.from(document.querySelectorAll('input[name="h-condition"]:checked')).map(x => x.value),
+                need: Array.from(document.querySelectorAll('input[name="h-need"]:checked')).map(x => x.value),
+                ctxDesc: document.getElementById('h-context-desc')?.value || '',
+                ctxFreq: document.getElementById('h-context-freq')?.value || '',
+                ctxScore: document.getElementById('h-context-score')?.value || '5',
+                ind1: document.querySelector('input[name="hearing-ind-1"]:checked')?.value || '',
+                ind2: document.querySelector('input[name="hearing-ind-2"]:checked')?.value || '',
+            };
+        }
+
+        function setHearingIndicator(state) {
+            const el = document.getElementById('hearing-autosave-indicator');
+            if (!el) return;
+            if (state === 'saving') {
+                el.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-slate-400"></i> 儲存中...';
+                el.className = 'text-xs text-slate-400 font-medium flex items-center gap-1';
+            } else if (state === 'saved') {
+                el.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-500"></i> 已自動儲存';
+                el.className = 'text-xs text-emerald-600 font-bold flex items-center gap-1';
+                setTimeout(() => {
+                    el.innerHTML = '<i class="fa-solid fa-cloud text-slate-300"></i> 已儲存';
+                    el.className = 'text-xs text-slate-400 font-medium flex items-center gap-1';
+                }, 2500);
+            } else if (state === 'error') {
+                el.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-red-400"></i> 儲存失敗';
+                el.className = 'text-xs text-red-500 font-bold flex items-center gap-1';
+            } else {
+                el.innerHTML = '<i class="fa-solid fa-cloud text-slate-300"></i> 填寫後將自動儲存';
+                el.className = 'text-xs text-slate-400 font-medium flex items-center gap-1';
+            }
+        }
+
+        function triggerHearingAutoSave() {
+            if (!currentEditingCaseId || !currentUser) return;
+            setHearingIndicator('saving');
+            clearTimeout(hearingAutoSaveTimer);
+            hearingAutoSaveTimer = setTimeout(async () => {
+                try {
+                    await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), {
+                        hearing: collectHearingData(),
+                        updatedAt: serverTimestamp()
+                    });
+                    setHearingIndicator('saved');
+                } catch (e) {
+                    setHearingIndicator('error');
+                    console.error('聽力自動儲存失敗', e);
+                }
+            }, 1500);
+        }
+
+        // 監聽聽力頁籤內所有 input / change 事件
+        document.querySelectorAll('#tab-hearing input, #tab-hearing textarea').forEach(el => {
+            el.addEventListener('change', triggerHearingAutoSave);
+            el.addEventListener('input', triggerHearingAutoSave);
         });
 
         function initCanvasSize() {
