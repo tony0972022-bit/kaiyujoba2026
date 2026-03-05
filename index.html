@@ -264,7 +264,7 @@
                     <div>
                         <label class="block text-base font-medium text-slate-600 mb-2">對象別 (將影響個案登打模式) *</label>
                         <div class="flex flex-wrap gap-4 text-base md:text-lg">
-                            <label class="flex items-center cursor-pointer p-2 hover:bg-slate-50 rounded"><input type="radio" name="form-category" value="中高齡及高齡者" class="mr-2 w-5 h-5" required> 中高齡及高齡者(工作站)</label>
+                            <label class="flex items-center cursor-pointer p-2 hover:bg-slate-50 rounded"><input type="radio" name="form-category" value="中高齡（工作站）" class="mr-2 w-5 h-5" required> 中高齡（工作站）</label>
                             <label class="flex items-center cursor-pointer p-2 hover:bg-slate-50 rounded"><input type="radio" name="form-category" value="身心障礙者" class="mr-2 w-5 h-5"> 身心障礙者(單人)</label>
                             <label class="flex items-center cursor-pointer p-2 hover:bg-slate-50 rounded"><input type="radio" name="form-category" value="勞工就業通" class="mr-2 w-5 h-5"> 勞工就業通</label>
                         </div>
@@ -1105,6 +1105,159 @@
         </div>
     </main>
 
+    <!-- ================= 中高齡工作站工作區（全螢幕，獨立於 main 之外） ================= -->
+    <div id="view-ws-elder" class="hidden fixed inset-0 bg-slate-100 z-50 flex flex-col">
+        <!-- Top bar -->
+        <header class="bg-amber-600 text-white shadow-md px-4 py-3 flex items-center gap-3 shrink-0 z-10">
+            <button id="elder-btn-back" class="text-white hover:text-amber-200 p-2 -ml-2 text-2xl"><i class="fa-solid fa-arrow-left"></i></button>
+            <h1 id="elder-app-title" class="text-xl font-bold tracking-wide flex-1 truncate">中高齡工作站</h1>
+            <span id="elder-auth-badge" class="text-xs bg-amber-700 px-3 py-1 rounded-full font-bold">中高齡</span>
+        </header>
+
+        <!-- Body: sidebar + main -->
+        <div class="flex-1 flex overflow-hidden">
+
+            <!-- ⬅️ 左側邊欄 -->
+            <div class="w-72 md:w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col h-full overflow-y-auto no-scrollbar z-20 shadow-sm">
+
+                <!-- 公司資訊 -->
+                <div class="p-4 border-b border-slate-100 space-y-1">
+                    <h2 id="elder-ws-company" class="text-lg font-black text-slate-800 leading-snug">公司名稱</h2>
+                    <p id="elder-ws-meta" class="text-xs text-slate-500">初訪日：-</p>
+                    <div class="flex gap-2 mt-2">
+                        <button id="elder-btn-edit" class="flex-1 text-xs text-blue-700 bg-white border border-blue-200 py-1.5 rounded-lg font-bold hover:bg-blue-50"><i class="fa-solid fa-pen mr-1"></i>編輯基本資料</button>
+                        <button id="elder-btn-delete-case" class="text-xs text-red-600 bg-white border border-red-200 px-3 py-1.5 rounded-lg font-bold hover:bg-red-50"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <label class="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-lg p-2.5 cursor-pointer mt-2">
+                        <input type="checkbox" id="elder-report-completed" class="w-4 h-4 text-rose-600 rounded">
+                        <span class="text-xs font-bold text-rose-800">已完成報告</span>
+                    </label>
+                </div>
+
+                <!-- 共用申請設備 -->
+                <div class="p-4 border-b border-slate-100">
+                    <h3 class="font-bold text-sm text-slate-700 mb-2"><i class="fa-solid fa-cart-flatbed text-amber-500 mr-1"></i>共用申請設備</h3>
+                    <textarea id="elder-shared-equipment" rows="3" class="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 resize-none" placeholder="每行一項&#10;例：升降台車 x5&#10;拖板車 x1"></textarea>
+                    <button id="elder-btn-save-equipment" class="mt-2 w-full bg-amber-500 text-white py-1.5 rounded-lg text-xs font-bold hover:bg-amber-600 transition-colors"><i class="fa-solid fa-floppy-disk mr-1"></i>儲存設備</button>
+                </div>
+
+                <!-- 工作站列表 -->
+                <div class="p-4 flex-1 flex flex-col min-h-0">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-sm text-slate-700"><i class="fa-solid fa-layer-group text-blue-500 mr-1"></i>工作站列表</h3>
+                        <button id="elder-btn-add-ws" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-700"><i class="fa-solid fa-plus mr-1"></i>新增</button>
+                    </div>
+                    <div id="elder-ws-list" class="space-y-2 flex-1 overflow-y-auto no-scrollbar">
+                        <p class="text-xs text-slate-400 text-center py-4">尚無工作站</p>
+                    </div>
+                </div>
+
+                <!-- 下載文字檔 -->
+                <div class="p-4 border-t border-slate-100 shrink-0">
+                    <button id="elder-btn-download-text" class="w-full bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors shadow">
+                        <i class="fa-solid fa-file-lines mr-2"></i>下載文字檔
+                    </button>
+                </div>
+            </div>
+
+            <!-- ➡️ 右側主工作區 -->
+            <div id="elder-main-area" class="flex-1 overflow-y-auto p-4 md:p-6 pb-20">
+
+                <!-- 空白提示 -->
+                <div id="elder-empty-state" class="flex flex-col items-center justify-center h-full text-slate-400 select-none">
+                    <i class="fa-solid fa-layer-group text-6xl mb-4 opacity-20"></i>
+                    <p class="text-xl font-bold">尚未建立工作站</p>
+                    <p class="text-sm mt-2">點擊左側「＋新增」建立第一個工作站</p>
+                </div>
+
+                <!-- 工作站詳細區 -->
+                <div id="elder-ws-detail" class="hidden max-w-4xl mx-auto space-y-5">
+
+                    <!-- 工作站標頭 -->
+                    <div class="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm">
+                        <div class="flex items-center gap-3 mb-5">
+                            <input type="text" id="elder-ws-name" class="flex-1 text-xl md:text-2xl font-black text-slate-800 bg-transparent border-b-2 border-amber-300 focus:outline-none focus:border-amber-500 pb-1" placeholder="工作站名稱（如：包裝作業區）">
+                            <button id="elder-btn-delete-ws" class="text-red-400 hover:text-red-600 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-xs font-bold shrink-0 transition-colors">
+                                <i class="fa-solid fa-trash mr-1"></i>刪除此站
+                            </button>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-600 mb-1">主要工作內容</label>
+                                <textarea id="elder-work-content" rows="3" class="auto-resize w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-base" placeholder="說明此工作站的主要作業內容、操作流程..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-600 mb-1">工作困難</label>
+                                <textarea id="elder-difficulties" rows="3" class="auto-resize w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-400 text-base" placeholder="描述目前遭遇的工作困難與不便之處..."></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-600 mb-1">改善建議</label>
+                                <textarea id="elder-improvements" rows="3" class="auto-resize w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-green-400 text-base" placeholder="建議的改善方式、輔具規格..."></textarea>
+                            </div>
+                        </div>
+                        <button id="elder-btn-save-ws" class="mt-5 w-full bg-slate-800 text-white py-3.5 rounded-xl font-bold text-lg hover:bg-slate-700 active:scale-[0.98] transition-transform shadow-lg">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i>儲存此工作站
+                        </button>
+                    </div>
+
+                    <!-- 人員名單 -->
+                    <div class="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-users text-amber-500 mr-2"></i>人員名單</h3>
+                            <label class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-pointer hover:bg-emerald-700 transition-colors">
+                                <i class="fa-solid fa-file-excel mr-1"></i>匯入 Excel
+                                <input type="file" id="elder-excel-import" accept=".xlsx,.xls" class="hidden">
+                            </label>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-3">Excel 欄位需含：<span class="font-bold text-slate-600">姓名、性別、年齡、職稱、年資、工作說明、期待申請項目</span></p>
+                        <div id="elder-personnel-container">
+                            <p class="text-sm text-slate-400">尚未匯入人員資料。</p>
+                        </div>
+                    </div>
+
+                    <!-- 現場照片 -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-5 flex justify-between items-center border-b border-slate-100">
+                            <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-camera text-blue-500 mr-2"></i>現場照片</h3>
+                            <div class="flex items-center gap-2">
+                                <p class="text-xs text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded hidden md:block"><i class="fa-solid fa-triangle-exclamation mr-1"></i>拍完記得點確認上傳</p>
+                                <label class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-pointer hover:bg-blue-700 transition-colors">
+                                    <i class="fa-solid fa-plus mr-1"></i>拍照/選圖
+                                    <input type="file" id="elder-photo-upload" accept="image/*" capture="environment" multiple class="hidden">
+                                </label>
+                            </div>
+                        </div>
+                        <div id="elder-pending-photos" class="hidden mx-5 mt-4 p-4 bg-amber-50 rounded-xl border-2 border-dashed border-amber-300">
+                            <h4 class="text-xs font-bold text-amber-800 mb-2"><i class="fa-solid fa-hourglass-half mr-1"></i>待上傳</h4>
+                            <div id="elder-pending-grid" class="grid grid-cols-3 md:grid-cols-5 gap-2 mb-3"></div>
+                            <button id="elder-btn-upload-photos" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 text-sm transition-colors">
+                                <i class="fa-solid fa-cloud-arrow-up mr-2"></i>確認上傳全部照片
+                            </button>
+                        </div>
+                        <div id="elder-photos-container" class="p-5 space-y-2">
+                            <p class="text-sm text-slate-400">尚無照片。</p>
+                        </div>
+                    </div>
+
+                    <!-- 訪談錄音 -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-5 flex justify-between items-center border-b border-slate-100">
+                            <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-microphone text-red-500 mr-2"></i>訪談錄音</h3>
+                            <button id="elder-btn-record" class="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors">
+                                <i class="fa-solid fa-circle mr-1 text-xs"></i>開始錄音
+                            </button>
+                        </div>
+                        <p id="elder-recording-status" class="hidden mx-5 mt-3 text-sm text-red-600 font-bold animate-pulse">● 錄音中...</p>
+                        <div id="elder-audios-container" class="p-5 space-y-2">
+                            <p class="text-sm text-slate-400">尚無錄音。</p>
+                        </div>
+                    </div>
+
+                </div><!-- end elder-ws-detail -->
+            </div><!-- end elder-main-area -->
+        </div><!-- end flex body -->
+    </div><!-- end view-ws-elder -->
+
     <!-- 🌟 懸浮預覽視窗 (PiP) -->
     <div id="preview-modal" class="hidden fixed top-20 right-6 w-80 md:w-[600px] h-[500px] md:h-[700px] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.4)] border border-slate-300 rounded-2xl z-[100] flex flex-col overflow-hidden resize transition-shadow focus-within:shadow-[0_20px_60px_rgba(59,130,246,0.4)]">
         <div id="preview-header" class="p-3 md:p-4 flex justify-between items-center text-white bg-slate-800 select-none cursor-move active:bg-slate-700 transition-colors">
@@ -1678,6 +1831,11 @@
             else showView('list', '訪視案件管理', true);
         });
 
+        document.getElementById('elder-btn-back').addEventListener('click', () => {
+            document.getElementById('view-ws-elder').classList.add('hidden');
+            showView('list', '訪視案件管理', true);
+        });
+
         // ==========================================
         // 系統設定 
         // ==========================================
@@ -2130,7 +2288,7 @@
             filtered.forEach(item => {
                 const el = document.createElement('div');
                 el.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md cursor-pointer relative group transition-all";
-                const catColor = (item.category === '中高齡及高齡者') ? 'bg-amber-100 text-amber-700' : (item.category === '身心障礙者') ? 'bg-emerald-100 text-emerald-700' : (item.category === '勞工就業通') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700';
+                const catColor = (item.category === '中高齡（工作站）' || item.category === '中高齡及高齡者') ? 'bg-amber-100 text-amber-700' : (item.category === '身心障礙者') ? 'bg-emerald-100 text-emerald-700' : (item.category === '勞工就業通') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700';
 
                 const owner = getCaseOwner(item);
                 const ownerColor = isPrimaryOwner(owner) ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-slate-50 text-slate-600 border border-slate-200';
@@ -2170,7 +2328,7 @@
 
             // 傳統分類（只統計主責凱宇/蔡凱宇）
             document.getElementById('dash-total').textContent = ownerCases.length;
-            document.getElementById('dash-elder').textContent = ownerCases.filter(c => c.category === '中高齡及高齡者').length;
+            document.getElementById('dash-elder').textContent = ownerCases.filter(c => c.category === '中高齡（工作站）' || c.category === '中高齡及高齡者').length;
             document.getElementById('dash-disabled').textContent = ownerCases.filter(c => c.category === '身心障礙者').length;
             document.getElementById('dash-job').textContent = ownerCases.filter(c => c.category === '勞工就業通').length;
 
@@ -2285,6 +2443,12 @@
                 currentEditingCaseId = id;
                 const c = casesData.find(x => x.id === id);
                 if (!c) return;
+
+                // 中高齡（工作站）走獨立工作區
+                if (c.category === '中高齡（工作站）') {
+                    openElderWorkspace(id);
+                    return;
+                }
                 
                 document.getElementById('ws-category').textContent = c.category || '未分類';
                 document.getElementById('ws-company').textContent = c.company || '未命名企業';
@@ -2394,6 +2558,449 @@
             }
         }
         window.openWorkspace = openWorkspace;
+
+        // ==========================================
+        // 🌟 中高齡（工作站）專屬邏輯
+        // ==========================================
+        let currentElderCaseId = null;
+        let currentWorkstationId = null;
+        let elderPendingPhotos = [];
+        let elderIsRecording = false;
+        let elderMediaRecorder = null;
+        let elderAudioChunks = [];
+        let elderRecordingStream = null;
+        let elderSegmentInterval = null;
+        let elderSegmentIndex = 0;
+        let elderRecTimerInterval = null;
+        let elderRecStartTime = null;
+
+        function openElderWorkspace(caseId) {
+            currentElderCaseId = caseId;
+            currentWorkstationId = null;
+            const c = casesData.find(x => x.id === caseId);
+            if (!c) return;
+
+            document.getElementById('elder-ws-company').textContent = c.company || '未命名企業';
+            document.getElementById('elder-ws-meta').textContent = `初訪日：${c.visitDate || '-'}　主責：${c.owner || ''}`;
+            document.getElementById('elder-shared-equipment').value = c.sharedEquipment || '';
+            document.getElementById('elder-report-completed').checked = isReportCompleted(c);
+            document.getElementById('elder-app-title').textContent = c.company || '中高齡工作站';
+
+            renderElderWorkstationList(c.workstations || []);
+            document.getElementById('elder-empty-state').classList.remove('hidden');
+            document.getElementById('elder-ws-detail').classList.add('hidden');
+
+            // 顯示視圖
+            document.getElementById('view-container-standard').classList.add('hidden');
+            DOM.views.workspace.classList.add('hidden');
+            document.getElementById('view-ws-elder').classList.remove('hidden');
+        }
+
+        function renderElderWorkstationList(workstations) {
+            const list = document.getElementById('elder-ws-list');
+            if (!workstations || workstations.length === 0) {
+                list.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">尚無工作站，點擊上方「新增」</p>';
+                return;
+            }
+            list.innerHTML = workstations.map(ws => `
+                <div class="elder-ws-item p-3 rounded-xl border cursor-pointer transition-colors ${ws.id === currentWorkstationId ? 'bg-amber-100 border-amber-400' : 'bg-white border-slate-200 hover:bg-amber-50 hover:border-amber-300'}"
+                    onclick="window.selectElderWorkstation('${ws.id}')">
+                    <div class="flex justify-between items-center gap-2">
+                        <span class="text-sm font-bold text-slate-800 truncate">${ws.name || '未命名'}</span>
+                        <span class="text-xs text-slate-400 shrink-0 bg-slate-100 px-2 py-0.5 rounded-full">${(ws.personnel || []).length}人</span>
+                    </div>
+                    <div class="flex gap-3 mt-1 text-xs text-slate-400">
+                        <span><i class="fa-solid fa-camera mr-1"></i>${(ws.photos || []).length}</span>
+                        <span><i class="fa-solid fa-microphone mr-1"></i>${(ws.audios || []).length}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.selectElderWorkstation = function(wsId) {
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            if (!c) return;
+            const ws = (c.workstations || []).find(w => w.id === wsId);
+            if (!ws) return;
+            currentWorkstationId = wsId;
+
+            renderElderWorkstationList(c.workstations || []);
+            document.getElementById('elder-ws-name').value = ws.name || '';
+            document.getElementById('elder-work-content').value = ws.workContent || '';
+            document.getElementById('elder-difficulties').value = ws.difficulties || '';
+            document.getElementById('elder-improvements').value = ws.improvements || '';
+
+            renderElderPersonnel(ws.personnel || []);
+            elderPendingPhotos = [];
+            renderElderPendingPhotos();
+            renderElderPhotos(ws.photos || []);
+            renderElderAudios(ws.audios || []);
+
+            document.getElementById('elder-empty-state').classList.add('hidden');
+            document.getElementById('elder-ws-detail').classList.remove('hidden');
+            triggerAutoResize();
+        };
+
+        // 新增工作站
+        document.getElementById('elder-btn-add-ws').addEventListener('click', async () => {
+            const name = prompt('請輸入工作站名稱（例如：包裝作業區）：');
+            if (!name || !name.trim()) return;
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            if (!c) return;
+            const newWs = { id: 'ws_' + Date.now(), name: name.trim(), workContent: '', difficulties: '', improvements: '', personnel: [], photos: [], audios: [] };
+            const workstations = [...(c.workstations || []), newWs];
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations });
+            renderElderWorkstationList(workstations);
+            window.selectElderWorkstation(newWs.id);
+        });
+
+        // 儲存工作站
+        document.getElementById('elder-btn-save-ws').addEventListener('click', async () => {
+            if (!currentElderCaseId || !currentWorkstationId) return;
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            if (!c) return;
+            const btn = document.getElementById('elder-btn-save-ws');
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>儲存中...';
+            const workstations = (c.workstations || []).map(ws => {
+                if (ws.id !== currentWorkstationId) return ws;
+                return { ...ws, name: document.getElementById('elder-ws-name').value.trim() || ws.name, workContent: document.getElementById('elder-work-content').value, difficulties: document.getElementById('elder-difficulties').value, improvements: document.getElementById('elder-improvements').value };
+            });
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
+                showToast('✓ 工作站資料已儲存');
+                renderElderWorkstationList(workstations);
+            } catch(e) { alert('儲存失敗：' + e.message); }
+            finally { btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i>儲存此工作站'; }
+        });
+
+        // 刪除工作站
+        document.getElementById('elder-btn-delete-ws').addEventListener('click', async () => {
+            if (!currentElderCaseId || !currentWorkstationId) return;
+            if (!confirm('確定刪除此工作站？所有人員、照片、錄音資料將永久消失。')) return;
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            if (!c) return;
+            const workstations = (c.workstations || []).filter(ws => ws.id !== currentWorkstationId);
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations });
+            currentWorkstationId = null;
+            renderElderWorkstationList(workstations);
+            document.getElementById('elder-empty-state').classList.remove('hidden');
+            document.getElementById('elder-ws-detail').classList.add('hidden');
+            showToast('工作站已刪除');
+        });
+
+        // 儲存共用設備
+        document.getElementById('elder-btn-save-equipment').addEventListener('click', async () => {
+            if (!currentElderCaseId) return;
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { sharedEquipment: document.getElementById('elder-shared-equipment').value, updatedAt: serverTimestamp() });
+            showToast('✓ 共用設備已儲存');
+        });
+
+        // 完成報告
+        document.getElementById('elder-report-completed').addEventListener('change', async (e) => {
+            if (!currentElderCaseId) return;
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { reportCompleted: e.target.checked, reportCompletedAt: e.target.checked ? formatLocalDateTime() : '', updatedAt: serverTimestamp() });
+            showToast(e.target.checked ? '已標記完成報告' : '已取消完成報告');
+        });
+
+        // 編輯基本資料
+        document.getElementById('elder-btn-edit').addEventListener('click', () => {
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            if (!c) return;
+            document.getElementById('view-ws-elder').classList.add('hidden');
+            document.getElementById('view-container-standard').classList.remove('hidden');
+            currentEditingCaseId = currentElderCaseId;
+            document.getElementById('btn-edit-case').click();
+        });
+
+        // 刪除案件
+        document.getElementById('elder-btn-delete-case').addEventListener('click', async () => {
+            if (!currentElderCaseId) return;
+            if (!confirm('確定永久刪除此案件？無法復原。')) return;
+            await deleteDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId));
+            showToast('案件已刪除');
+            document.getElementById('view-ws-elder').classList.add('hidden');
+            showView('list', '訪視案件管理', true);
+        });
+
+        // ====== 人員名單 ======
+        function renderElderPersonnel(personnel) {
+            const container = document.getElementById('elder-personnel-container');
+            if (!personnel || personnel.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400">尚未匯入人員資料。</p>'; return;
+            }
+            container.innerHTML = `
+                <p class="text-sm font-bold text-slate-600 mb-3">共 ${personnel.length} 人</p>
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-sm">
+                        <thead class="bg-amber-50">
+                            <tr>${['姓名','性別','年齡','職稱','年資','工作說明','期待申請項目'].map(h => `<th class="px-3 py-2 text-left font-bold text-slate-700 whitespace-nowrap border-b border-slate-200">${h}</th>`).join('')}</tr>
+                        </thead>
+                        <tbody>
+                            ${personnel.map((p, i) => `<tr class="${i%2===0?'bg-white':'bg-slate-50'} hover:bg-amber-50 transition-colors">
+                                <td class="px-3 py-2 font-medium whitespace-nowrap">${p.name||''}</td>
+                                <td class="px-3 py-2 whitespace-nowrap">${p.gender||''}</td>
+                                <td class="px-3 py-2 whitespace-nowrap">${p.age||''}</td>
+                                <td class="px-3 py-2 whitespace-nowrap">${p.title||''}</td>
+                                <td class="px-3 py-2 whitespace-nowrap">${p.seniority||''}</td>
+                                <td class="px-3 py-2">${p.workDesc||''}</td>
+                                <td class="px-3 py-2">${p.expectedItems||''}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <button onclick="window.clearElderPersonnel()" class="mt-3 text-xs text-red-500 hover:text-red-700 font-bold"><i class="fa-solid fa-trash mr-1"></i>清除人員資料</button>
+            `;
+        }
+
+        document.getElementById('elder-excel-import').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !currentElderCaseId || !currentWorkstationId) return;
+            e.target.value = '';
+            try {
+                const data = await file.arrayBuffer();
+                const wb = XLSX.read(data);
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+                if (rows.length === 0) { alert('Excel 沒有資料'); return; }
+                const find = (row, ...candidates) => {
+                    const k = Object.keys(row).find(k => candidates.some(c => k.includes(c)));
+                    return k ? String(row[k] || '').trim() : '';
+                };
+                const personnel = rows.map(row => ({
+                    name: find(row,'姓名','名字'), gender: find(row,'性別'), age: find(row,'年齡','歲'),
+                    title: find(row,'職稱','職位'), seniority: find(row,'年資','資歷'),
+                    workDesc: find(row,'工作說明','工作內容','說明'), expectedItems: find(row,'期待','申請項目','申請')
+                })).filter(p => p.name);
+                if (personnel.length === 0) { alert('找不到有效人員，請確認 Excel 欄位含：姓名、性別、年齡、職稱、年資、工作說明、期待申請項目'); return; }
+                const c = casesData.find(x => x.id === currentElderCaseId);
+                const workstations = (c.workstations || []).map(w => w.id === currentWorkstationId ? { ...w, personnel } : w);
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
+                renderElderPersonnel(personnel);
+                renderElderWorkstationList(workstations);
+                showToast(`✓ 已匯入 ${personnel.length} 位人員`);
+            } catch(err) { alert('匯入失敗：' + err.message); }
+        });
+
+        window.clearElderPersonnel = async () => {
+            if (!confirm('確定清除此工作站所有人員？')) return;
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            const workstations = (c.workstations || []).map(w => w.id === currentWorkstationId ? { ...w, personnel: [] } : w);
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations });
+            renderElderPersonnel([]);
+            renderElderWorkstationList(workstations);
+        };
+
+        // ====== 照片 ======
+        function renderElderPendingPhotos() {
+            const container = document.getElementById('elder-pending-photos');
+            const grid = document.getElementById('elder-pending-grid');
+            if (elderPendingPhotos.length === 0) { container.classList.add('hidden'); return; }
+            container.classList.remove('hidden');
+            grid.innerHTML = elderPendingPhotos.map((p, i) => `
+                <div class="relative aspect-square">
+                    <img src="${p.previewUrl}" class="w-full h-full object-cover rounded-lg">
+                    <button onclick="window.removeElderPendingPhoto(${i})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center leading-none">×</button>
+                </div>`).join('');
+        }
+        window.removeElderPendingPhoto = (i) => { elderPendingPhotos.splice(i, 1); renderElderPendingPhotos(); };
+
+        function renderElderPhotos(photos) {
+            const container = document.getElementById('elder-photos-container');
+            if (!photos || photos.length === 0) { container.innerHTML = '<p class="text-sm text-slate-400">尚無照片。</p>'; return; }
+            container.innerHTML = photos.map((p, i) => `
+                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <img src="${p.previewUrl || p.downloadUrl}" class="w-14 h-14 object-cover rounded-lg cursor-pointer shrink-0" onclick="window.openPreview('${p.downloadUrl||p.previewUrl}','${p.displayName||p.name}','image')">
+                    <div class="flex-1 min-w-0"><p class="text-sm font-bold text-slate-700 truncate">${p.displayName||p.name}</p></div>
+                    <button onclick="window.deleteElderPhoto(${i})" class="text-red-400 hover:text-red-600 px-2 py-1 rounded shrink-0"><i class="fa-solid fa-trash text-sm"></i></button>
+                </div>`).join('');
+        }
+
+        document.getElementById('elder-photo-upload').addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files); e.target.value = '';
+            for (const file of files) {
+                const compressed = await compressImage(file);
+                elderPendingPhotos.push({ file: compressed, previewUrl: URL.createObjectURL(compressed), name: `elder_photo_${Date.now()}_${Math.random().toString(36).slice(2,6)}.jpg`, displayName: new Date().toLocaleString() });
+            }
+            renderElderPendingPhotos();
+        });
+
+        document.getElementById('elder-btn-upload-photos').addEventListener('click', async () => {
+            if (!currentElderCaseId || !currentWorkstationId || elderPendingPhotos.length === 0) return;
+            const btn = document.getElementById('elder-btn-upload-photos');
+            btn.disabled = true; btn.textContent = '上傳中...';
+            const uploaded = [];
+            for (const p of elderPendingPhotos) {
+                try {
+                    const result = await uploadToGoogleDrive(p.file, p.name);
+                    uploaded.push({ name: p.name, displayName: p.displayName, previewUrl: result.previewUrl, downloadUrl: result.downloadUrl });
+                } catch(err) {
+                    try { const url = URL.createObjectURL(p.file); const a = document.createElement('a'); a.href=url; a.download=p.name; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); } catch(_) {}
+                }
+            }
+            if (uploaded.length > 0) {
+                const c = casesData.find(x => x.id === currentElderCaseId);
+                const workstations = (c.workstations || []).map(w => w.id === currentWorkstationId ? { ...w, photos: [...(w.photos||[]), ...uploaded] } : w);
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations });
+                const curWs = workstations.find(w => w.id === currentWorkstationId);
+                renderElderPhotos(curWs.photos || []);
+                renderElderWorkstationList(workstations);
+            }
+            elderPendingPhotos = []; renderElderPendingPhotos();
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up mr-2"></i>確認上傳全部照片';
+            showToast(`✓ 已上傳 ${uploaded.length} 張照片`);
+        });
+
+        window.deleteElderPhoto = async (index) => {
+            if (!confirm('確定刪除此照片？')) return;
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            const workstations = (c.workstations || []).map(w => { if (w.id !== currentWorkstationId) return w; const photos = [...(w.photos||[])]; photos.splice(index,1); return {...w, photos}; });
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations });
+            renderElderPhotos(workstations.find(w => w.id === currentWorkstationId)?.photos || []);
+        };
+
+        // ====== 錄音 ======
+        function renderElderAudios(audios) {
+            const container = document.getElementById('elder-audios-container');
+            if (!audios || audios.length === 0) { container.innerHTML = '<p class="text-sm text-slate-400">尚無錄音。</p>'; return; }
+            container.innerHTML = audios.map((audio, i) => `
+                <div class="flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <i class="fa-solid fa-file-audio text-blue-400 shrink-0"></i>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-slate-700 truncate">${audio.displayName||audio.name}</p>
+                        <p class="text-xs text-slate-400 mt-0.5"><i class="fa-regular fa-clock mr-1"></i><span id="elder-dur-${i}">--:--</span></p>
+                    </div>
+                    <a href="${audio.downloadUrl||audio.previewUrl}" target="_blank" class="text-slate-400 hover:text-blue-600 p-1.5 rounded"><i class="fa-solid fa-download text-sm"></i></a>
+                    <button onclick="window.deleteElderAudio(${i})" class="text-red-400 hover:text-red-600 p-1.5 rounded"><i class="fa-solid fa-trash text-sm"></i></button>
+                </div>`).join('');
+            audios.forEach((audio, i) => {
+                const url = audio.downloadUrl || audio.previewUrl;
+                if (!url) return;
+                const hidden = new Audio(); hidden.preload = 'metadata';
+                hidden.onloadedmetadata = () => { const el = document.getElementById(`elder-dur-${i}`); if (el) el.textContent = formatDuration(hidden.duration); hidden.src = ''; };
+                hidden.onerror = () => { const el = document.getElementById(`elder-dur-${i}`); if (el) el.textContent = '--:--'; };
+                hidden.src = url;
+            });
+        }
+
+        document.getElementById('elder-btn-record').addEventListener('click', async () => {
+            if (!currentElderCaseId || !currentWorkstationId) { alert('請先選擇工作站再錄音'); return; }
+            if (!elderIsRecording) { await startElderRecording(); } else { stopElderRecording(); }
+        });
+
+        async function startElderRecording() {
+            try {
+                elderRecordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                elderMediaRecorder = new MediaRecorder(elderRecordingStream);
+                elderAudioChunks = []; elderSegmentIndex = 0; elderRecStartTime = Date.now();
+                elderMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) elderAudioChunks.push(e.data); };
+                elderMediaRecorder.onstop = async () => {
+                    if (elderSegmentInterval) { clearInterval(elderSegmentInterval); elderSegmentInterval = null; }
+                    if (elderRecTimerInterval) { clearInterval(elderRecTimerInterval); elderRecTimerInterval = null; }
+                    if (elderAudioChunks.length > 0) {
+                        const blob = new Blob(elderAudioChunks, { type: elderMediaRecorder.mimeType || 'audio/webm' });
+                        const fileName = `elder_audio_${Date.now()}.webm`;
+                        const label = elderSegmentIndex > 0 ? `${new Date().toLocaleString()} 第${elderSegmentIndex+1}段(尾)` : new Date().toLocaleString();
+                        await uploadElderAudio(blob, fileName, label);
+                    }
+                    if (elderRecordingStream) elderRecordingStream.getTracks().forEach(t => t.stop());
+                    elderRecordingStream = null; elderIsRecording = false;
+                    const btn = document.getElementById('elder-btn-record');
+                    if (btn) btn.innerHTML = '<i class="fa-solid fa-circle mr-1 text-xs"></i>開始錄音';
+                    if (btn) { btn.classList.remove('bg-red-600','text-white'); btn.classList.add('bg-red-50','text-red-600','border','border-red-200'); }
+                    const status = document.getElementById('elder-recording-status');
+                    if (status) status.classList.add('hidden');
+                };
+                elderMediaRecorder.start(1000);
+                elderIsRecording = true;
+                const btn = document.getElementById('elder-btn-record');
+                btn.innerHTML = '<i class="fa-solid fa-stop mr-1"></i>停止錄音';
+                btn.classList.remove('bg-red-50','text-red-600','border','border-red-200');
+                btn.classList.add('bg-red-600','text-white');
+                document.getElementById('elder-recording-status').classList.remove('hidden');
+                elderSegmentInterval = setInterval(async () => {
+                    if (!elderIsRecording || !elderAudioChunks.length) return;
+                    elderSegmentIndex++;
+                    const segChunks = [...elderAudioChunks]; elderAudioChunks = [];
+                    const segBlob = new Blob(segChunks, { type: elderMediaRecorder.mimeType || 'audio/webm' });
+                    const segFileName = `elder_audio_${Date.now()}_part${elderSegmentIndex}.webm`;
+                    showToast(`第${elderSegmentIndex}段上傳中...`);
+                    await uploadElderAudio(segBlob, segFileName, `${new Date().toLocaleString()} 第${elderSegmentIndex}段`);
+                }, SEGMENT_MINUTES * 60 * 1000);
+                elderRecTimerInterval = setInterval(() => {
+                    if (!elderRecStartTime) return;
+                    const sec = Math.floor((Date.now() - elderRecStartTime) / 1000);
+                    const mm = String(Math.floor(sec/60)).padStart(2,'0'), ss = String(sec%60).padStart(2,'0');
+                    const status = document.getElementById('elder-recording-status');
+                    if (status) status.textContent = `● 錄音中 ${mm}:${ss}（每${SEGMENT_MINUTES}分鐘自動分段）`;
+                }, 1000);
+            } catch(err) { alert('無法開始錄音：' + err.message); }
+        }
+
+        function stopElderRecording() {
+            if (!elderIsRecording || !elderMediaRecorder || elderMediaRecorder.state !== 'recording') return;
+            elderIsRecording = false;
+            elderMediaRecorder.stop();
+        }
+
+        async function uploadElderAudio(audioBlob, fileName, displayLabel) {
+            try {
+                const result = await uploadToGoogleDrive(audioBlob, fileName);
+                const c = casesData.find(x => x.id === currentElderCaseId);
+                if (!c) return;
+                const workstations = (c.workstations || []).map(w => w.id === currentWorkstationId ? { ...w, audios: [...(w.audios||[]), { name: fileName, displayName: displayLabel, previewUrl: result.previewUrl, downloadUrl: result.downloadUrl, transcript: '' }] } : w);
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations });
+                renderElderAudios(workstations.find(w => w.id === currentWorkstationId)?.audios || []);
+                renderElderWorkstationList(workstations);
+                showToast('✓ 錄音已上傳');
+            } catch(err) {
+                try { const url = URL.createObjectURL(audioBlob); const a = document.createElement('a'); a.href=url; a.download=fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); alert('⚠️ 雲端上傳失敗，已下載備份：' + fileName); } catch(_) {}
+            }
+        }
+
+        window.deleteElderAudio = async (index) => {
+            if (!confirm('確定刪除此錄音？')) return;
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            const workstations = (c.workstations || []).map(w => { if (w.id !== currentWorkstationId) return w; const audios = [...(w.audios||[])]; audios.splice(index,1); return {...w, audios}; });
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations });
+            renderElderAudios(workstations.find(w => w.id === currentWorkstationId)?.audios || []);
+        };
+
+        // ====== 文字檔輸出 ======
+        document.getElementById('elder-btn-download-text').addEventListener('click', () => {
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            if (!c) return;
+            const lines = [];
+            lines.push('【中高齡職務再設計訪視紀錄】');
+            lines.push(`公司：${c.company || ''}`);
+            lines.push(`初訪日期：${c.visitDate || ''}　主責：${c.owner || ''}`);
+            if (c.phone) lines.push(`聯絡電話：${c.phone}`);
+            lines.push('');
+            if (c.sharedEquipment) {
+                lines.push('【共用申請設備】');
+                c.sharedEquipment.split('\n').filter(l => l.trim()).forEach(l => lines.push('・' + l.trim()));
+                lines.push('');
+            }
+            (c.workstations || []).forEach((ws, idx) => {
+                lines.push(`${'='.repeat(50)}`);
+                lines.push(`【工作站${idx+1}：${ws.name || '未命名'}】（共 ${(ws.personnel||[]).length} 人）`);
+                lines.push('');
+                if (ws.personnel && ws.personnel.length > 0) {
+                    lines.push('　人員名單：');
+                    lines.push(`　${'姓名'.padEnd(6)}${'性別'.padEnd(4)}${'年齡'.padEnd(4)}${'職稱'.padEnd(8)}${'年資'.padEnd(6)}工作說明　期待申請項目`);
+                    ws.personnel.forEach(p => lines.push(`　${String(p.name||'').padEnd(6)}${String(p.gender||'').padEnd(4)}${String(p.age||'').padEnd(4)}${String(p.title||'').padEnd(8)}${String(p.seniority||'').padEnd(6)}${p.workDesc||''}　${p.expectedItems||''}`));
+                    lines.push('');
+                }
+                if (ws.workContent) { lines.push('　【主要工作內容】'); lines.push('　' + ws.workContent.replace(/\n/g, '\n　')); lines.push(''); }
+                if (ws.difficulties) { lines.push('　【工作困難】'); lines.push('　' + ws.difficulties.replace(/\n/g, '\n　')); lines.push(''); }
+                if (ws.improvements) { lines.push('　【改善建議】'); lines.push('　' + ws.improvements.replace(/\n/g, '\n　')); lines.push(''); }
+            });
+            const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `中高齡訪視紀錄_${c.company||'未命名'}_${c.visitDate||''}.txt`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+            showToast('文字檔已下載');
+        });
 
         document.getElementById('btn-edit-case').addEventListener('click', () => {
             const c = casesData.find(x => x.id === currentEditingCaseId);
@@ -2528,7 +3135,7 @@
 
         document.querySelectorAll('input[name="form-category"]').forEach(radio => {
             radio.addEventListener('change', (e) => {
-                const isWorkstation = e.target.value === '中高齡及高齡者';
+                const isWorkstation = e.target.value === '中高齡（工作站）';
                 document.getElementById('group-single-client').classList.toggle('hidden', isWorkstation);
                 document.getElementById('group-multi-client').classList.toggle('hidden', !isWorkstation);
                 if(isWorkstation && multiClients.length === 0) addWorkstationClient(); 
@@ -2955,8 +3562,8 @@
                 updatedAt: serverTimestamp()
             };
 
-            if(category === '中高齡及高齡者') {
-                data.clients = multiClients.filter(c => c.name.trim() !== ''); data.clientName = data.clients.length > 0 ? `${data.clients[0].name} 等 ${data.clients.length} 人` : '未命名工作站';
+            if(category === '中高齡（工作站）') {
+                data.clientName = '（工作站案件）'; data.clients = []; data.workstations = data.workstations || [];
             } else {
                 data.clientName = document.getElementById('form-client-name').value; data.clientGender = document.getElementById('form-client-gender').value;
                 data.clientDob = document.getElementById('form-client-dob').value; data.clientAge = document.getElementById('form-client-age').value;
@@ -2969,6 +3576,7 @@
             if (caseId) { await updateDoc(doc(casesRef, caseId), data); showToast("基本資料更新成功"); } 
             else {
                 data.createdAt = serverTimestamp(); data.photos = []; data.audios = []; data.files = []; data.checklist = {}; data.env = { lux: '', noise: '', height: '', weight: '' };
+                if (category === '中高齡（工作站）') { data.workstations = []; data.sharedEquipment = ''; }
                 data.reportCompleted = false; data.reportCompletedAt = '';
                 let limitsDraft = []; if (data.disability) limitsDraft.push(`障礙類別：${data.disability}`); if (data.disabilityCause) limitsDraft.push(`致障原因：${data.disabilityCause}`);
                 data.report = { status: data.clientCondition || "", limits: limitsDraft.join('\n'), analysis: data.initialProblems ? "申請書反映問題：\n" + data.initialProblems : "", strategy: "" };
