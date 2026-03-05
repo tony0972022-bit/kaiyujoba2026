@@ -398,15 +398,9 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div>
-                            <label class="block text-base font-medium text-slate-600 mb-1">接案日期</label>
-                            <input type="date" id="form-intake-date" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
-                        </div>
-                        <div>
-                            <label class="block text-base font-medium text-slate-600 mb-1">初訪日期</label>
-                            <input type="date" id="form-visit-date" required class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
-                        </div>
+                    <div>
+                        <label class="block text-base font-medium text-slate-600 mb-1">初訪日期</label>
+                        <input type="date" id="form-visit-date" required class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
                     </div>
 
                     <div>
@@ -1126,13 +1120,14 @@
             <span id="dis-autosave-indicator" class="text-xs bg-blue-800 px-3 py-1 rounded-full font-bold flex items-center gap-1">
                 <i class="fa-solid fa-cloud text-blue-300"></i> 自動儲存
             </span>
+            <button id="dis-sidebar-toggle" class="text-white hover:text-blue-200 p-2 text-lg" title="收/展側邊欄"><i class="fa-solid fa-bars-staggered"></i></button>
         </header>
 
         <!-- Body: sidebar + main -->
         <div class="flex-1 flex overflow-hidden">
 
             <!-- ⬅️ 左側欄 -->
-            <div class="w-72 md:w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col h-full overflow-y-auto no-scrollbar z-20 shadow-sm">
+            <div id="dis-sidebar" class="w-72 md:w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col h-full overflow-y-auto no-scrollbar z-20 shadow-sm transition-all duration-300">
 
                 <!-- 個案摘要（常駐） -->
                 <div class="p-4 border-b border-slate-100">
@@ -1359,13 +1354,14 @@
             <button id="elder-btn-back" class="text-white hover:text-amber-200 p-2 -ml-2 text-2xl"><i class="fa-solid fa-arrow-left"></i></button>
             <h1 id="elder-app-title" class="text-xl font-bold tracking-wide flex-1 truncate">中高齡工作站</h1>
             <span id="elder-auth-badge" class="text-xs bg-amber-700 px-3 py-1 rounded-full font-bold">中高齡</span>
+            <button id="elder-sidebar-toggle" class="text-white hover:text-amber-200 p-2 text-lg" title="收/展側邊欄"><i class="fa-solid fa-bars-staggered"></i></button>
         </header>
 
         <!-- Body: sidebar + main -->
         <div class="flex-1 flex overflow-hidden">
 
             <!-- ⬅️ 左側邊欄 -->
-            <div class="w-72 md:w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col h-full overflow-y-auto no-scrollbar z-20 shadow-sm">
+            <div id="elder-sidebar" class="w-72 md:w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col h-full overflow-y-auto no-scrollbar z-20 shadow-sm transition-all duration-300">
 
                 <!-- 公司資訊 -->
                 <div class="p-4 border-b border-slate-100 space-y-1">
@@ -1385,7 +1381,12 @@
                 <div class="p-4 border-b border-slate-100">
                     <h3 class="font-bold text-sm text-slate-700 mb-2"><i class="fa-solid fa-cart-flatbed text-amber-500 mr-1"></i>共用申請設備</h3>
                     <textarea id="elder-shared-equipment" rows="3" class="w-full p-2 border border-slate-200 rounded-lg text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 resize-none" placeholder="每行一項&#10;例：升降台車 x5&#10;拖板車 x1"></textarea>
-                    <button id="elder-btn-save-equipment" class="mt-2 w-full bg-amber-500 text-white py-1.5 rounded-lg text-xs font-bold hover:bg-amber-600 transition-colors"><i class="fa-solid fa-floppy-disk mr-1"></i>儲存設備</button>
+                    <button id="elder-btn-save-equipment" class="mt-2 w-full bg-amber-500 text-white py-1.5 rounded-lg text-xs font-bold hover:bg-amber-600 transition-colors"><i class="fa-solid fa-floppy-disk mr-1"></i>儲存設備 & 分配</button>
+                    <!-- 設備人員分配 -->
+                    <div id="elder-equipment-assignment" class="mt-3 hidden">
+                        <p class="text-xs font-bold text-slate-600 mb-1.5"><i class="fa-solid fa-user-check text-emerald-500 mr-1"></i>分配對象（勾選）</p>
+                        <div id="elder-equipment-assignment-list" class="space-y-2"></div>
+                    </div>
                 </div>
 
                 <!-- 單位人員清單 -->
@@ -1404,12 +1405,12 @@
                 </div>
 
                 <!-- 工作站列表 -->
-                <div class="p-4 flex-1 flex flex-col min-h-0">
+                <div class="p-4">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="font-bold text-sm text-slate-700"><i class="fa-solid fa-layer-group text-blue-500 mr-1"></i>工作站列表</h3>
                         <button id="elder-btn-add-ws" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-700"><i class="fa-solid fa-plus mr-1"></i>新增</button>
                     </div>
-                    <div id="elder-ws-list" class="space-y-2 flex-1 overflow-y-auto no-scrollbar">
+                    <div id="elder-ws-list" class="space-y-2">
                         <p class="text-xs text-slate-400 text-center py-4">尚無工作站</p>
                     </div>
                 </div>
@@ -1503,6 +1504,19 @@
                         </div>
                         <div id="elder-personnel-container">
                             <p class="text-sm text-slate-400">請先在左側欄匯入單位人員清單，再勾選此工作站人員。</p>
+                        </div>
+                    </div>
+
+                    <!-- 客觀數據 -->
+                    <div class="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-lg text-slate-700 border-b pb-3 mb-4"><i class="fa-solid fa-ruler-combined text-amber-500 mr-2"></i>現場客觀數據</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">環境照度 (Lux)</label><input type="number" id="elder-env-lux" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-lg"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">環境噪音 (dB)</label><input type="number" id="elder-env-noise" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-lg"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">工作桌高度 (cm)</label><input type="number" id="elder-env-desk-height" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-lg"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">工作台高度 (cm)</label><input type="number" id="elder-env-work-height" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-lg"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">移動距離 (m)</label><input type="number" id="elder-env-distance" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-lg"></div>
+                            <div><label class="block text-xs font-bold text-slate-600 mb-1">搬運重量 (kg)</label><input type="number" id="elder-env-weight" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-lg"></div>
                         </div>
                     </div>
 
@@ -3123,6 +3137,21 @@
             showView('list', '訪視案件管理');
         });
 
+        // ==========================================
+        // 側邊欄收放（Elder & Dis）
+        // ==========================================
+        function toggleSidebar(sidebarId) {
+            const sb = document.getElementById(sidebarId);
+            if (!sb) return;
+            if (sb.classList.contains('!w-0')) {
+                sb.classList.remove('!w-0', '!overflow-hidden', '!min-w-0');
+            } else {
+                sb.classList.add('!w-0', '!overflow-hidden', '!min-w-0');
+            }
+        }
+        document.getElementById('elder-sidebar-toggle')?.addEventListener('click', () => toggleSidebar('elder-sidebar'));
+        document.getElementById('dis-sidebar-toggle')?.addEventListener('click', () => toggleSidebar('dis-sidebar'));
+
         // Dis report completed
         document.getElementById('dis-report-completed')?.addEventListener('change', async (e) => {
             if (!currentDisCaseId || !currentUser) return;
@@ -3389,7 +3418,6 @@
                 container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">尚未匯入人員</p>';
                 return;
             }
-            // Build assignment map: personId -> [workstationNames]
             const assignMap = {};
             (workstations || []).forEach(ws => {
                 (ws.personnelIds || []).forEach(pid => {
@@ -3397,15 +3425,31 @@
                     assignMap[pid].push(ws.name || '未命名');
                 });
             });
-            container.innerHTML = companyPersonnel.map(p => {
-                const assigned = assignMap[p.id] || [];
-                const isAssigned = assigned.length > 0;
-                const wsLabel = assigned.map(n => n.length > 5 ? n.slice(0,4)+'…' : n).join('、');
-                return `<div class="flex items-center gap-1.5 py-1 px-1 rounded-lg ${isAssigned ? '' : 'bg-orange-50'}">
-                    <span class="text-xs font-bold truncate flex-1 ${isAssigned ? 'text-slate-700' : 'text-orange-600'}">${p.name}</span>
-                    ${isAssigned ? `<span class="text-xs text-slate-400 truncate max-w-[80px]">${wsLabel}</span>` : '<span class="text-xs text-orange-400">未指派</span>'}
-                </div>`;
+            const makeChip = (p, isAssigned, wsLabel) => {
+                const tooltip = [p.title, p.workDesc].filter(Boolean).join(' | ') || '';
+                const chipColor = isAssigned ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-orange-50 text-orange-600 border-orange-200';
+                return `<span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full border text-xs font-bold cursor-default select-none ${chipColor}" title="${tooltip}">${p.name}${isAssigned ? `<span class="text-slate-400 font-normal ml-0.5">${wsLabel}</span>` : ''}</span>`;
+            };
+            const unassigned = companyPersonnel.filter(p => !(assignMap[p.id]?.length));
+            const assigned = companyPersonnel.filter(p => assignMap[p.id]?.length > 0);
+            const unassignedChips = unassigned.map(p => makeChip(p, false, '')).join('');
+            const assignedChips = assigned.map(p => {
+                const wsLabel = assignMap[p.id].map(n => n.length > 4 ? n.slice(0,3)+'…' : n).join('、');
+                return makeChip(p, true, wsLabel);
             }).join('');
+            const totalCount = companyPersonnel.length;
+            const unCount = unassigned.length;
+            const assignedSection = assigned.length > 0 ? `
+                <div id="elder-personnel-all-section" class="hidden mt-1">
+                    <p class="text-xs text-slate-400 mb-1">已指派（${assigned.length}人）</p>
+                    <div class="flex flex-wrap gap-1.5">${assignedChips}</div>
+                </div>` : '';
+            container.innerHTML = `
+                <div>
+                    ${unCount > 0 ? `<p class="text-xs text-orange-600 font-bold mb-1">未指派（${unCount}人）</p><div class="flex flex-wrap gap-1.5">${unassignedChips}</div>` : `<p class="text-xs text-emerald-600 font-bold mb-1">✓ 全部 ${totalCount} 人已指派</p>`}
+                    ${assignedSection}
+                    ${assigned.length > 0 ? `<button onclick="document.getElementById('elder-personnel-all-section').classList.toggle('hidden');this.textContent=this.textContent.includes('展開')?'▲ 收起已指派':'▼ 展開已指派（${assigned.length}人）'" class="mt-1.5 text-xs text-slate-400 hover:text-slate-600 font-bold">▼ 展開已指派（${assigned.length}人）</button>` : ''}
+                </div>`;
         }
 
         function renderElderPersonnelCheckboxes(companyPersonnel, currentPersonnelIds) {
@@ -3416,17 +3460,54 @@
                 return;
             }
             const ids = new Set(currentPersonnelIds || []);
-            container.innerHTML = `
-                <div class="space-y-2">
-                    ${companyPersonnel.map(p => `
-                        <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${ids.has(p.id) ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white hover:border-amber-200'}">
-                            <input type="checkbox" class="elder-personnel-chk w-5 h-5 accent-amber-600 shrink-0" data-pid="${p.id}" ${ids.has(p.id) ? 'checked' : ''}>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-bold text-slate-800">${p.name} <span class="font-normal text-slate-500">${p.gender||''} ${p.age ? p.age+'歲' : ''}</span></p>
-                                <p class="text-xs text-slate-500 truncate">${[p.title, p.seniority ? p.seniority+'年資' : ''].filter(Boolean).join(' · ')}</p>
-                            </div>
-                        </label>`).join('')}
+            container.innerHTML = `<div class="grid grid-cols-2 gap-1.5">${companyPersonnel.map(p => {
+                const tooltip = [p.title, p.seniority ? p.seniority+'年資' : '', p.workDesc].filter(Boolean).join(' | ');
+                return `<label class="flex items-center gap-2 px-2.5 py-2 rounded-xl border-2 cursor-pointer transition-colors ${ids.has(p.id) ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white hover:border-amber-200'}" title="${tooltip}"><input type="checkbox" class="elder-personnel-chk w-4 h-4 accent-amber-600 shrink-0" data-pid="${p.id}" ${ids.has(p.id) ? 'checked' : ''}><div class="min-w-0"><p class="text-xs font-bold text-slate-800 truncate">${p.name}</p><p class="text-xs text-slate-400 truncate">${p.gender||''}${p.age ? ' '+p.age+'歲' : ''}</p></div></label>`;
+            }).join('')}</div>`;
+        }
+
+        // 設備人員分配渲染
+        function renderElderEquipmentAssignment(equipmentText, companyPersonnel, assignments) {
+            const listEl = document.getElementById('elder-equipment-assignment-list');
+            const wrapEl = document.getElementById('elder-equipment-assignment');
+            if (!listEl || !wrapEl) return;
+            const lines = (equipmentText || '').split('\n').map(l => l.trim()).filter(Boolean);
+            if (lines.length === 0 || !companyPersonnel || companyPersonnel.length === 0) {
+                wrapEl.classList.add('hidden');
+                return;
+            }
+            wrapEl.classList.remove('hidden');
+            listEl.innerHTML = lines.map(line => {
+                const assignedIds = new Set((assignments || {})[line] || []);
+                const personChips = companyPersonnel.map(p => `
+                    <label class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border cursor-pointer text-xs font-bold transition-colors ${assignedIds.has(p.id) ? 'bg-amber-100 border-amber-400 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300'}">
+                        <input type="checkbox" class="equip-person-chk hidden" data-equip="${encodeURIComponent(line)}" data-pid="${p.id}" ${assignedIds.has(p.id) ? 'checked' : ''}>
+                        ${p.name}
+                    </label>`).join('');
+                return `<div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200">
+                    <p class="text-xs font-bold text-slate-700 mb-1.5">・${line}</p>
+                    <div class="flex flex-wrap gap-1.5">${personChips}</div>
                 </div>`;
+            }).join('');
+            // Toggle chip style on click
+            listEl.querySelectorAll('.equip-person-chk').forEach(chk => {
+                chk.addEventListener('change', function() {
+                    const label = this.closest('label');
+                    if (this.checked) label.className = label.className.replace('bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300','bg-amber-100 border-amber-400 text-amber-800');
+                    else label.className = label.className.replace('bg-amber-100 border-amber-400 text-amber-800','bg-slate-50 border-slate-200 text-slate-500 hover:border-amber-300');
+                });
+            });
+        }
+
+        // 收集設備分配
+        function collectEquipmentAssignments() {
+            const result = {};
+            document.querySelectorAll('.equip-person-chk:checked').forEach(chk => {
+                const equip = decodeURIComponent(chk.dataset.equip);
+                if (!result[equip]) result[equip] = [];
+                result[equip].push(chk.dataset.pid);
+            });
+            return result;
         }
 
         // Company Excel import (left sidebar)
@@ -3493,6 +3574,7 @@
 
             renderElderWorkstationList(c.workstations || []);
             renderElderCompanyPersonnel(c.companyPersonnel || [], c.workstations || []);
+            renderElderEquipmentAssignment(c.sharedEquipment || '', c.companyPersonnel || [], c.equipmentAssignments || {});
             document.getElementById('elder-empty-state').classList.remove('hidden');
             document.getElementById('elder-ws-detail').classList.add('hidden');
 
@@ -3550,9 +3632,17 @@
             document.getElementById('elder-work-content').value = ws.workContent || '';
             document.getElementById('elder-difficulties').value = ws.difficulties || '';
             document.getElementById('elder-improvements').value = ws.improvements || '';
+            const wsEnv = ws.env || {};
+            document.getElementById('elder-env-lux').value = wsEnv.lux || '';
+            document.getElementById('elder-env-noise').value = wsEnv.noise || '';
+            document.getElementById('elder-env-desk-height').value = wsEnv.deskHeight || '';
+            document.getElementById('elder-env-work-height').value = wsEnv.workHeight || '';
+            document.getElementById('elder-env-distance').value = wsEnv.distance || '';
+            document.getElementById('elder-env-weight').value = wsEnv.weight || '';
 
             const elderCase = casesData.find(x => x.id === currentElderCaseId);
             renderElderPersonnelCheckboxes(elderCase?.companyPersonnel || [], ws.personnelIds || []);
+            renderElderEquipmentAssignment(elderCase?.sharedEquipment || '', elderCase?.companyPersonnel || [], elderCase?.equipmentAssignments || {});
             elderPendingPhotos = [];
             renderElderPendingPhotos();
             renderElderPhotos(ws.photos || []);
@@ -3585,7 +3675,7 @@
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>儲存中...';
             const workstations = (c.workstations || []).map(ws => {
                 if (ws.id !== currentWorkstationId) return ws;
-                return { ...ws, name: document.getElementById('elder-ws-name').value.trim() || ws.name, workContent: document.getElementById('elder-work-content').value, difficulties: document.getElementById('elder-difficulties').value, improvements: document.getElementById('elder-improvements').value, personnelIds: Array.from(document.querySelectorAll('.elder-personnel-chk:checked')).map(cb => cb.dataset.pid) };
+                return { ...ws, name: document.getElementById('elder-ws-name').value.trim() || ws.name, workContent: document.getElementById('elder-work-content').value, difficulties: document.getElementById('elder-difficulties').value, improvements: document.getElementById('elder-improvements').value, personnelIds: Array.from(document.querySelectorAll('.elder-personnel-chk:checked')).map(cb => cb.dataset.pid), env: { lux: document.getElementById('elder-env-lux')?.value||'', noise: document.getElementById('elder-env-noise')?.value||'', deskHeight: document.getElementById('elder-env-desk-height')?.value||'', workHeight: document.getElementById('elder-env-work-height')?.value||'', distance: document.getElementById('elder-env-distance')?.value||'', weight: document.getElementById('elder-env-weight')?.value||'' } };
             });
             try {
                 await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
@@ -3613,8 +3703,23 @@
         // 儲存共用設備
         document.getElementById('elder-btn-save-equipment').addEventListener('click', async () => {
             if (!currentElderCaseId) return;
-            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { sharedEquipment: document.getElementById('elder-shared-equipment').value, updatedAt: serverTimestamp() });
-            showToast('✓ 共用設備已儲存');
+            const equipText = document.getElementById('elder-shared-equipment').value;
+            const equipAssignments = collectEquipmentAssignments();
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), {
+                sharedEquipment: equipText,
+                equipmentAssignments: equipAssignments,
+                updatedAt: serverTimestamp()
+            });
+            // Re-render assignment UI with updated assignments
+            renderElderEquipmentAssignment(equipText, c?.companyPersonnel || [], equipAssignments);
+            showToast('✓ 共用設備及人員分配已儲存');
+        });
+
+        // 設備文字變動時重渲染分配區
+        document.getElementById('elder-shared-equipment').addEventListener('input', function() {
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            renderElderEquipmentAssignment(this.value, c?.companyPersonnel || [], c?.equipmentAssignments || {});
         });
 
         // 完成報告
