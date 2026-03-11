@@ -1358,19 +1358,6 @@
                     <textarea id="dis-improvements" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500 text-base leading-relaxed bg-slate-50 focus:bg-white" rows="3" placeholder="現場觀察後建議的改善方向、所需輔具..."></textarea>
                 </div>
 
-                <!-- 四、改善方式/輔具建議 -->
-                <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div class="flex justify-between items-center pb-2">
-                        <h3 class="font-bold text-xl text-blue-800">四、改善方式、內容及輔具建議</h3>
-                        <button class="dis-btn-copy text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-bold" data-target="dis-strategy-text"><i class="fa-regular fa-copy mr-1"></i>複製</button>
-                    </div>
-                    <details class="border-b-2 border-blue-100 pb-3 mb-4">
-                        <summary class="cursor-pointer text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-3 py-1.5 rounded-full font-bold select-none inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-comments"></i>訪談範本</summary>
-                        <div class="mt-2 p-3 bg-blue-50 rounded-xl text-sm text-slate-700 border border-blue-100 leading-relaxed">「根據今天的現場評估，我們初步想了幾個可能的協助方向，我來跟您說明一下。第一個是……（說明方向）。您覺得這樣的方式對您的工作會有幫助嗎？有沒有什麼您覺得我們可能還沒想到的地方，或是您覺得更有需要的？」</div>
-                    </details>
-                    <textarea id="dis-strategy-text" class="auto-resize w-full p-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base leading-relaxed bg-slate-50 focus:bg-white" rows="4" placeholder="預計提供的輔具規格、人力協助時數規劃..."></textarea>
-                </div>
-
                 <!-- 客觀數據 -->
                 <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h3 class="font-bold text-xl text-slate-700 border-b pb-3 mb-4"><i class="fa-solid fa-ruler-combined text-blue-500 mr-2"></i>現場客觀數據</h3>
@@ -1769,6 +1756,7 @@
             gasUrl: 'https://script.google.com/macros/s/AKfycbxelfY8BWyg2ZWeO4UbnenSH8eLS20qojH5N-tvZgvj_fcgoLL-MJosD53NIdo03qPdFw/exec',
             geminiApiKey: 'AIzaSyDcr3EH_yPAd9kQO1Qi00d2q8QUP9YGnd8',
             aiPromptStyle: '請用專業、客觀且具同理心的口吻，將以下草稿潤飾成正式的職務再設計評估報告段落。請修正錯字並讓語句通順，不需加入額外的引言或結語，直接給出潤飾後的純文字內容即可。',
+            lineQrImage: '',
             districts: [
                 { name: '高雄', keywords: ['高雄'], owner: '張世立', email: 'lili341341@gmail.com' },
                 { name: '屏東', keywords: ['屏東'], owner: '洪錦蓉', email: 'a250245@oa.pthg.gov.tw' },
@@ -2226,6 +2214,7 @@
                     if(data.gasUrl) settings.gasUrl = data.gasUrl;
                     if(data.geminiApiKey) settings.geminiApiKey = data.geminiApiKey;
                     if(data.aiPromptStyle) settings.aiPromptStyle = data.aiPromptStyle;
+                    if(typeof data.lineQrImage === 'string') settings.lineQrImage = data.lineQrImage;
                     if(data.checklists) settings.checklists = data.checklists;
                     const presetDistricts = Array.isArray(settings.districts) ? settings.districts : [];
                     if (Array.isArray(data.districts) && data.districts.length > 0) {
@@ -2241,6 +2230,8 @@
                         settings.districts = Array.from(byName.values());
                     }
                 }
+                if (!settings.lineQrImage) settings.lineQrImage = localStorage.getItem('lineQrImage') || '';
+                syncQrUiWithSettings();
             } catch (err) { console.warn("載入設定失敗:", err); }
         }
 
@@ -2253,6 +2244,48 @@
             renderDistrictOptions();
             renderCommitteeCheckboxes(); 
         }
+
+        function syncQrUiWithSettings() {
+            const img = document.getElementById('qr-img');
+            const placeholder = document.getElementById('qr-placeholder');
+            if (!img || !placeholder) return;
+            const data = settings.lineQrImage || '';
+            if (data) {
+                img.src = data;
+                img.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                localStorage.setItem('lineQrImage', data);
+            } else {
+                img.removeAttribute('src');
+                img.classList.add('hidden');
+                placeholder.classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('qr-upload')?.addEventListener('change', async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = '';
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const data = String(ev.target?.result || '');
+                if (!data) return;
+                settings.lineQrImage = data;
+                syncQrUiWithSettings();
+                if (currentUser) {
+                    try {
+                        await saveSettings();
+                        showToast('LINE QR 名片已同步到雲端');
+                    } catch (err) {
+                        console.warn('儲存 LINE QR 失敗', err);
+                        showToast('已更新本機 QR，雲端同步失敗');
+                    }
+                } else {
+                    showToast('已更新本機 QR（尚未登入雲端）');
+                }
+            };
+            reader.readAsDataURL(file);
+        });
 
         document.getElementById('btn-test-gas').addEventListener('click', async () => {
             const url = document.getElementById('setting-gas-input').value.trim();
@@ -3180,7 +3213,8 @@
             document.getElementById('dis-limits-text').value = rpt.limits || '';
             document.getElementById('dis-analysis-text').value = rpt.analysis || '';
             document.getElementById('dis-improvements').value = rpt.improvements || '';
-            document.getElementById('dis-strategy-text').value = rpt.strategy || c.strategy || '';
+            const disStrategyEl = document.getElementById('dis-strategy-text');
+            if (disStrategyEl) disStrategyEl.value = rpt.strategy || c.strategy || '';
 
             const env = c.env || {};
             document.getElementById('dis-env-lux').value = env.lux || '';
@@ -3264,7 +3298,8 @@
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'absolute top-3 right-3 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-2.5 py-1 rounded-lg font-bold z-10';
-                btn.innerHTML = '<i class="fa-solid fa-chevron-up mr-1"></i>收合';
+                btn.innerHTML = '<i class="fa-solid fa-chevron-down mr-1"></i>展開';
+                btn.dataset.hidden = '1';
 
                 btn.addEventListener('click', () => {
                     const shouldHide = btn.dataset.hidden !== '1';
@@ -3278,9 +3313,31 @@
                         : '<i class="fa-solid fa-chevron-up mr-1"></i>收合';
                 });
 
+                Array.from(card.children).forEach(el => {
+                    if (el === first || el === btn) return;
+                    el.classList.add('hidden');
+                });
                 card.appendChild(btn);
                 card.dataset.collapsibleReady = '1';
             });
+        }
+
+        function setDisAudioBusy(isBusy) {
+            const ids = ['dis-btn-record', 'dis-btn-edit', 'dis-btn-delete', 'dis-btn-download-text', 'dis-btn-upload-photos'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                if ('disabled' in el) el.disabled = !!isBusy;
+                el.classList.toggle('opacity-50', !!isBusy);
+                el.classList.toggle('pointer-events-none', !!isBusy);
+            });
+            const uploadInput = document.getElementById('dis-audio-upload');
+            const uploadLabel = uploadInput?.closest('label');
+            if (uploadInput) uploadInput.disabled = !!isBusy;
+            if (uploadLabel) {
+                uploadLabel.classList.toggle('opacity-50', !!isBusy);
+                uploadLabel.classList.toggle('pointer-events-none', !!isBusy);
+            }
         }
 
         function updateDisHearingScore() {
@@ -3421,6 +3478,7 @@
             const label = document.getElementById('dis-audio-upload')?.closest('label');
             const origText = label ? label.querySelector('span')?.textContent : '';
             try {
+                setDisAudioBusy(true);
                 showToast('⏳ 上傳音檔中，請稍候...');
                 const fileName = `audio_${Date.now()}_${file.name}`;
                 const result = await uploadToGoogleDrive(file, fileName);
@@ -3438,6 +3496,7 @@
                     showToast('✓ AI 逐字稿已完成');
                 } catch(te) { console.warn('AI transcription failed', te); }
             } catch(err) { alert('上傳失敗：'+err.message); }
+            finally { setDisAudioBusy(false); }
         });
 
         // Dis recording button
@@ -3535,7 +3594,6 @@
             row('二、個案之生理限制', data.report.limits);
             row('三、個案就業問題診斷與分析', data.report.analysis);
             row('改善建議', data.report.improvements);
-            row('四、改善方式、內容及輔具建議', data.report.strategy);
 
             sec('成果報告');
             row('五、審查會決議', data.outcome.resolution);
@@ -4510,7 +4568,6 @@
                 { 項目: "一、個案之就業狀況", 內容: d_status || rpt.status || "" },
                 { 項目: "二、個案之生理限制", 內容: d_limits || rpt.limits || "" },
                 { 項目: "三、個案就業問題診斷與分析", 內容: d_analysis || rpt.analysis || "" },
-                { 項目: "四、改善方式、內容及輔具建議", 內容: d_strategy || rpt.strategy || "" },
                 { 項目: "", 內容: "" },
                 { 項目: "🏆 改善成果報告", 內容: "" },
                 { 項目: "五、審查會決議", 內容: d_resolution || outcome.resolution || "" },
@@ -4642,7 +4699,6 @@
             addIf('一、個案之就業狀況', rpt.status);
             addIf('二、個案之生理限制', rpt.limits);
             addIf('三、個案就業問題診斷與分析', rpt.analysis);
-            addIf('四、改善方式、內容及輔具建議', rpt.strategy);
 
             addSection('成果報告');
             addIf('五、審查會決議', out.resolution);
@@ -6200,31 +6256,6 @@ ${rawDraft}
         <svg viewBox="0 0 24 24" class="w-7 h-7 fill-white" xmlns="http://www.w3.org/2000/svg"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
     </button>
 
-    <script>
-    // QR Code 名片功能
-    (function() {
-        const stored = localStorage.getItem('lineQrImage');
-        if (stored) {
-            document.getElementById('qr-img').src = stored;
-            document.getElementById('qr-img').classList.remove('hidden');
-            document.getElementById('qr-placeholder').classList.add('hidden');
-        }
-        document.getElementById('qr-upload').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                const data = ev.target.result;
-                localStorage.setItem('lineQrImage', data);
-                document.getElementById('qr-img').src = data;
-                document.getElementById('qr-img').classList.remove('hidden');
-                document.getElementById('qr-placeholder').classList.add('hidden');
-            };
-            reader.readAsDataURL(file);
-            e.target.value = '';
-        });
-    })();
-    </script>
 </body>
 </html>
 
