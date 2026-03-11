@@ -486,6 +486,9 @@
                         <span id="ws-category" class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded font-bold">類別</span>
                         <span id="ws-visit-date" class="text-xs text-slate-500 font-medium">訪視日: -</span>
                     </div>
+                    <div id="ws-save-indicator" class="text-xs text-slate-400 font-medium">
+                        最後存檔：尚未儲存
+                    </div>
                     <h2 id="ws-company" class="text-xl font-black text-slate-800 leading-tight">載入中...</h2>
                     <p id="ws-client" class="text-sm font-bold text-slate-600">載入中...</p>
                     
@@ -1389,6 +1392,7 @@
             <button id="elder-btn-back" class="text-white hover:text-amber-200 p-2 -ml-2 text-2xl"><i class="fa-solid fa-arrow-left"></i></button>
             <h1 id="elder-app-title" class="text-xl font-bold tracking-wide flex-1 truncate">中高齡工作站</h1>
             <span id="elder-auth-badge" class="text-xs bg-amber-700 px-3 py-1 rounded-full font-bold">中高齡</span>
+            <span id="elder-save-indicator" class="text-xs bg-amber-700/80 px-3 py-1 rounded-full font-bold whitespace-nowrap">最後存檔：--:--:--</span>
             <button id="elder-sidebar-toggle" class="text-white hover:text-amber-200 p-2 text-lg" title="收/展側邊欄"><i class="fa-solid fa-bars-staggered"></i></button>
         </header>
 
@@ -2070,6 +2074,26 @@
             setTimeout(() => {
                 document.querySelectorAll('.auto-resize').forEach(ta => autoResizeTextarea(ta));
             }, 100);
+        }
+
+        function formatSaveClock(d = new Date()) {
+            return d.toLocaleTimeString('zh-TW', { hour12: false });
+        }
+
+        function setWsSaveIndicator(state) {
+            const el = document.getElementById('ws-save-indicator');
+            if (!el) return;
+            if (state === 'saving') el.textContent = '最後存檔：儲存中...';
+            else if (state === 'saved') el.textContent = `最後存檔：${formatSaveClock()}`;
+            else if (state === 'error') el.textContent = '最後存檔：失敗';
+        }
+
+        function setElderSaveIndicator(state) {
+            const el = document.getElementById('elder-save-indicator');
+            if (!el) return;
+            if (state === 'saving') el.textContent = '最後存檔：儲存中...';
+            else if (state === 'saved') el.textContent = `最後存檔：${formatSaveClock()}`;
+            else if (state === 'error') el.textContent = '最後存檔：失敗';
         }
 
         function isMicNotFoundError(err) {
@@ -2944,8 +2968,65 @@
         // ==========================================
         // 提前宣告錄音狀態變數，避免 Firestore 快速回傳時的 TDZ 錯誤
         let isRecording = false;
+        let isCaseSwitchSaving = false;
+
+        function setCaseSwitchUiLock(locked) {
+            if (DOM?.casesContainer) DOM.casesContainer.classList.toggle('pointer-events-none', !!locked);
+            if (DOM?.casesContainer) DOM.casesContainer.classList.toggle('opacity-60', !!locked);
+            document.body.classList.toggle('cursor-wait', !!locked);
+        }
+
+        async function flushPendingCaseSavesBeforeSwitch() {
+            if (!currentUser) return;
+            const jobs = [];
+
+            if (typeof wsAutoSaveTimer !== 'undefined' && wsAutoSaveTimer) {
+                clearTimeout(wsAutoSaveTimer);
+                wsAutoSaveTimer = null;
+                if (currentEditingCaseId && typeof saveWorkspaceData === 'function') {
+                    jobs.push(saveWorkspaceData(true, currentEditingCaseId));
+                }
+            }
+
+            if (typeof hearingAutoSaveTimer !== 'undefined' && hearingAutoSaveTimer) {
+                clearTimeout(hearingAutoSaveTimer);
+                hearingAutoSaveTimer = null;
+                if (currentEditingCaseId && typeof saveWorkspaceData === 'function') {
+                    jobs.push(saveWorkspaceData(true, currentEditingCaseId));
+                }
+            }
+
+            if (typeof disAutoSaveTimer !== 'undefined' && disAutoSaveTimer && currentDisCaseId) {
+                clearTimeout(disAutoSaveTimer);
+                disAutoSaveTimer = null;
+                jobs.push(updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId), {
+                    ...collectDisData(),
+                    updatedAt: serverTimestamp()
+                }));
+            }
+
+            if (typeof elderWsAutoSaveTimer !== 'undefined' && elderWsAutoSaveTimer) {
+                clearTimeout(elderWsAutoSaveTimer);
+                elderWsAutoSaveTimer = null;
+                if (currentElderCaseId && currentWorkstationId && typeof saveCurrentElderWorkstation === 'function') {
+                    jobs.push(saveCurrentElderWorkstation(true));
+                }
+            }
+
+            if (jobs.length === 0) return;
+            const results = await Promise.allSettled(jobs);
+            const failed = results.find(r => r.status === 'rejected');
+            if (failed) throw failed.reason || new Error('切換前自動儲存失敗');
+        }
+
         async function openWorkspace(id) {
             try {
+                if (isCaseSwitchSaving) return;
+                isCaseSwitchSaving = true;
+                setCaseSwitchUiLock(true);
+                showToast("切換案件前儲存中，請稍候...");
+                await flushPendingCaseSavesBeforeSwitch();
+
                 if (isRecording && currentEditingCaseId && currentEditingCaseId !== id) {
                     showToast("已切換案件，系統自動結束並上傳前一案件錄音");
                     await stopRecordingFlow();
@@ -3069,6 +3150,9 @@
                 console.error("開啟案件發生錯誤細節：", err);
                 // 顯示精確的錯誤訊息方便排解
                 alert(`開啟案件時發生錯誤，請截圖告知開發者：\n${err.name}: ${err.message}`); 
+            } finally {
+                isCaseSwitchSaving = false;
+                setCaseSwitchUiLock(false);
             }
         }
         window.openWorkspace = openWorkspace;
@@ -3093,8 +3177,8 @@
             if (state === 'saving') {
                 el.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-blue-300"></i> 儲存中...';
             } else if (state === 'saved') {
-                el.innerHTML = '<i class="fa-solid fa-cloud-check text-green-300"></i> 已自動儲存';
-                setTimeout(() => { el.innerHTML = '<i class="fa-solid fa-cloud text-blue-300"></i> 自動儲存'; }, 2000);
+                const clock = formatSaveClock();
+                el.innerHTML = `<i class="fa-solid fa-cloud-check text-green-300"></i> 已儲存 ${clock}`;
             } else if (state === 'error') {
                 el.innerHTML = '<i class="fa-solid fa-cloud-exclamation text-red-300"></i> 儲存失敗';
             } else {
@@ -3128,11 +3212,13 @@
 
         function triggerDisAutoSave() {
             if (!currentDisCaseId || !currentUser) return;
+            const targetCaseId = currentDisCaseId;
             setDisAutosaveIndicator('saving');
             clearTimeout(disAutoSaveTimer);
             disAutoSaveTimer = setTimeout(async () => {
+                if (targetCaseId !== currentDisCaseId) return;
                 try {
-                    await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId), {
+                    await updateDoc(doc(db, 'users', currentUser.uid, 'cases', targetCaseId), {
                         ...collectDisData(),
                         updatedAt: serverTimestamp()
                     });
@@ -3203,6 +3289,7 @@
         };
 
         function openDisWorkspace(id) {
+            clearTimeout(disAutoSaveTimer);
             currentDisCaseId = id;
             const c = casesData.find(x => x.id === id);
             if (!c) return;
@@ -3268,9 +3355,29 @@
             }
             // 填入聽力資料（使用 tab-hearing 原始欄位）
             document.querySelectorAll('input[name="hearing-ind-1"], input[name="hearing-ind-2"]').forEach(r => r.checked = false);
+            document.querySelectorAll('input[name="h-exp"], input[name="h-type"]').forEach(r => r.checked = false);
             const hearing = c.hearing || {};
             if (hearing.ind1) { const r = document.querySelector(`input[name="hearing-ind-1"][value="${hearing.ind1}"]`); if (r) r.checked = true; }
             if (hearing.ind2) { const r = document.querySelector(`input[name="hearing-ind-2"][value="${hearing.ind2}"]`); if (r) r.checked = true; }
+            if (hearing.exp) { const r = document.querySelector(`input[name="h-exp"][value="${hearing.exp}"]`); if (r) r.checked = true; }
+            if (hearing.htype) { const r = document.querySelector(`input[name="h-type"][value="${hearing.htype}"]`); if (r) r.checked = true; }
+            document.querySelectorAll('input[name="h-condition"]').forEach(ch => ch.checked = false);
+            if (Array.isArray(hearing.condition)) hearing.condition.forEach(v => { const ch = document.querySelector(`input[name="h-condition"][value="${v}"]`); if (ch) ch.checked = true; });
+            document.querySelectorAll('input[name="h-need"]').forEach(ch => ch.checked = false);
+            if (Array.isArray(hearing.need)) hearing.need.forEach(v => { const ch = document.querySelector(`input[name="h-need"][value="${v}"]`); if (ch) ch.checked = true; });
+            if (document.getElementById('h-cause')) document.getElementById('h-cause').value = hearing.cause || '';
+            if (document.getElementById('h-status')) document.getElementById('h-status').value = hearing.status || '';
+            if (document.getElementById('h-years')) document.getElementById('h-years').value = hearing.years || '';
+            if (document.getElementById('h-brand')) document.getElementById('h-brand').value = hearing.brand || '';
+            if (document.getElementById('h-context-desc')) document.getElementById('h-context-desc').value = hearing.ctxDesc || '';
+            if (document.getElementById('h-context-freq')) document.getElementById('h-context-freq').value = hearing.ctxFreq || '';
+            const hScore = document.getElementById('h-context-score');
+            const hScoreLbl = document.getElementById('h-score-label');
+            if (hScore) {
+                hScore.value = hearing.ctxScore || '5';
+                if (hScoreLbl) hScoreLbl.textContent = hScore.value;
+            }
+            if (window.calculateHearingScore) window.calculateHearingScore();
 
             // Checklist
             const disChkContainer = document.getElementById('dis-checklist-container');
@@ -4023,9 +4130,16 @@
             if (document.getElementById('view-ws-elder')?.classList.contains('hidden')) return;
             const payload = collectElderWorkstationsForSave();
             if (!payload) return;
-            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations: payload.workstations, updatedAt: serverTimestamp() });
-            renderElderWorkstationList(payload.workstations);
-            if (!silent) showToast('✓ 工作站資料已儲存');
+            setElderSaveIndicator('saving');
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations: payload.workstations, updatedAt: serverTimestamp() });
+                renderElderWorkstationList(payload.workstations);
+                setElderSaveIndicator('saved');
+                if (!silent) showToast('✓ 工作站資料已儲存');
+            } catch (e) {
+                setElderSaveIndicator('error');
+                throw e;
+            }
         }
 
         // 儲存工作站
@@ -4042,8 +4156,11 @@
         function scheduleElderWorkstationAutoSave() {
             if (!currentElderCaseId || !currentWorkstationId) return;
             if (document.getElementById('view-ws-elder')?.classList.contains('hidden')) return;
+            const targetCaseId = currentElderCaseId;
+            const targetWorkstationId = currentWorkstationId;
             clearTimeout(elderWsAutoSaveTimer);
             elderWsAutoSaveTimer = setTimeout(async () => {
+                if (targetCaseId !== currentElderCaseId || targetWorkstationId !== currentWorkstationId) return;
                 try { await saveCurrentElderWorkstation(true); } catch (e) { console.warn('elder workstation autosave failed', e); }
             }, 1200);
         }
@@ -4084,14 +4201,21 @@
             const equipText = document.getElementById('elder-shared-equipment').value;
             const equipAssignments = collectEquipmentAssignments();
             const c = casesData.find(x => x.id === currentElderCaseId);
-            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), {
-                sharedEquipment: equipText,
-                equipmentAssignments: equipAssignments,
-                updatedAt: serverTimestamp()
-            });
-            // Re-render assignment UI with updated assignments
-            renderElderEquipmentAssignment(equipText, c?.companyPersonnel || [], equipAssignments);
-            showToast('✓ 共用設備及人員分配已儲存');
+            setElderSaveIndicator('saving');
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), {
+                    sharedEquipment: equipText,
+                    equipmentAssignments: equipAssignments,
+                    updatedAt: serverTimestamp()
+                });
+                // Re-render assignment UI with updated assignments
+                renderElderEquipmentAssignment(equipText, c?.companyPersonnel || [], equipAssignments);
+                setElderSaveIndicator('saved');
+                showToast('✓ 共用設備及人員分配已儲存');
+            } catch (e) {
+                setElderSaveIndicator('error');
+                throw e;
+            }
         });
 
         // 設備文字變動時重渲染分配區
@@ -4560,11 +4684,18 @@
             return dataToUpdate;
         }
 
-        async function saveWorkspaceData(silent = false) {
-            if (!currentEditingCaseId || !currentUser || !isStandardWorkspaceActive()) return;
+        async function saveWorkspaceData(silent = false, targetCaseId = currentEditingCaseId) {
+            if (!targetCaseId || !currentUser || !isStandardWorkspaceActive()) return;
             const dataToUpdate = collectWorkspaceDataToUpdate();
-            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), dataToUpdate);
-            if (!silent) showToast("資料已安全儲存！");
+            setWsSaveIndicator('saving');
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', targetCaseId), dataToUpdate);
+                setWsSaveIndicator('saved');
+                if (!silent) showToast("資料已安全儲存！");
+            } catch (e) {
+                setWsSaveIndicator('error');
+                throw e;
+            }
         }
 
         document.querySelectorAll('.btn-save-ws').forEach(btn => {
@@ -4581,9 +4712,11 @@
 
         function scheduleWorkspaceAutoSave() {
             if (!currentEditingCaseId || !isStandardWorkspaceActive()) return;
+            const targetCaseId = currentEditingCaseId;
             clearTimeout(wsAutoSaveTimer);
             wsAutoSaveTimer = setTimeout(async () => {
-                try { await saveWorkspaceData(true); } catch (e) { console.warn('workspace autosave failed', e); }
+                if (targetCaseId !== currentEditingCaseId) return;
+                try { await saveWorkspaceData(true, targetCaseId); } catch (e) { console.warn('workspace autosave failed', e); }
             }, 1200);
         }
 
@@ -4591,7 +4724,7 @@
             if (!isStandardWorkspaceActive()) return;
             const t = e.target;
             if (!(t instanceof Element)) return;
-            if (t.matches('#ws-status-text, #ws-limits-text, #ws-analysis-text, #ws-strategy-text, #ws-outcome-resolution, #ws-outcome-acceptance, #ws-outcome-benefit, #ws-outcome-date, #env-lux, #env-noise, #env-height, #env-weight, #h-cause, #h-status, #h-years, #h-brand, #h-context-desc, #h-context-freq, #h-context-score')) {
+            if (t.matches('#ws-status-text, #ws-limits-text, #ws-analysis-text, #ws-strategy-text, #ws-outcome-resolution, #ws-outcome-acceptance, #ws-outcome-benefit, #ws-outcome-date, #env-lux, #env-noise, #env-height, #env-weight')) {
                 scheduleWorkspaceAutoSave();
             }
         });
@@ -4600,7 +4733,7 @@
             if (!isStandardWorkspaceActive()) return;
             const t = e.target;
             if (!(t instanceof Element)) return;
-            if (t.matches('.chk-dynamic, input[name="hearing-ind-1"], input[name="hearing-ind-2"], input[name="h-exp"], input[name="h-type"], input[name="h-condition"], input[name="h-need"]')) {
+            if (t.matches('.chk-dynamic')) {
                 scheduleWorkspaceAutoSave();
             }
         });
@@ -6262,12 +6395,14 @@ ${rawDraft}
         }
 
         function triggerHearingAutoSave() {
-            if (!currentEditingCaseId || !currentUser) return;
+            if (!isStandardWorkspaceActive() || !currentEditingCaseId || !currentUser) return;
+            const targetCaseId = currentEditingCaseId;
             setHearingIndicator('saving');
             clearTimeout(hearingAutoSaveTimer);
             hearingAutoSaveTimer = setTimeout(async () => {
+                if (targetCaseId !== currentEditingCaseId) return;
                 try {
-                    await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), {
+                    await updateDoc(doc(db, 'users', currentUser.uid, 'cases', targetCaseId), {
                         hearing: collectHearingData(),
                         updatedAt: serverTimestamp()
                     });
