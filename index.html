@@ -2735,7 +2735,7 @@
 
                 el.innerHTML = `
                     <div class="flex justify-between items-start mb-3 gap-3">
-                        <h3 class="font-bold text-slate-800 text-xl pr-4 flex-1 min-w-0">${item.company || '未命名企業'}</h3>
+                        <h3 class="font-bold text-slate-800 text-xl pr-4 flex-1 min-w-0">${item.clientName || '未命名個案'}</h3>
                         <div class="flex flex-col items-end gap-2 shrink-0">
                             <span class="text-xs ${ownerColor} px-3 py-1 rounded-lg font-black whitespace-nowrap">主責：${owner}</span>
                             ${completedBadge}
@@ -2743,7 +2743,7 @@
                         </div>
                     </div>
                     <div class="flex items-center text-base text-slate-500 gap-4 font-medium">
-                        <span class="truncate max-w-[180px]"><i class="fa-solid fa-users text-slate-400 mr-2"></i> ${item.clientName || '無'}</span>
+                        <span class="truncate max-w-[220px]"><i class="fa-solid fa-building text-slate-400 mr-2"></i> ${item.company || '無'}</span>
                         <span><i class="fa-solid fa-calendar text-slate-400 mr-2"></i> ${item.visitDate || item.date || '無'}</span>
                     </div>
                     <div class="absolute top-1/2 right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500">
@@ -2803,8 +2803,8 @@
                 content.innerHTML = filtered.map(item => `
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 hover:border-blue-400 cursor-pointer flex justify-between items-center transition-colors" onclick="window.openWorkspace('${item.id}')">
                         <div>
-                            <h4 class="font-bold text-slate-800 text-lg">${item.company || '未命名企業'}</h4>
-                            <p class="text-sm text-slate-500 mt-1"><i class="fa-solid fa-user mr-1"></i> ${item.clientName || '無'} | <i class="fa-solid fa-calendar mr-1"></i> ${item.visitDate || item.date || '-'}</p>
+                            <h4 class="font-bold text-slate-800 text-lg">${item.clientName || '未命名個案'}</h4>
+                            <p class="text-sm text-slate-500 mt-1"><i class="fa-solid fa-building mr-1"></i> ${item.company || '無'} | <i class="fa-solid fa-calendar mr-1"></i> ${item.visitDate || item.date || '-'}</p>
                         </div>
                         <i class="fa-solid fa-chevron-right text-blue-500 text-xl"></i>
                     </div>
@@ -3242,11 +3242,46 @@
             if (DOM && DOM.views && DOM.views.workspace) DOM.views.workspace.classList.add('hidden');
             document.getElementById('view-dis-case').classList.remove('hidden');
             syncResponsiveSidebars();
+            initDisMainAreaCollapsible();
 
             setDisAutosaveIndicator('idle');
             triggerAutoResize();
         }
         window.openDisWorkspace = openDisWorkspace;
+
+        function initDisMainAreaCollapsible() {
+            const cards = Array.from(document.querySelectorAll('#dis-main-area > div'));
+            cards.forEach(card => {
+                if (!card || card.id === 'dis-hearing-section') return;
+                if (card.dataset.collapsibleReady === '1') return;
+
+                const first = card.firstElementChild;
+                if (!first) return;
+                if (first.tagName === 'BUTTON') return; // opening script card already has its own toggle
+                if (card.children.length < 2) return;
+
+                card.classList.add('relative');
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'absolute top-3 right-3 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-2.5 py-1 rounded-lg font-bold z-10';
+                btn.innerHTML = '<i class="fa-solid fa-chevron-up mr-1"></i>收合';
+
+                btn.addEventListener('click', () => {
+                    const shouldHide = btn.dataset.hidden !== '1';
+                    Array.from(card.children).forEach(el => {
+                        if (el === first || el === btn) return;
+                        el.classList.toggle('hidden', shouldHide);
+                    });
+                    btn.dataset.hidden = shouldHide ? '1' : '0';
+                    btn.innerHTML = shouldHide
+                        ? '<i class="fa-solid fa-chevron-down mr-1"></i>展開'
+                        : '<i class="fa-solid fa-chevron-up mr-1"></i>收合';
+                });
+
+                card.appendChild(btn);
+                card.dataset.collapsibleReady = '1';
+            });
+        }
 
         function updateDisHearingScore() {
             const v1 = Number(document.querySelector('input[name="dis-hearing-ind-1"]:checked')?.value || 0);
@@ -3315,7 +3350,10 @@
         // Dis edit basic info
         document.getElementById('dis-btn-edit')?.addEventListener('click', () => {
             if (!currentDisCaseId) return;
-            window.editCase(currentDisCaseId);
+            currentEditingCaseId = currentDisCaseId;
+            document.getElementById('view-dis-case')?.classList.add('hidden');
+            document.getElementById('view-container-standard')?.classList.remove('hidden');
+            document.getElementById('btn-edit-case')?.click();
         });
 
         // Dis delete case
