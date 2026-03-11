@@ -710,12 +710,6 @@
                         </span>
                     </div>
 
-                    <div class="flex items-center justify-end">
-                        <button type="button" onclick="toggleAllHearingBlocks()" id="hearing-toggle-all-btn" class="text-sm font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg px-3 py-2 transition-colors">
-                            <i class="fa-solid fa-up-down-left-right mr-1"></i>收合全部
-                        </button>
-                    </div>
-
                     <!-- 區塊一: 助聽器使用問卷 -->
                     <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <button type="button" onclick="toggleHearingBlock('1')" class="w-full px-6 md:px-8 py-4 flex items-center justify-between text-left hover:bg-purple-50 transition-colors">
@@ -3294,30 +3288,31 @@
                 if (first.tagName === 'BUTTON') return; // opening script card already has its own toggle
                 if (card.children.length < 2) return;
 
-                card.classList.add('relative');
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'absolute top-3 right-3 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-2.5 py-1 rounded-lg font-bold z-10';
-                btn.innerHTML = '<i class="fa-solid fa-chevron-down mr-1"></i>展開';
-                btn.dataset.hidden = '1';
+                const indicator = document.createElement('span');
+                indicator.className = 'ml-2 text-xs text-slate-500 font-bold';
+                indicator.innerHTML = '<i class="fa-solid fa-chevron-down mr-1"></i>展開';
+                first.classList.add('cursor-pointer');
+                first.appendChild(indicator);
 
-                btn.addEventListener('click', () => {
-                    const shouldHide = btn.dataset.hidden !== '1';
+                first.addEventListener('click', (evt) => {
+                    // Do not collapse when interacting with controls inside the header.
+                    if (evt.target.closest('button, a, input, textarea, select, label, summary, details')) return;
+                    const shouldHide = first.dataset.hidden !== '1';
                     Array.from(card.children).forEach(el => {
-                        if (el === first || el === btn) return;
+                        if (el === first) return;
                         el.classList.toggle('hidden', shouldHide);
                     });
-                    btn.dataset.hidden = shouldHide ? '1' : '0';
-                    btn.innerHTML = shouldHide
+                    first.dataset.hidden = shouldHide ? '1' : '0';
+                    indicator.innerHTML = shouldHide
                         ? '<i class="fa-solid fa-chevron-down mr-1"></i>展開'
                         : '<i class="fa-solid fa-chevron-up mr-1"></i>收合';
                 });
 
+                first.dataset.hidden = '1';
                 Array.from(card.children).forEach(el => {
-                    if (el === first || el === btn) return;
+                    if (el === first) return;
                     el.classList.add('hidden');
                 });
-                card.appendChild(btn);
                 card.dataset.collapsibleReady = '1';
             });
         }
@@ -5965,36 +5960,12 @@ ${rawDraft}
         let drawColor = '#0f172a'; let drawSize = 3; let isEraser = false;
 
         // 聽覺需求評估表相關函式
-        window.toggleHearingAllLabel = () => {
-            const btn = document.getElementById('hearing-toggle-all-btn');
-            if (!btn) return;
-            const sections = ['1', '2'];
-            const allOpen = sections.every(no => !document.getElementById('hearing-content-' + no)?.classList.contains('hidden'));
-            btn.innerHTML = allOpen
-                ? '<i class="fa-solid fa-up-down-left-right mr-1"></i>收合全部'
-                : '<i class="fa-solid fa-up-down-left-right mr-1"></i>展開全部';
-        };
-
         window.toggleHearingBlock = (blockNo) => {
             const content = document.getElementById('hearing-content-' + blockNo);
             const icon = document.getElementById('hearing-icon-' + blockNo);
             if (!content || !icon) return;
             content.classList.toggle('hidden');
             icon.classList.toggle('rotate-180');
-            window.toggleHearingAllLabel();
-        };
-
-        window.toggleAllHearingBlocks = () => {
-            const sections = ['1', '2'];
-            const allOpen = sections.every(no => !document.getElementById('hearing-content-' + no)?.classList.contains('hidden'));
-            sections.forEach(no => {
-                const content = document.getElementById('hearing-content-' + no);
-                const icon = document.getElementById('hearing-icon-' + no);
-                if (!content || !icon) return;
-                content.classList.toggle('hidden', allOpen);
-                icon.classList.toggle('rotate-180', allOpen);
-            });
-            window.toggleHearingAllLabel();
         };
 
         document.getElementById('h-context-score')?.addEventListener('input', function() {
