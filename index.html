@@ -85,6 +85,16 @@
         </div>
     </div>
 
+    <!-- 離開/切換案件時的全畫面鎖定遮罩 -->
+    <div id="saving-overlay" class="hidden fixed inset-0 z-[210] bg-slate-900/35 backdrop-blur-[1px] pointer-events-auto">
+        <div class="absolute inset-0 flex items-center justify-center px-4">
+            <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 px-6 py-5 min-w-[260px] max-w-[90vw] text-center">
+                <div class="text-blue-600 text-2xl mb-2"><i class="fa-solid fa-spinner fa-spin"></i></div>
+                <p id="saving-overlay-text" class="text-sm md:text-base font-bold text-slate-700">離開前存檔中，請稍候...</p>
+            </div>
+        </div>
+    </div>
+
     <!-- 頂部導航列 -->
     <header class="bg-blue-600 text-white shadow-md p-4 md:p-5 flex justify-between items-center no-print shrink-0 z-10 relative">
         <div class="flex items-center gap-3">
@@ -2993,18 +3003,21 @@
         async function flushPendingCaseSavesBeforeSwitch() {
             if (!currentUser) return;
             const jobs = [];
+            const hasPendingWsLikeSave =
+                (typeof wsAutoSaveTimer !== 'undefined' && !!wsAutoSaveTimer) ||
+                (typeof hearingAutoSaveTimer !== 'undefined' && !!hearingAutoSaveTimer);
 
             if (typeof wsAutoSaveTimer !== 'undefined' && wsAutoSaveTimer) {
                 clearTimeout(wsAutoSaveTimer);
                 wsAutoSaveTimer = null;
-                if (currentEditingCaseId && typeof saveWorkspaceData === 'function') {
-                    jobs.push(saveWorkspaceData(true, currentEditingCaseId));
-                }
             }
 
             if (typeof hearingAutoSaveTimer !== 'undefined' && hearingAutoSaveTimer) {
                 clearTimeout(hearingAutoSaveTimer);
                 hearingAutoSaveTimer = null;
+            }
+
+            if (hasPendingWsLikeSave) {
                 if (currentEditingCaseId && typeof saveWorkspaceData === 'function') {
                     jobs.push(saveWorkspaceData(true, currentEditingCaseId));
                 }
@@ -3038,8 +3051,6 @@
                 if (isCaseSwitchSaving) return;
                 isCaseSwitchSaving = true;
                 setCaseSwitchUiLock(true);
-                showToast("切換案件前儲存中，請稍候...");
-                await flushPendingCaseSavesBeforeSwitch();
 
                 if (isRecording && currentEditingCaseId && currentEditingCaseId !== id) {
                     showToast("已切換案件，系統自動結束並上傳前一案件錄音");
