@@ -2230,8 +2230,15 @@
             } else { showView('list', '訪視案件管理', true, false); }
         });
 
-        DOM.btnBack.addEventListener('click', () => {
+        DOM.btnBack.addEventListener('click', async () => {
             if (!DOM.views.workspace.classList.contains('hidden')) {
+                try {
+                    showToast("離開前儲存中，請稍候...");
+                    await flushPendingCaseSavesBeforeSwitch();
+                } catch (err) {
+                    alert("離開前自動儲存失敗：" + (err?.message || err));
+                    return;
+                }
                 showView('list', '訪視案件管理', true);
                 return;
             }
@@ -2243,6 +2250,13 @@
             if (elderIsRecording) {
                 showToast('離開前自動停止錄音並上傳中...');
                 await stopElderRecording();
+            }
+            try {
+                showToast("離開前儲存中，請稍候...");
+                await flushPendingCaseSavesBeforeSwitch();
+            } catch (err) {
+                alert("離開前自動儲存失敗：" + (err?.message || err));
+                return;
             }
             document.getElementById('view-ws-elder').classList.add('hidden');
             showView('list', '訪視案件管理', true);
@@ -3507,6 +3521,13 @@
                 showToast('離開前自動停止錄音並上傳中...');
                 await stopDisRecordingFlow();
             }
+            try {
+                showToast("離開前儲存中，請稍候...");
+                await flushPendingCaseSavesBeforeSwitch();
+            } catch (err) {
+                alert("離開前自動儲存失敗：" + (err?.message || err));
+                return;
+            }
             // 將 tab-hearing 還原到 view-workspace 的 tab-assess 旁邊
             const tabHearing = document.getElementById('tab-hearing');
             const tabAssess = document.getElementById('tab-assess');
@@ -3581,6 +3602,7 @@
                     showToast('刪除前自動停止錄音並上傳中...');
                     await stopDisRecordingFlow();
                 }
+                await flushPendingCaseSavesBeforeSwitch();
                 await deleteDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId));
                 document.getElementById('view-dis-case').classList.add('hidden');
                 document.getElementById('view-container-standard').classList.remove('hidden');
@@ -4249,6 +4271,7 @@
                 showToast('刪除前自動停止錄音並上傳中...');
                 await stopElderRecording();
             }
+            await flushPendingCaseSavesBeforeSwitch();
             await deleteDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId));
             showToast('案件已刪除');
             document.getElementById('view-ws-elder').classList.add('hidden');
@@ -5769,18 +5792,30 @@
         btnRecordFloating?.addEventListener('click', () => { toggleRecordingFlow(); });
         syncRecordingUi('idle');
 
+        function hasPendingCaseSave() {
+            const pendingWs = (typeof wsAutoSaveTimer !== 'undefined' && !!wsAutoSaveTimer);
+            const pendingHearing = (typeof hearingAutoSaveTimer !== 'undefined' && !!hearingAutoSaveTimer);
+            const pendingDis = (typeof disAutoSaveTimer !== 'undefined' && !!disAutoSaveTimer);
+            const pendingElder = (typeof elderWsAutoSaveTimer !== 'undefined' && !!elderWsAutoSaveTimer);
+            return pendingWs || pendingHearing || pendingDis || pendingElder;
+        }
+
         window.addEventListener('beforeunload', (e) => {
-            if (!isRecording) return;
+            const recordingBusy = !!(isRecording || disIsRecording || elderIsRecording);
+            const pendingSave = hasPendingCaseSave();
+            if (!recordingBusy && !pendingSave) return;
             e.preventDefault();
             e.returnValue = '';
         });
 
         window.addEventListener('keydown', (e) => {
-            if (!isRecording) return;
+            const recordingBusy = !!(isRecording || disIsRecording || elderIsRecording);
+            const pendingSave = hasPendingCaseSave();
+            if (!recordingBusy && !pendingSave) return;
             const key = String(e.key || '').toLowerCase();
             if (key === 'f5' || ((e.ctrlKey || e.metaKey) && key === 'r')) {
                 e.preventDefault();
-                showToast("錄音中，已暫時阻擋重新整理");
+                showToast(recordingBusy ? "錄音或儲存進行中，已暫時阻擋重新整理" : "資料儲存中，請稍候再重新整理");
             }
         });
 
