@@ -46,6 +46,26 @@
                 height: 72dvh !important;
             }
         }
+
+        /* Hearing blocks mobile overflow hardening */
+        #tab-hearing, #tab-hearing * { box-sizing: border-box; }
+        #tab-hearing { overflow-x: hidden; }
+        #tab-hearing label, #tab-hearing div, #tab-hearing p, #tab-hearing h3, #tab-hearing h4, #tab-hearing span {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        @media (max-width: 480px) {
+            #tab-hearing .grid.grid-cols-2 { grid-template-columns: 1fr; }
+            #tab-hearing .hearing-result-grid { grid-template-columns: 1fr; }
+            #tab-hearing .hearing-result-grid > div .p-3 { font-size: 1rem; }
+            #tab-hearing .hearing-result-grid > div .bg-\[\#d97706\],
+            #tab-hearing .hearing-result-grid > div .bg-\[\#fcd34d\],
+            #tab-hearing .hearing-result-grid > div .bg-\[\#fef3c7\] {
+                border-right: 0 !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen flex flex-col overflow-hidden relative">
@@ -3101,10 +3121,7 @@
                     height: document.getElementById('dis-env-height')?.value || '',
                     weight: document.getElementById('dis-env-weight')?.value || ''
                 },
-                hearing: {
-                    ind1: document.querySelector('input[name="hearing-ind-1"]:checked')?.value || '',
-                    ind2: document.querySelector('input[name="hearing-ind-2"]:checked')?.value || ''
-                },
+                hearing: collectHearingData(),
                 checklist
             };
         }
@@ -3246,7 +3263,8 @@
             const disHearingSection = document.getElementById('dis-hearing-section');
             if (tabHearing && disHearingSection) {
                 disHearingSection.appendChild(tabHearing);
-                tabHearing.classList.remove('hidden', 'ws-tab-content');
+                tabHearing.classList.remove('hidden', 'ws-tab-content', 'max-w-4xl', 'mx-auto');
+                tabHearing.classList.add('w-full');
             }
             // 填入聽力資料（使用 tab-hearing 原始欄位）
             document.querySelectorAll('input[name="hearing-ind-1"], input[name="hearing-ind-2"]').forEach(r => r.checked = false);
@@ -3387,6 +3405,8 @@
             const tabAssess = document.getElementById('tab-assess');
             if (tabHearing && tabAssess && tabAssess.parentNode) {
                 tabAssess.parentNode.appendChild(tabHearing);
+                tabHearing.classList.remove('w-full');
+                tabHearing.classList.add('max-w-4xl', 'mx-auto');
                 tabHearing.classList.add('hidden', 'ws-tab-content');
             }
             document.getElementById('view-dis-case').classList.add('hidden');
@@ -3864,6 +3884,7 @@
         let elderRecTimerInterval = null;
         let elderRecStartTime = null;
         let elderStopRecordingResolver = null;
+        let elderWsAutoSaveTimer = null;
 
         function openElderWorkspace(caseId) {
             currentElderCaseId = caseId;
@@ -3972,23 +3993,74 @@
             window.selectElderWorkstation(newWs.id);
         });
 
+        function collectElderWorkstationsForSave() {
+            const c = casesData.find(x => x.id === currentElderCaseId);
+            if (!c) return null;
+            const workstations = (c.workstations || []).map(ws => {
+                if (ws.id !== currentWorkstationId) return ws;
+                return {
+                    ...ws,
+                    name: document.getElementById('elder-ws-name').value.trim() || ws.name,
+                    workContent: document.getElementById('elder-work-content').value,
+                    difficulties: document.getElementById('elder-difficulties').value,
+                    improvements: document.getElementById('elder-improvements').value,
+                    personnelIds: Array.from(document.querySelectorAll('.elder-personnel-chk:checked')).map(cb => cb.dataset.pid),
+                    env: {
+                        lux: document.getElementById('elder-env-lux')?.value || '',
+                        noise: document.getElementById('elder-env-noise')?.value || '',
+                        deskHeight: document.getElementById('elder-env-desk-height')?.value || '',
+                        workHeight: document.getElementById('elder-env-work-height')?.value || '',
+                        distance: document.getElementById('elder-env-distance')?.value || '',
+                        weight: document.getElementById('elder-env-weight')?.value || ''
+                    }
+                };
+            });
+            return { c, workstations };
+        }
+
+        async function saveCurrentElderWorkstation(silent = false) {
+            if (!currentElderCaseId || !currentWorkstationId || !currentUser) return;
+            if (document.getElementById('view-ws-elder')?.classList.contains('hidden')) return;
+            const payload = collectElderWorkstationsForSave();
+            if (!payload) return;
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations: payload.workstations, updatedAt: serverTimestamp() });
+            renderElderWorkstationList(payload.workstations);
+            if (!silent) showToast('✓ 工作站資料已儲存');
+        }
+
         // 儲存工作站
         document.getElementById('elder-btn-save-ws').addEventListener('click', async () => {
             if (!currentElderCaseId || !currentWorkstationId) return;
-            const c = casesData.find(x => x.id === currentElderCaseId);
-            if (!c) return;
             const btn = document.getElementById('elder-btn-save-ws');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>儲存中...';
-            const workstations = (c.workstations || []).map(ws => {
-                if (ws.id !== currentWorkstationId) return ws;
-                return { ...ws, name: document.getElementById('elder-ws-name').value.trim() || ws.name, workContent: document.getElementById('elder-work-content').value, difficulties: document.getElementById('elder-difficulties').value, improvements: document.getElementById('elder-improvements').value, personnelIds: Array.from(document.querySelectorAll('.elder-personnel-chk:checked')).map(cb => cb.dataset.pid), env: { lux: document.getElementById('elder-env-lux')?.value||'', noise: document.getElementById('elder-env-noise')?.value||'', deskHeight: document.getElementById('elder-env-desk-height')?.value||'', workHeight: document.getElementById('elder-env-work-height')?.value||'', distance: document.getElementById('elder-env-distance')?.value||'', weight: document.getElementById('elder-env-weight')?.value||'' } };
-            });
             try {
-                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
-                showToast('✓ 工作站資料已儲存');
-                renderElderWorkstationList(workstations);
+                await saveCurrentElderWorkstation(false);
             } catch(e) { alert('儲存失敗：' + e.message); }
             finally { btn.innerHTML = '<i class="fa-solid fa-floppy-disk mr-2"></i>儲存此工作站'; }
+        });
+
+        function scheduleElderWorkstationAutoSave() {
+            if (!currentElderCaseId || !currentWorkstationId) return;
+            if (document.getElementById('view-ws-elder')?.classList.contains('hidden')) return;
+            clearTimeout(elderWsAutoSaveTimer);
+            elderWsAutoSaveTimer = setTimeout(async () => {
+                try { await saveCurrentElderWorkstation(true); } catch (e) { console.warn('elder workstation autosave failed', e); }
+            }, 1200);
+        }
+
+        document.addEventListener('input', (e) => {
+            const t = e.target;
+            if (!(t instanceof Element)) return;
+            if (t.matches('#elder-ws-name, #elder-work-content, #elder-difficulties, #elder-improvements, #elder-env-lux, #elder-env-noise, #elder-env-desk-height, #elder-env-work-height, #elder-env-distance, #elder-env-weight')) {
+                scheduleElderWorkstationAutoSave();
+            }
+        });
+        document.addEventListener('change', (e) => {
+            const t = e.target;
+            if (!(t instanceof Element)) return;
+            if (t.matches('.elder-personnel-chk')) {
+                scheduleElderWorkstationAutoSave();
+            }
         });
 
         // 刪除工作站
@@ -4439,57 +4511,98 @@
             }
         });
 
+        let wsAutoSaveTimer = null;
+        function isStandardWorkspaceActive() {
+            return !!(DOM?.views?.workspace && !DOM.views.workspace.classList.contains('hidden'));
+        }
+
+        function collectWorkspaceDataToUpdate() {
+            const dataToUpdate = {
+                report: {
+                    status: document.getElementById('ws-status-text')?.value || '',
+                    limits: document.getElementById('ws-limits-text')?.value || '',
+                    analysis: document.getElementById('ws-analysis-text')?.value || '',
+                    strategy: document.getElementById('ws-strategy-text')?.value || ''
+                },
+                outcome: {
+                    resolution: document.getElementById('ws-outcome-resolution')?.value || '',
+                    acceptance: document.getElementById('ws-outcome-acceptance')?.value || '',
+                    benefit: document.getElementById('ws-outcome-benefit')?.value || '',
+                    closeDate: document.getElementById('ws-outcome-date')?.value || ''
+                },
+                env: {
+                    lux: document.getElementById('env-lux')?.value || '',
+                    noise: document.getElementById('env-noise')?.value || '',
+                    height: document.getElementById('env-height')?.value || '',
+                    weight: document.getElementById('env-weight')?.value || ''
+                },
+                hearing: {
+                    ind1: document.querySelector('input[name="hearing-ind-1"]:checked')?.value || '',
+                    ind2: document.querySelector('input[name="hearing-ind-2"]:checked')?.value || '',
+                    exp: document.querySelector('input[name="h-exp"]:checked')?.value || '',
+                    htype: document.querySelector('input[name="h-type"]:checked')?.value || '',
+                    cause: document.getElementById('h-cause')?.value || '',
+                    status: document.getElementById('h-status')?.value || '',
+                    years: document.getElementById('h-years')?.value || '',
+                    brand: document.getElementById('h-brand')?.value || '',
+                    condition: Array.from(document.querySelectorAll('input[name="h-condition"]:checked')).map(x => x.value),
+                    need: Array.from(document.querySelectorAll('input[name="h-need"]:checked')).map(x => x.value),
+                    ctxDesc: document.getElementById('h-context-desc')?.value || '',
+                    ctxFreq: document.getElementById('h-context-freq')?.value || '',
+                    ctxScore: document.getElementById('h-context-score')?.value || '5'
+                },
+                checklist: {},
+                updatedAt: serverTimestamp()
+            };
+            document.querySelectorAll('.chk-dynamic').forEach(checkbox => {
+                dataToUpdate.checklist[checkbox.dataset.chkkey] = checkbox.checked;
+            });
+            return dataToUpdate;
+        }
+
+        async function saveWorkspaceData(silent = false) {
+            if (!currentEditingCaseId || !currentUser || !isStandardWorkspaceActive()) return;
+            const dataToUpdate = collectWorkspaceDataToUpdate();
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), dataToUpdate);
+            if (!silent) showToast("資料已安全儲存！");
+        }
+
         document.querySelectorAll('.btn-save-ws').forEach(btn => {
             btn.addEventListener('click', async () => {
                 if (!currentEditingCaseId) return;
                 const originalText = btn.innerHTML;
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> 儲存中...';
-                
-                const dataToUpdate = {
-                    report: {
-                        status: document.getElementById('ws-status-text').value,
-                        limits: document.getElementById('ws-limits-text').value,
-                        analysis: document.getElementById('ws-analysis-text').value,
-                        strategy: document.getElementById('ws-strategy-text').value
-                    },
-                    outcome: {
-                        resolution: document.getElementById('ws-outcome-resolution').value,
-                        acceptance: document.getElementById('ws-outcome-acceptance').value,
-                        benefit: document.getElementById('ws-outcome-benefit').value,
-                        closeDate: document.getElementById('ws-outcome-date').value
-                    },
-                    env: {
-                        lux: document.getElementById('env-lux').value,
-                        noise: document.getElementById('env-noise').value,
-                        height: document.getElementById('env-height').value,
-                        weight: document.getElementById('env-weight').value
-                    },
-                    hearing: {
-                        ind1: document.querySelector('input[name="hearing-ind-1"]:checked')?.value || '',
-                        ind2: document.querySelector('input[name="hearing-ind-2"]:checked')?.value || '',
-                        exp: document.querySelector('input[name="h-exp"]:checked')?.value || '',
-                        htype: document.querySelector('input[name="h-type"]:checked')?.value || '',
-                        cause: document.getElementById('h-cause')?.value || '',
-                        status: document.getElementById('h-status')?.value || '',
-                        years: document.getElementById('h-years')?.value || '',
-                        brand: document.getElementById('h-brand')?.value || '',
-                        condition: Array.from(document.querySelectorAll('input[name="h-condition"]:checked')).map(x => x.value),
-                        need: Array.from(document.querySelectorAll('input[name="h-need"]:checked')).map(x => x.value),
-                        ctxDesc: document.getElementById('h-context-desc')?.value || '',
-                        ctxFreq: document.getElementById('h-context-freq')?.value || '',
-                        ctxScore: document.getElementById('h-context-score')?.value || '5'
-                    },
-                    checklist: {}, 
-                    updatedAt: serverTimestamp()
-                };
-                
-                document.querySelectorAll('.chk-dynamic').forEach(checkbox => { dataToUpdate.checklist[checkbox.dataset.chkkey] = checkbox.checked; });
                 try {
-                    await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentEditingCaseId), dataToUpdate);
-                    showToast("資料已安全儲存！");
+                    await saveWorkspaceData(false);
                 } catch(e) { alert("儲存失敗: " + e.message); } 
                 finally { btn.innerHTML = originalText; }
             });
+        });
+
+        function scheduleWorkspaceAutoSave() {
+            if (!currentEditingCaseId || !isStandardWorkspaceActive()) return;
+            clearTimeout(wsAutoSaveTimer);
+            wsAutoSaveTimer = setTimeout(async () => {
+                try { await saveWorkspaceData(true); } catch (e) { console.warn('workspace autosave failed', e); }
+            }, 1200);
+        }
+
+        document.addEventListener('input', (e) => {
+            if (!isStandardWorkspaceActive()) return;
+            const t = e.target;
+            if (!(t instanceof Element)) return;
+            if (t.matches('#ws-status-text, #ws-limits-text, #ws-analysis-text, #ws-strategy-text, #ws-outcome-resolution, #ws-outcome-acceptance, #ws-outcome-benefit, #ws-outcome-date, #env-lux, #env-noise, #env-height, #env-weight, #h-cause, #h-status, #h-years, #h-brand, #h-context-desc, #h-context-freq, #h-context-score')) {
+                scheduleWorkspaceAutoSave();
+            }
+        });
+
+        document.addEventListener('change', (e) => {
+            if (!isStandardWorkspaceActive()) return;
+            const t = e.target;
+            if (!(t instanceof Element)) return;
+            if (t.matches('.chk-dynamic, input[name="hearing-ind-1"], input[name="hearing-ind-2"], input[name="h-exp"], input[name="h-type"], input[name="h-condition"], input[name="h-need"]')) {
+                scheduleWorkspaceAutoSave();
+            }
         });
 
         document.querySelectorAll('input[name="form-category"]').forEach(radio => {
