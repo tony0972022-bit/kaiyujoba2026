@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>職務再設計 - 訪視紀錄 APP</title>
     <link rel="icon" href="data:," />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -25,6 +25,27 @@
         textarea { transition: height 0.2s ease; overflow-y: hidden; }
         /* Sidebar 動畫 */
         .sidebar-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        /* iPhone Pro Max / iPad mini readability hardening */
+        html, body { min-height: 100dvh; }
+        #main-content, #view-container-standard, #ws-main-area, #dis-main-area, #elder-main-area { min-width: 0; }
+
+        @media (max-width: 900px) {
+            body { overflow-x: hidden; }
+            #main-content, #view-container-standard, #ws-main-area, #dis-main-area, #elder-main-area { overflow-x: hidden; }
+            #view-container-standard { padding: 0.75rem; }
+            #ws-main-area, #dis-main-area, #elder-main-area {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
+                padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+            }
+            #tab-hearing .sticky { top: env(safe-area-inset-top); }
+            #preview-modal {
+                right: 0.5rem !important;
+                left: 0.5rem !important;
+                width: auto !important;
+                height: 72dvh !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased h-screen flex flex-col overflow-hidden relative">
@@ -226,6 +247,9 @@
                         <button id="btn-add-committee" class="bg-blue-600 text-white px-5 py-3 rounded-lg font-bold hover:bg-blue-700 md:text-lg">新增</button>
                     </div>
                     <ul id="setting-committee-list" class="space-y-2 md:text-lg"></ul>
+                    <button id="btn-export-committee-district" class="mt-3 w-full bg-emerald-600 text-white px-4 py-3 md:text-lg rounded-lg font-bold hover:bg-emerald-700 shadow">
+                        <i class="fa-solid fa-file-excel mr-1"></i> 下載委員轄區清單 (Excel)
+                    </button>
                 </div>
 
                 <div class="mb-6">
@@ -285,12 +309,20 @@
                         <label class="block text-base font-medium text-slate-600 mb-1">主責人 *</label>
                         <select id="form-owner" required class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg bg-white">
                             <option value="凱宇">凱宇</option>
+                            <option value="蔡凱宇">蔡凱宇</option>
                             <option value="黃國裕">黃國裕</option>
                             <option value="高湘怡">高湘怡</option>
                             <option value="方姿云">方姿云</option>
                             <option value="陳秋媚">陳秋媚</option>
                             <option value="盧怡倫">盧怡倫</option>
-                            <option value="蔡凱宇">蔡凱宇</option>
+                            <option value="張世立">張世立</option>
+                            <option value="洪錦蓉">洪錦蓉</option>
+                            <option value="廖彥斐">廖彥斐</option>
+                            <option value="蔡秀英">蔡秀英</option>
+                            <option value="顏雅玲">顏雅玲</option>
+                            <option value="林益青">林益青</option>
+                            <option value="胡媧祥">胡媧祥</option>
+                            <option value="黃致綺">黃致綺</option>
                         </select>
                     </div>
 
@@ -678,9 +710,19 @@
                         </span>
                     </div>
 
+                    <div class="flex items-center justify-end">
+                        <button type="button" onclick="toggleAllHearingBlocks()" id="hearing-toggle-all-btn" class="text-sm font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg px-3 py-2 transition-colors">
+                            <i class="fa-solid fa-up-down-left-right mr-1"></i>收合全部
+                        </button>
+                    </div>
+
                     <!-- 區塊一: 助聽器使用問卷 -->
-                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-xl text-slate-700 border-b pb-4 mb-6"><i class="fa-solid fa-ear-listen text-purple-500 mr-3"></i>區塊一：助聽器使用問卷</h3>
+                    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <button type="button" onclick="toggleHearingBlock('1')" class="w-full px-6 md:px-8 py-4 flex items-center justify-between text-left hover:bg-purple-50 transition-colors">
+                            <h3 class="font-bold text-xl text-slate-700"><i class="fa-solid fa-ear-listen text-purple-500 mr-3"></i>區塊一：助聽器使用問卷</h3>
+                            <i id="hearing-icon-1" class="fa-solid fa-chevron-up text-purple-500 transition-transform"></i>
+                        </button>
+                        <div id="hearing-content-1" class="p-6 md:p-8 border-t border-slate-100">
 
                         <!-- Q1: 是否配戴助聽器 -->
                         <div class="mb-8">
@@ -886,11 +928,16 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        </div>
+                    </section>
 
                     <!-- 區塊二: 溝通聆聽需求檢核 -->
-                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-xl text-slate-700 border-b pb-4 mb-6"><i class="fa-solid fa-clipboard-list text-blue-500 mr-3"></i>區塊二：溝通聆聽需求檢核</h3>
+                    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <button type="button" onclick="toggleHearingBlock('2')" class="w-full px-6 md:px-8 py-4 flex items-center justify-between text-left hover:bg-blue-50 transition-colors">
+                            <h3 class="font-bold text-xl text-slate-700"><i class="fa-solid fa-clipboard-list text-blue-500 mr-3"></i>區塊二：溝通聆聽需求檢核</h3>
+                            <i id="hearing-icon-2" class="fa-solid fa-chevron-up text-blue-500 transition-transform"></i>
+                        </button>
+                        <div id="hearing-content-2" class="p-6 md:p-8 border-t border-slate-100">
 
                         <!-- 指標一 -->
                         <div class="mb-6">
@@ -981,7 +1028,7 @@
                         <!-- 結果 -->
                         <div>
                             <h4 class="font-bold text-lg text-slate-800 mb-2">新購助聽器之必要性：<span class="text-base font-normal">由指標一和指標二的分數加總</span></h4>
-                            <div class="grid grid-cols-3 gap-0 border border-slate-800 rounded-lg overflow-hidden">
+                            <div class="hearing-result-grid grid grid-cols-1 sm:grid-cols-3 gap-0 border border-slate-800 rounded-lg overflow-hidden">
                                 <div id="hearing-result-high" class="text-center transition-colors">
                                     <div class="bg-[#d97706] py-2 font-bold text-lg border-b border-r border-slate-800 flex items-center justify-center gap-2">
                                         <i class="fa-regular fa-square text-black res-chk"></i><i class="fa-solid fa-square-check text-black res-checked hidden"></i> 6-8 分
@@ -1007,7 +1054,8 @@
                         <button class="btn-save-ws w-full mt-8 bg-purple-700 text-white py-4 md:py-5 rounded-xl shadow-xl font-bold text-xl hover:bg-purple-800 transition-transform active:scale-[0.98]">
                             <i class="fa-solid fa-check-double mr-2"></i>儲存聽力案檢核
                         </button>
-                    </div>
+                        </div>
+                    </section>
                 </div>
 
                 <!-- 頁籤 3: 評估撰寫 -->
@@ -1709,18 +1757,27 @@
         // ==========================================
         const PRIMARY_OWNER = '凱宇';
         const PRIMARY_OWNER_ALIASES = ['凱宇', '蔡凱宇'];
-        const RESPONSIBLE_OPTIONS = ['凱宇','黃國裕','高湘怡','方姿云','陳秋媚','盧怡倫','蔡凱宇'];
+        const RESPONSIBLE_OPTIONS = ['凱宇','蔡凱宇','黃國裕','高湘怡','方姿云','陳秋媚','盧怡倫','張世立','洪錦蓉','廖彥斐','蔡秀英','顏雅玲','林益青','胡媧祥','黃致綺'];
+        const DEFAULT_COMMITTEE = ['張瑞昆','殷其遠','林雅玲','張美珍','歐昌潤','陳志軒','羅凱凡','莊惠鈞','陳瑩如','林克寰','陳賴秀慧','曹晏綾','黃偉豪','邱昆孟','陳聖雄'];
         let showOtherOwnersInList = false; // 案件列表：預設只顯示主責凱宇/蔡凱宇
         let cachedDeadlineItems = []; // 儀表板期限提醒清單快取
 
         
         
         let settings = { 
-            committee: [], 
+            committee: [...DEFAULT_COMMITTEE],
             gasUrl: 'https://script.google.com/macros/s/AKfycbxelfY8BWyg2ZWeO4UbnenSH8eLS20qojH5N-tvZgvj_fcgoLL-MJosD53NIdo03qPdFw/exec',
             geminiApiKey: 'AIzaSyDcr3EH_yPAd9kQO1Qi00d2q8QUP9YGnd8',
             aiPromptStyle: '請用專業、客觀且具同理心的口吻，將以下草稿潤飾成正式的職務再設計評估報告段落。請修正錯字並讓語句通順，不需加入額外的引言或結語，直接給出潤飾後的純文字內容即可。',
             districts: [
+                { name: '高雄', keywords: ['高雄'], owner: '張世立', email: 'lili341341@gmail.com' },
+                { name: '屏東', keywords: ['屏東'], owner: '洪錦蓉', email: 'a250245@oa.pthg.gov.tw' },
+                { name: '台東', keywords: ['台東'], owner: '廖彥斐', email: 'n3116@taitung.gov.tw' },
+                { name: '澎湖', keywords: ['澎湖'], owner: '蔡秀英', email: 'fa30901@mail.penghu.gov.tw' },
+                { name: '岡山訓就', keywords: ['岡山'], owner: '顏雅玲', email: 'alinyan1975@gmail.com', phone: '07-6228321#222', address: '高雄市岡山區民有路27號' },
+                { name: '鳳山訓就', keywords: ['鳳山'], owner: '胡媧祥', email: 'papa54928@gmail.com' },
+                { name: '高屏澎東銀髮', keywords: [], owner: '林益青', email: 'kimlatte@wda.gov.tw', phone: '07-7252586#118', address: '高雄市苓雅區中正一路306號2樓' },
+                { name: '高屏澎東', keywords: [], owner: '黃致綺', email: 'jrchihuang@wda.gov.tw' },
                 { name: '未分區', keywords: [], owner: '凱宇' }
             ],
             checklists: {
@@ -2164,12 +2221,25 @@
                 const docSnap = await getDoc(docRef);
                 if(docSnap.exists()) {
                     const data = docSnap.data();
-                    settings.committee = data.committee || [];
+                    const storedCommittee = Array.isArray(data.committee) ? data.committee : [];
+                    settings.committee = Array.from(new Set([...DEFAULT_COMMITTEE, ...storedCommittee].map(x => String(x || "").trim()).filter(Boolean)));
                     if(data.gasUrl) settings.gasUrl = data.gasUrl;
                     if(data.geminiApiKey) settings.geminiApiKey = data.geminiApiKey;
                     if(data.aiPromptStyle) settings.aiPromptStyle = data.aiPromptStyle;
                     if(data.checklists) settings.checklists = data.checklists;
-                    if(Array.isArray(data.districts)) settings.districts = data.districts;
+                    const presetDistricts = Array.isArray(settings.districts) ? settings.districts : [];
+                    if (Array.isArray(data.districts) && data.districts.length > 0) {
+                        const byName = new Map();
+                        data.districts.forEach(d => {
+                            const n = String(d?.name || '').trim();
+                            if (n) byName.set(n, d);
+                        });
+                        presetDistricts.forEach(d => {
+                            const n = String(d?.name || '').trim();
+                            if (n && !byName.has(n)) byName.set(n, d);
+                        });
+                        settings.districts = Array.from(byName.values());
+                    }
                 }
             } catch (err) { console.warn("載入設定失敗:", err); }
         }
@@ -2248,6 +2318,68 @@
         });
 
         window.removeCommittee = (idx) => { settings.committee.splice(idx, 1); saveSettings(); };
+
+        document.getElementById('btn-export-committee-district')?.addEventListener('click', () => {
+            try {
+                const committeeList = Array.from(new Set((settings.committee || DEFAULT_COMMITTEE).map(x => String(x || "").trim()).filter(Boolean)));
+                const committeeDistrictCount = new Map();
+                committeeList.forEach(name => committeeDistrictCount.set(name, new Map()));
+
+                (casesData || []).forEach(c => {
+                    const district = String(c?.district || '未分區').trim() || '未分區';
+                    const visitorsRaw = String(c?.visitors || '');
+                    if (!visitorsRaw) return;
+                    const visitors = visitorsRaw.split(/[、,，\\n\\/]+/).map(x => String(x || "").trim()).filter(Boolean);
+                    visitors.forEach(name => {
+                        if (!committeeDistrictCount.has(name)) committeeDistrictCount.set(name, new Map());
+                        const dMap = committeeDistrictCount.get(name);
+                        dMap.set(district, (dMap.get(district) || 0) + 1);
+                    });
+                });
+
+                const statsRows = [];
+                committeeDistrictCount.forEach((dMap, committee) => {
+                    if (dMap.size === 0) {
+                        statsRows.push({ 委員: committee, 轄區: '（尚無案件紀錄）', 案件數: 0 });
+                        return;
+                    }
+                    Array.from(dMap.entries()).sort((a, b) => b[1] - a[1]).forEach(([district, count]) => {
+                        statsRows.push({ 委員: committee, 轄區: district, 案件數: count });
+                    });
+                });
+
+                const districtRows = (getDistrictList() || []).map(d => ({
+                    轄區: String(d?.name || ""),
+                    承辦人: String(d?.owner || ""),
+                    關鍵字: Array.isArray(d?.keywords) ? d.keywords.join('、') : '',
+                    Email: String(d?.email || ""),
+                    電話: String(d?.phone || ""),
+                    地址: String(d?.address || "")
+                }));
+
+                const wb = XLSX.utils.book_new();
+                const wsStats = XLSX.utils.json_to_sheet(statsRows, { header: ['委員', '轄區', '案件數'] });
+                wsStats['!cols'] = [{ wch: 12 }, { wch: 18 }, { wch: 10 }];
+                XLSX.utils.book_append_sheet(wb, wsStats, '委員轄區統計');
+
+                const wsDistrict = XLSX.utils.json_to_sheet(districtRows, { header: ['轄區', '承辦人', '關鍵字', 'Email', '電話', '地址'] });
+                wsDistrict['!cols'] = [{ wch: 14 }, { wch: 12 }, { wch: 24 }, { wch: 30 }, { wch: 16 }, { wch: 34 }];
+                XLSX.utils.book_append_sheet(wb, wsDistrict, '轄區承辦設定');
+
+                const wsCommittee = XLSX.utils.json_to_sheet(committeeList.map(name => ({ 委員姓名: name })), { header: ['委員姓名'] });
+                wsCommittee['!cols'] = [{ wch: 14 }];
+                XLSX.utils.book_append_sheet(wb, wsCommittee, '委員名單');
+
+                const now = new Date();
+                const pad = n => String(n).padStart(2, '0');
+                const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+                XLSX.writeFile(wb, '委員轄區清單_' + stamp + '.xlsx');
+                showToast('委員轄區清單已下載');
+            } catch (err) {
+                console.error('匯出委員轄區清單失敗', err);
+                alert('匯出失敗，請稍後再試');
+            }
+        });
 
         function renderDistrictOwnerOptions() {
             const sel = document.getElementById('setting-district-owner');
@@ -3109,6 +3241,7 @@
             document.getElementById('view-container-standard').classList.add('hidden');
             if (DOM && DOM.views && DOM.views.workspace) DOM.views.workspace.classList.add('hidden');
             document.getElementById('view-dis-case').classList.remove('hidden');
+            syncResponsiveSidebars();
 
             setDisAutosaveIndicator('idle');
             triggerAutoResize();
@@ -3140,6 +3273,17 @@
         // ==========================================
         // 側邊欄收放（Elder & Dis）
         // ==========================================
+        function syncResponsiveSidebars() {
+            const compact = window.innerWidth < 900;
+            const disSb = document.getElementById('dis-sidebar');
+            const elderSb = document.getElementById('elder-sidebar');
+            [disSb, elderSb].forEach(sb => {
+                if (!sb) return;
+                if (compact) sb.classList.add('!w-0', '!overflow-hidden', '!min-w-0');
+                else sb.classList.remove('!w-0', '!overflow-hidden', '!min-w-0');
+            });
+        }
+
         function toggleSidebar(sidebarId) {
             const sb = document.getElementById(sidebarId);
             if (!sb) return;
@@ -3151,7 +3295,10 @@
         }
         document.getElementById('elder-sidebar-toggle')?.addEventListener('click', () => toggleSidebar('elder-sidebar'));
         document.getElementById('dis-sidebar-toggle')?.addEventListener('click', () => toggleSidebar('dis-sidebar'));
+        window.addEventListener('resize', syncResponsiveSidebars);
+        window.addEventListener('orientationchange', syncResponsiveSidebars);
 
+        syncResponsiveSidebars();
         // Dis report completed
         document.getElementById('dis-report-completed')?.addEventListener('change', async (e) => {
             if (!currentDisCaseId || !currentUser) return;
@@ -3597,6 +3744,7 @@
             document.getElementById('view-container-standard').classList.add('hidden');
             DOM.views.workspace.classList.add('hidden');
             document.getElementById('view-ws-elder').classList.remove('hidden');
+            syncResponsiveSidebars();
         }
 
         function renderElderWorkstationList(workstations) {
@@ -5723,6 +5871,38 @@ ${rawDraft}
         let drawColor = '#0f172a'; let drawSize = 3; let isEraser = false;
 
         // 聽覺需求評估表相關函式
+        window.toggleHearingAllLabel = () => {
+            const btn = document.getElementById('hearing-toggle-all-btn');
+            if (!btn) return;
+            const sections = ['1', '2'];
+            const allOpen = sections.every(no => !document.getElementById('hearing-content-' + no)?.classList.contains('hidden'));
+            btn.innerHTML = allOpen
+                ? '<i class="fa-solid fa-up-down-left-right mr-1"></i>收合全部'
+                : '<i class="fa-solid fa-up-down-left-right mr-1"></i>展開全部';
+        };
+
+        window.toggleHearingBlock = (blockNo) => {
+            const content = document.getElementById('hearing-content-' + blockNo);
+            const icon = document.getElementById('hearing-icon-' + blockNo);
+            if (!content || !icon) return;
+            content.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+            window.toggleHearingAllLabel();
+        };
+
+        window.toggleAllHearingBlocks = () => {
+            const sections = ['1', '2'];
+            const allOpen = sections.every(no => !document.getElementById('hearing-content-' + no)?.classList.contains('hidden'));
+            sections.forEach(no => {
+                const content = document.getElementById('hearing-content-' + no);
+                const icon = document.getElementById('hearing-icon-' + no);
+                if (!content || !icon) return;
+                content.classList.toggle('hidden', allOpen);
+                icon.classList.toggle('rotate-180', allOpen);
+            });
+            window.toggleHearingAllLabel();
+        };
+
         document.getElementById('h-context-score')?.addEventListener('input', function() {
             const lbl = document.getElementById('h-score-label');
             if (lbl) lbl.textContent = this.value;
@@ -6009,5 +6189,8 @@ ${rawDraft}
     </script>
 </body>
 </html>
+
+
+
 
 
