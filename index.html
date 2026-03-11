@@ -3049,8 +3049,8 @@
                 const c = casesData.find(x => x.id === id);
                 if (!c) return;
 
-                // 中高齡（工作站）走獨立工作區
-                if (c.category === '中高齡（工作站）') {
+                // 中高齡（工作站）與勞工就業通走中高工作區版型
+                if (c.category === '中高齡（工作站）' || c.category === '中高齡及高齡者' || c.category === '勞工就業通') {
                     openElderWorkspace(id);
                     return;
                 }
@@ -4026,6 +4026,8 @@
             document.getElementById('elder-shared-equipment').value = c.sharedEquipment || '';
             document.getElementById('elder-report-completed').checked = isReportCompleted(c);
             document.getElementById('elder-app-title').textContent = c.company || '中高齡工作站';
+            const elderBadge = document.getElementById('elder-auth-badge');
+            if (elderBadge) elderBadge.textContent = c.category || '中高齡';
 
             renderElderWorkstationList(c.workstations || []);
             renderElderCompanyPersonnel(c.companyPersonnel || [], c.workstations || []);
