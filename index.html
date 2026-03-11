@@ -702,14 +702,6 @@
                 <!-- 頁籤: 聽力案檢核 -->
                 <div id="tab-hearing" class="ws-tab-content hidden max-w-4xl mx-auto w-full space-y-6">
 
-                    <!-- 自動儲存狀態列 -->
-                    <div class="sticky top-0 z-20 bg-white/90 backdrop-blur border border-slate-200 rounded-xl px-4 py-2 flex items-center justify-between shadow-sm">
-                        <span class="text-sm font-bold text-slate-700"><i class="fa-solid fa-ear-listen text-purple-500 mr-2"></i>聽力案檢核</span>
-                        <span id="hearing-autosave-indicator" class="text-xs text-slate-400 font-medium flex items-center gap-1">
-                            <i class="fa-solid fa-cloud text-slate-300"></i> 填寫後將自動儲存
-                        </span>
-                    </div>
-
                     <!-- 區塊一: 助聽器使用問卷 -->
                     <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <button type="button" onclick="toggleHearingBlock('1')" class="w-full px-6 md:px-8 py-4 flex items-center justify-between text-left hover:bg-purple-50 transition-colors">
@@ -2060,6 +2052,40 @@
             }, 100);
         }
 
+        function isMicNotFoundError(err) {
+            const name = String(err?.name || '').toLowerCase();
+            const msg = String(err?.message || '').toLowerCase();
+            return name.includes('notfound') || msg.includes('requested device not found') || msg.includes('device not found');
+        }
+
+        function formatMicError(err) {
+            const name = String(err?.name || '');
+            const msg = String(err?.message || '');
+            if (isMicNotFoundError(err)) return '找不到可用麥克風，請檢查裝置連線或系統輸入來源後再試。';
+            if (name === 'NotAllowedError' || name === 'PermissionDeniedError') return '瀏覽器未允許麥克風權限，請在網址列設定中開啟麥克風。';
+            if (name === 'NotReadableError') return '麥克風目前被其他程式占用，請關閉其他會議/錄音軟體後重試。';
+            return msg || '無法存取麥克風，請稍後再試。';
+        }
+
+        async function requestMicrophoneStream() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('目前瀏覽器不支援錄音功能');
+            }
+            try {
+                return await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (err) {
+                if (!isMicNotFoundError(err)) throw err;
+                const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+                const mic = devices.find(d => d.kind === 'audioinput' && d.deviceId);
+                if (!mic) throw new Error('找不到可用麥克風裝置');
+                try {
+                    return await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { ideal: mic.deviceId } } });
+                } catch {
+                    throw new Error('找不到可用麥克風裝置');
+                }
+            }
+        }
+
         function updateAge() {
             const dobVal = document.getElementById('form-client-dob').value;
             if(dobVal) {
@@ -2169,7 +2195,11 @@
             else showView('list', '訪視案件管理', true);
         });
 
-        document.getElementById('elder-btn-back').addEventListener('click', () => {
+        document.getElementById('elder-btn-back').addEventListener('click', async () => {
+            if (elderIsRecording) {
+                showToast('離開前自動停止錄音並上傳中...');
+                await stopElderRecording();
+            }
             document.getElementById('view-ws-elder').classList.add('hidden');
             showView('list', '訪視案件管理', true);
         });
@@ -3035,6 +3065,7 @@
         let disRecordingStartTime = null;
         let disMediaRecorder = null;
         let disAudioChunks = [];
+        let disStopRecordingResolver = null;
 
         function setDisAutosaveIndicator(state) {
             const el = document.getElementById('dis-autosave-indicator');
@@ -3346,7 +3377,11 @@
         }
 
         // Dis back button
-        document.getElementById('dis-btn-back')?.addEventListener('click', () => {
+        document.getElementById('dis-btn-back')?.addEventListener('click', async () => {
+            if (disIsRecording) {
+                showToast('離開前自動停止錄音並上傳中...');
+                await stopDisRecordingFlow();
+            }
             // 將 tab-hearing 還原到 view-workspace 的 tab-assess 旁邊
             const tabHearing = document.getElementById('tab-hearing');
             const tabAssess = document.getElementById('tab-assess');
@@ -3415,6 +3450,10 @@
         document.getElementById('dis-btn-delete')?.addEventListener('click', async () => {
             if (!currentDisCaseId || !confirm('確定要刪除這個個案？此操作無法復原。')) return;
             try {
+                if (disIsRecording) {
+                    showToast('刪除前自動停止錄音並上傳中...');
+                    await stopDisRecordingFlow();
+                }
                 await deleteDoc(doc(db, 'users', currentUser.uid, 'cases', currentDisCaseId));
                 document.getElementById('view-dis-case').classList.add('hidden');
                 document.getElementById('view-container-standard').classList.remove('hidden');
@@ -3504,15 +3543,14 @@
             const statusEl = document.getElementById('dis-recording-status');
             if (disIsRecording) {
                 // Stop
-                disIsRecording = false;
-                clearInterval(disSegmentInterval);
-                if (disMediaRecorder && disMediaRecorder.state !== 'inactive') disMediaRecorder.stop();
+                await stopDisRecordingFlow();
                 btn.innerHTML = '<i class="fa-solid fa-circle mr-1 text-xs"></i>開始錄音';
                 statusEl.classList.add('hidden');
             } else {
                 // Start
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const startedCaseId = currentDisCaseId;
+                    const stream = await requestMicrophoneStream();
                     disAudioChunks = [];
                     disSegmentIndex = 0;
                     disIsRecording = true;
@@ -3520,14 +3558,26 @@
                     disMediaRecorder = new MediaRecorder(stream);
                     disMediaRecorder.ondataavailable = e => { if (e.data.size > 0) disAudioChunks.push(e.data); };
                     disMediaRecorder.onstop = async () => {
-                        if (disAudioChunks.length === 0) return;
-                        const blob = new Blob(disAudioChunks, { type: disMediaRecorder.mimeType || 'audio/webm' });
-                        disAudioChunks = [];
-                        const fileName = `audio_${Date.now()}_dis_final.webm`;
-                        await uploadAudioAndSave(blob, fileName, currentDisCaseId, new Date().toLocaleString('zh-TW'));
-                        const c = casesData.find(x=>x.id===currentDisCaseId);
-                        renderDisAudios(c?.audios || []);
-                        stream.getTracks().forEach(t => t.stop());
+                        try {
+                            if (disAudioChunks.length > 0) {
+                                const blob = new Blob(disAudioChunks, { type: disMediaRecorder.mimeType || 'audio/webm' });
+                                disAudioChunks = [];
+                                const fileName = `audio_${Date.now()}_dis_final.webm`;
+                                await uploadAudioAndSave(blob, fileName, startedCaseId, new Date().toLocaleString('zh-TW'));
+                                const c = casesData.find(x=>x.id===startedCaseId);
+                                renderDisAudios(c?.audios || []);
+                            }
+                        } finally {
+                            stream.getTracks().forEach(t => t.stop());
+                            const b = document.getElementById('dis-btn-record');
+                            const s = document.getElementById('dis-recording-status');
+                            if (b) b.innerHTML = '<i class="fa-solid fa-circle mr-1 text-xs"></i>開始錄音';
+                            if (s) s.classList.add('hidden');
+                            if (disStopRecordingResolver) {
+                                disStopRecordingResolver();
+                                disStopRecordingResolver = null;
+                            }
+                        }
                     };
                     disMediaRecorder.start(1000);
                     disSegmentInterval = setInterval(async () => {
@@ -3536,15 +3586,28 @@
                         const chunks = [...disAudioChunks]; disAudioChunks = [];
                         const segBlob = new Blob(chunks, { type: disMediaRecorder.mimeType || 'audio/webm' });
                         const segName = `audio_${Date.now()}_dis_part${disSegmentIndex}.webm`;
-                        await uploadAudioAndSave(segBlob, segName, currentDisCaseId, `${new Date().toLocaleString('zh-TW')} 第${disSegmentIndex}段`);
-                        const c = casesData.find(x=>x.id===currentDisCaseId);
+                        await uploadAudioAndSave(segBlob, segName, startedCaseId, `${new Date().toLocaleString('zh-TW')} 第${disSegmentIndex}段`);
+                        const c = casesData.find(x=>x.id===startedCaseId);
                         renderDisAudios(c?.audios || []);
                     }, 5 * 60 * 1000);
                     btn.innerHTML = '<i class="fa-solid fa-stop mr-1"></i>停止錄音';
                     statusEl.classList.remove('hidden');
-                } catch(err) { alert('無法開啟麥克風：'+err.message); }
+                } catch(err) { alert('無法開啟麥克風：' + formatMicError(err)); }
             }
         });
+
+        async function stopDisRecordingFlow() {
+            if (!disIsRecording || !disMediaRecorder || disMediaRecorder.state !== 'recording') return;
+            disIsRecording = false;
+            if (disSegmentInterval) {
+                clearInterval(disSegmentInterval);
+                disSegmentInterval = null;
+            }
+            await new Promise((resolve) => {
+                disStopRecordingResolver = resolve;
+                disMediaRecorder.stop();
+            });
+        }
 
         // Download text file for dis case
         document.getElementById('dis-btn-download-text')?.addEventListener('click', () => {
@@ -3800,6 +3863,7 @@
         let elderSegmentIndex = 0;
         let elderRecTimerInterval = null;
         let elderRecStartTime = null;
+        let elderStopRecordingResolver = null;
 
         function openElderWorkspace(caseId) {
             currentElderCaseId = caseId;
@@ -3985,6 +4049,10 @@
         document.getElementById('elder-btn-delete-case').addEventListener('click', async () => {
             if (!currentElderCaseId) return;
             if (!confirm('確定永久刪除此案件？無法復原。')) return;
+            if (elderIsRecording) {
+                showToast('刪除前自動停止錄音並上傳中...');
+                await stopElderRecording();
+            }
             await deleteDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId));
             showToast('案件已刪除');
             document.getElementById('view-ws-elder').classList.add('hidden');
@@ -4126,12 +4194,14 @@
 
         document.getElementById('elder-btn-record').addEventListener('click', async () => {
             if (!currentElderCaseId || !currentWorkstationId) { alert('請先選擇工作站再錄音'); return; }
-            if (!elderIsRecording) { await startElderRecording(); } else { stopElderRecording(); }
+            if (!elderIsRecording) { await startElderRecording(); } else { await stopElderRecording(); }
         });
 
         async function startElderRecording() {
             try {
-                elderRecordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                const startedCaseId = currentElderCaseId;
+                const startedWorkstationId = currentWorkstationId;
+                elderRecordingStream = await requestMicrophoneStream();
                 elderMediaRecorder = new MediaRecorder(elderRecordingStream);
                 elderAudioChunks = []; elderSegmentIndex = 0; elderRecStartTime = Date.now();
                 elderMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) elderAudioChunks.push(e.data); };
@@ -4142,7 +4212,7 @@
                         const blob = new Blob(elderAudioChunks, { type: elderMediaRecorder.mimeType || 'audio/webm' });
                         const fileName = `elder_audio_${Date.now()}.webm`;
                         const label = elderSegmentIndex > 0 ? `${new Date().toLocaleString()} 第${elderSegmentIndex+1}段(尾)` : new Date().toLocaleString();
-                        await uploadElderAudio(blob, fileName, label);
+                        await uploadElderAudio(blob, fileName, label, startedCaseId, startedWorkstationId);
                     }
                     if (elderRecordingStream) elderRecordingStream.getTracks().forEach(t => t.stop());
                     elderRecordingStream = null; elderIsRecording = false;
@@ -4151,6 +4221,10 @@
                     if (btn) { btn.classList.remove('bg-red-600','text-white'); btn.classList.add('bg-red-50','text-red-600','border','border-red-200'); }
                     const status = document.getElementById('elder-recording-status');
                     if (status) status.classList.add('hidden');
+                    if (elderStopRecordingResolver) {
+                        elderStopRecordingResolver();
+                        elderStopRecordingResolver = null;
+                    }
                 };
                 elderMediaRecorder.start(1000);
                 elderIsRecording = true;
@@ -4166,7 +4240,7 @@
                     const segBlob = new Blob(segChunks, { type: elderMediaRecorder.mimeType || 'audio/webm' });
                     const segFileName = `elder_audio_${Date.now()}_part${elderSegmentIndex}.webm`;
                     showToast(`第${elderSegmentIndex}段上傳中...`);
-                    await uploadElderAudio(segBlob, segFileName, `${new Date().toLocaleString()} 第${elderSegmentIndex}段`);
+                    await uploadElderAudio(segBlob, segFileName, `${new Date().toLocaleString()} 第${elderSegmentIndex}段`, startedCaseId, startedWorkstationId);
                 }, SEGMENT_MINUTES * 60 * 1000);
                 elderRecTimerInterval = setInterval(() => {
                     if (!elderRecStartTime) return;
@@ -4175,23 +4249,28 @@
                     const status = document.getElementById('elder-recording-status');
                     if (status) status.textContent = `● 錄音中 ${mm}:${ss}（每${SEGMENT_MINUTES}分鐘自動分段）`;
                 }, 1000);
-            } catch(err) { alert('無法開始錄音：' + err.message); }
+            } catch(err) { alert('無法開始錄音：' + formatMicError(err)); }
         }
 
-        function stopElderRecording() {
+        async function stopElderRecording() {
             if (!elderIsRecording || !elderMediaRecorder || elderMediaRecorder.state !== 'recording') return;
             elderIsRecording = false;
-            elderMediaRecorder.stop();
+            await new Promise((resolve) => {
+                elderStopRecordingResolver = resolve;
+                elderMediaRecorder.stop();
+            });
         }
 
-        async function uploadElderAudio(audioBlob, fileName, displayLabel) {
+        async function uploadElderAudio(audioBlob, fileName, displayLabel, targetCaseId = currentElderCaseId, targetWorkstationId = currentWorkstationId) {
             try {
                 const result = await uploadToGoogleDrive(audioBlob, fileName);
-                const c = casesData.find(x => x.id === currentElderCaseId);
+                const c = casesData.find(x => x.id === targetCaseId);
                 if (!c) return;
-                const workstations = (c.workstations || []).map(w => w.id === currentWorkstationId ? { ...w, audios: [...(w.audios||[]), { name: fileName, displayName: displayLabel, previewUrl: result.previewUrl, downloadUrl: result.downloadUrl, transcript: '' }] } : w);
-                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations });
-                renderElderAudios(workstations.find(w => w.id === currentWorkstationId)?.audios || []);
+                const workstations = (c.workstations || []).map(w => w.id === targetWorkstationId ? { ...w, audios: [...(w.audios||[]), { name: fileName, displayName: displayLabel, previewUrl: result.previewUrl, downloadUrl: result.downloadUrl, transcript: '' }] } : w);
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', targetCaseId), { workstations });
+                if (targetCaseId === currentElderCaseId && targetWorkstationId === currentWorkstationId) {
+                    renderElderAudios(workstations.find(w => w.id === targetWorkstationId)?.audios || []);
+                }
                 renderElderWorkstationList(workstations);
                 showToast('✓ 錄音已上傳');
             } catch(err) {
@@ -5328,7 +5407,7 @@
         }
 
         async function startRecordingFlow() {
-            recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            recordingStream = await requestMicrophoneStream();
             mediaRecorder = new MediaRecorder(recordingStream);
             audioChunks = [];
             recChunkSeq = 0;
@@ -5436,7 +5515,7 @@
             try {
                 await startRecordingFlow();
             } catch (err) {
-                alert("無法存取麥克風，請檢查瀏覽器權限設定");
+                alert("無法存取麥克風：" + formatMicError(err));
             }
         }
 
