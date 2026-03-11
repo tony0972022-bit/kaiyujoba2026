@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -4056,7 +4056,7 @@
             document.getElementById('form-education').value = c.education || '';
             document.getElementById('form-hire-date').value = c.hireDate || '';
             document.getElementById('form-seniority').value = c.seniority || '';
-            document.getElementById('form-intake-date').value = c.intakeDate || '';
+            const intakeDateField = document.getElementById('form-intake-date'); if (intakeDateField) intakeDateField.value = c.intakeDate || '';
             document.getElementById('form-visit-date').value = c.visitDate || c.date || '';
             const ownerField = document.getElementById('form-owner'); if (ownerField) ownerField.value = getCaseOwner(c);
             renderDistrictOptions(c.district || '');
@@ -4620,6 +4620,7 @@
 
         DOM.btnNewCase.addEventListener('click', () => {
             DOM.form.reset(); document.getElementById('form-id').value = ''; document.getElementById('form-visit-date').valueAsDate = new Date();
+            const intakeDateInput = document.getElementById('form-intake-date'); if (intakeDateInput) intakeDateInput.valueAsDate = new Date();
             const ownerSel = document.getElementById('form-owner'); if (ownerSel) ownerSel.value = PRIMARY_OWNER;
             renderDistrictOptions();
             updateSeniority();
@@ -4649,7 +4650,7 @@
                 education: document.getElementById('form-education')?.value || '',
                 hireDate: hireDateNormalized,
                 seniority: document.getElementById('form-seniority')?.value || '',
-                intakeDate: document.getElementById('form-intake-date').value,
+                intakeDate: document.getElementById('form-intake-date')?.value || document.getElementById('form-visit-date')?.value || '',
                 visitDate: document.getElementById('form-visit-date').value,
                 visitors: visitors,
                 updatedAt: serverTimestamp()
@@ -6008,3 +6009,5 @@ ${rawDraft}
     </script>
 </body>
 </html>
+
+
