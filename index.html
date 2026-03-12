@@ -3901,105 +3901,113 @@
 
         // Download text file for dis case
         document.getElementById('dis-btn-download-text')?.addEventListener('click', () => {
-            if (!currentDisCaseId) return;
-            const c = casesData.find(x => x.id === currentDisCaseId);
-            if (!c) return;
-            const data = collectDisData();
-            const lines = [];
-            const sec = (t) => { lines.push(''); lines.push(`【${t}】`); };
-            const row = (label, val) => { const v=(val||'').toString().trim(); if(v) lines.push(`${label}：${v}`); };
+            try {
+                if (!currentDisCaseId) return;
+                const c = casesData.find(x => x.id === currentDisCaseId);
+                if (!c) return;
+                const data = collectDisData();
+                const lines = [];
+                const sec = (t) => { lines.push(''); lines.push(`【${t}】`); };
+                const row = (label, val) => { const v=(val||'').toString().trim(); if(v) lines.push(`${label}：${v}`); };
 
-            lines.push('【身心障礙者職務再設計訪視紀錄】');
-            lines.push('─'.repeat(40));
+                lines.push('【身心障礙者職務再設計訪視紀錄】');
+                lines.push('─'.repeat(40));
 
-            sec('個案基本資料');
-            row('個案姓名', c.clientName||c.client);
-            row('性別', c.clientGender);
-            row('年齡', c.clientAge ? c.clientAge+'歲' : '');
-            row('出生年月日', c.clientDob);
-            row('申請單位', c.company);
-            row('聯絡電話', c.phone);
-            row('個案手機', c.clientMobile);
-            row('個案Email', c.clientEmail);
-            row('教育程度', c.education);
-            row('職稱', c.clientTitle||c.jobTitle);
-            row('年資', c.seniority);
-            row('到職日', c.hireDate);
-            row('對象別', c.category);
-            row('轄區', c.district);
-            row('主責人員', getCaseOwner(c));
-            row('訪視委員', c.visitors);
-            row('接案日', c.intakeDate);
-            row('初訪日', c.visitDate||c.date);
+                sec('個案基本資料');
+                row('個案姓名', c.clientName||c.client);
+                row('性別', c.clientGender);
+                row('年齡', c.clientAge ? c.clientAge+'歲' : '');
+                row('出生年月日', c.clientDob);
+                row('申請單位', c.company);
+                row('聯絡電話', c.phone);
+                row('個案手機', c.clientMobile);
+                row('個案Email', c.clientEmail);
+                row('教育程度', c.education);
+                row('職稱', c.clientTitle||c.jobTitle);
+                row('年資', c.seniority);
+                row('到職日', c.hireDate);
+                row('對象別', c.category);
+                row('轄區', c.district);
+                row('主責人員', getCaseOwner(c));
+                row('訪視委員', c.visitors);
+                row('接案日', c.intakeDate);
+                row('初訪日', c.visitDate||c.date);
 
-            sec('障礙資訊');
-            row('障礙類別', c.disability);
-            row('致障原因', c.disabilityCause);
-            row('個人特質', c.clientTraits);
-            row('個人障礙情形/工作內容', c.clientCondition);
-            row('實際工作地點', c.workLocation);
-            row('遭遇問題及期待改善', c.initialProblems);
+                sec('障礙資訊');
+                row('障礙類別', c.disability);
+                row('致障原因', c.disabilityCause);
+                row('個人特質', c.clientTraits);
+                row('個人障礙情形/工作內容', c.clientCondition);
+                row('實際工作地點', c.workLocation);
+                row('遭遇問題及期待改善', c.initialProblems);
 
-            sec('評估撰寫');
-            row('一、個案之就業狀況', data.report.status);
-            row('二、個案之生理限制', data.report.limits);
-            row('三、個案就業問題診斷與分析', data.report.analysis);
-            row('改善建議', data.report.improvements);
+                sec('評估撰寫');
+                row('一、個案之就業狀況', data.report.status);
+                row('二、個案之生理限制', data.report.limits);
+                row('三、個案就業問題診斷與分析', data.report.analysis);
+                row('改善建議', data.report.improvements);
 
-            sec('成果報告');
-            row('五、審查會決議', data.outcome.resolution);
-            row('六、輔具試用、訓練及驗收', data.outcome.acceptance);
-            row('七、職務再設計前後效益評估', data.outcome.benefit);
-            row('八、結案日期', data.outcome.closeDate);
+                const outcome = c.outcome || {};
+                if (outcome.resolution || outcome.acceptance || outcome.benefit || outcome.closeDate) {
+                    sec('成果報告');
+                    row('五、審查會決議', outcome.resolution);
+                    row('六、輔具試用、訓練及驗收', outcome.acceptance);
+                    row('七、職務再設計前後效益評估', outcome.benefit);
+                    row('八、結案日期', outcome.closeDate);
+                }
 
-            sec('客觀數據');
-            row('環境照度(Lux)', data.env.lux);
-            row('環境噪音(dB)', data.env.noise);
-            row('操作檯面高度(cm)', data.env.height);
-            row('搬運物重量(kg)', data.env.weight);
+                sec('客觀數據');
+                row('環境照度(Lux)', data.env.lux);
+                row('環境噪音(dB)', data.env.noise);
+                row('操作檯面高度(cm)', data.env.height);
+                row('搬運物重量(kg)', data.env.weight);
 
-            sec('現場環境與能力檢核');
-            const safeChecklists = settings.checklists || {};
-            let hasChk = false;
-            for (const [cat, items] of Object.entries(safeChecklists)) {
-                const catLines = [];
-                items.forEach(item => {
-                    const key = String(item).replace(/[.#$/[\]]/g,'_');
-                    if (data.checklist[key] || (c.checklist && c.checklist[key])) catLines.push(`■ ${item}`);
-                });
-                if (catLines.length) { hasChk = true; lines.push(`${cat}：`); lines.push(...catLines); }
+                sec('現場環境與能力檢核');
+                const safeChecklists = settings.checklists || {};
+                let hasChk = false;
+                for (const [cat, items] of Object.entries(safeChecklists)) {
+                    const catLines = [];
+                    items.forEach(item => {
+                        const key = String(item).replace(/[.#$/[\]]/g,'_');
+                        if (data.checklist[key] || (c.checklist && c.checklist[key])) catLines.push(`■ ${item}`);
+                    });
+                    if (catLines.length) { hasChk = true; lines.push(`${cat}：`); lines.push(...catLines); }
+                }
+                if (!hasChk) lines.push('（無勾選項目）');
+
+                if (data.hearing.ind1 || data.hearing.ind2) {
+                    sec('聽覺需求評估表');
+                    row('指標一', data.hearing.ind1);
+                    row('指標二', data.hearing.ind2);
+                    row('總分', String(Number(data.hearing.ind1||0)+Number(data.hearing.ind2||0)));
+                }
+
+                const audios = c.audios || [];
+                const withTranscript = audios.filter(a=>(a.transcript||'').trim());
+                if (withTranscript.length) {
+                    sec('訪談錄音逐字稿');
+                    withTranscript.forEach((a,i) => {
+                        lines.push(`─── ${a.displayName||a.name} ───`);
+                        lines.push(a.transcript.trim());
+                        if (i < withTranscript.length-1) lines.push('');
+                    });
+                }
+                if (audios.length) {
+                    sec('錄音檔清單');
+                    audios.forEach((a,i) => lines.push(`${i+1}. ${a.displayName||a.name} ${(a.transcript||'').trim() ? '（有逐字稿）' : '（無逐字稿）'}`));
+                }
+
+                const text = lines.join('\n');
+                const fileName = `${sanitizeFileName(c.company||'未知')}_${sanitizeFileName(c.clientName||'未命名')}_訪視紀錄.txt`;
+                const blob = new Blob(['\ufeff', text], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href=url; a.download=fileName;
+                document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                showToast('已下載身障案件文字檔');
+            } catch (err) {
+                console.error('下載身障文字檔失敗', err);
+                alert('下載文字檔失敗：' + (err?.message || err));
             }
-            if (!hasChk) lines.push('（無勾選項目）');
-
-            if (data.hearing.ind1 || data.hearing.ind2) {
-                sec('聽覺需求評估表');
-                row('指標一', data.hearing.ind1);
-                row('指標二', data.hearing.ind2);
-                row('總分', String(Number(data.hearing.ind1||0)+Number(data.hearing.ind2||0)));
-            }
-
-            const audios = c.audios || [];
-            const withTranscript = audios.filter(a=>(a.transcript||'').trim());
-            if (withTranscript.length) {
-                sec('訪談錄音逐字稿');
-                withTranscript.forEach((a,i) => {
-                    lines.push(`─── ${a.displayName||a.name} ───`);
-                    lines.push(a.transcript.trim());
-                    if (i < withTranscript.length-1) lines.push('');
-                });
-            }
-            if (audios.length) {
-                sec('錄音檔清單');
-                audios.forEach((a,i) => lines.push(`${i+1}. ${a.displayName||a.name} ${(a.transcript||'').trim() ? '（有逐字稿）' : '（無逐字稿）'}`));
-            }
-
-            const text = lines.join('\n');
-            const fileName = `${sanitizeFileName(c.company||'未知')}_${sanitizeFileName(c.clientName||'未命名')}_訪視紀錄.txt`;
-            const blob = new Blob(['\ufeff', text], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href=url; a.download=fileName;
-            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-            showToast('已下載身障案件文字檔');
         });
 
         // ============================================================
