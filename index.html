@@ -3650,8 +3650,8 @@
         }
 
         function updateDisHearingScore() {
-            const v1 = Number(document.querySelector('input[name="dis-hearing-ind-1"]:checked')?.value || 0);
-            const v2 = Number(document.querySelector('input[name="dis-hearing-ind-2"]:checked')?.value || 0);
+            const v1 = Number(document.querySelector('input[name="hearing-ind-1"]:checked')?.value || 0);
+            const v2 = Number(document.querySelector('input[name="hearing-ind-2"]:checked')?.value || 0);
             const el = document.getElementById('dis-hearing-score');
             if (el) el.textContent = v1 + v2;
         }
@@ -3899,6 +3899,59 @@
             });
         }
 
+        function formatHearingValue(type, value) {
+            const expMap = {
+                never: '從未配戴',
+                tried: '曾嘗試但放棄',
+                current: '目前規律配戴',
+                irregular: '配戴不規律'
+            };
+            const hTypeMap = {
+                BTE: '耳掛型 (BTE)',
+                ITE: '耳內型 (ITE/ITC/CIC)',
+                CROS: 'CROS/BiCROS'
+            };
+            if (!value) return '';
+            if (type === 'exp') return expMap[value] || value;
+            if (type === 'htype') return hTypeMap[value] || value;
+            return value;
+        }
+
+        function hasHearingData(hearing) {
+            if (!hearing) return false;
+            return !!(
+                hearing.exp || hearing.htype ||
+                (Array.isArray(hearing.condition) && hearing.condition.length) ||
+                (Array.isArray(hearing.need) && hearing.need.length) ||
+                hearing.cause || hearing.status || hearing.years || hearing.brand ||
+                hearing.ctxDesc || hearing.ctxFreq || hearing.ctxScore ||
+                hearing.ind1 || hearing.ind2
+            );
+        }
+
+        function getCheckedLabelText(inputSelector) {
+            return Array.from(document.querySelectorAll(`${inputSelector}:checked`)).map(el => {
+                const text = el.closest('label')?.innerText || el.value || '';
+                return text.replace(/\s+/g, ' ').trim();
+            }).filter(Boolean);
+        }
+
+        function getSelectedHearingIndicatorText(name) {
+            const selected = document.querySelector(`input[name="${name}"]:checked`);
+            if (!selected) return '';
+            const label = selected.closest('label');
+            if (!label) return selected.value || '';
+            const parts = Array.from(label.querySelectorAll('div')).map(el => (el.innerText || '').replace(/\s+/g, ' ').trim()).filter(Boolean);
+            return parts.join(' / ');
+        }
+
+        function hearingNecessityLevel(totalScore) {
+            const n = Number(totalScore || 0);
+            if (n >= 6) return '高';
+            if (n >= 3) return '中';
+            return '低';
+        }
+
         // Download text file for dis case
         document.getElementById('dis-btn-download-text')?.addEventListener('click', () => {
             try {
@@ -3941,11 +3994,14 @@
                 row('實際工作地點', c.workLocation);
                 row('遭遇問題及期待改善', c.initialProblems);
 
-                sec('評估撰寫');
-                row('一、個案之就業狀況', data.report.status);
-                row('二、個案之生理限制', data.report.limits);
-                row('三、個案就業問題診斷與分析', data.report.analysis);
-                row('改善建議', data.report.improvements);
+                sec('一、個案之就業狀況');
+                row('內容', data.report.status);
+                sec('二、個案之生理限制');
+                row('內容', data.report.limits);
+                sec('三、個案就業問題診斷與分析');
+                row('內容', data.report.analysis);
+                sec('改善建議');
+                row('內容', data.report.improvements);
 
                 const outcome = c.outcome || {};
                 if (outcome.resolution || outcome.acceptance || outcome.benefit || outcome.closeDate) {
@@ -3956,30 +4012,56 @@
                     row('八、結案日期', outcome.closeDate);
                 }
 
-                sec('客觀數據');
+                sec('現場客觀數據');
                 row('環境照度(Lux)', data.env.lux);
                 row('環境噪音(dB)', data.env.noise);
                 row('操作檯面高度(cm)', data.env.height);
                 row('搬運物重量(kg)', data.env.weight);
 
                 sec('現場環境與能力檢核');
-                const safeChecklists = settings.checklists || {};
+                const safeChecklists = Object.fromEntries(
+                    Object.entries(settings.checklists || {}).filter(([k]) => !k.includes('中高齡') && !k.includes('人因工程'))
+                );
+                const domCheckedChecklist = new Set(
+                    Array.from(document.querySelectorAll('#dis-checklist-container .chk-dis:checked')).map(el => el.dataset.chkkey)
+                );
                 let hasChk = false;
                 for (const [cat, items] of Object.entries(safeChecklists)) {
                     const catLines = [];
                     items.forEach(item => {
                         const key = String(item).replace(/[.#$/[\]]/g,'_');
-                        if (data.checklist[key] || (c.checklist && c.checklist[key])) catLines.push(`■ ${item}`);
+                        if (domCheckedChecklist.has(key) || data.checklist[key] || (c.checklist && c.checklist[key])) catLines.push(`■ ${item}`);
                     });
                     if (catLines.length) { hasChk = true; lines.push(`${cat}：`); lines.push(...catLines); }
                 }
                 if (!hasChk) lines.push('（無勾選項目）');
 
-                if (data.hearing.ind1 || data.hearing.ind2) {
-                    sec('聽覺需求評估表');
-                    row('指標一', data.hearing.ind1);
-                    row('指標二', data.hearing.ind2);
-                    row('總分', String(Number(data.hearing.ind1||0)+Number(data.hearing.ind2||0)));
+                if (hasHearingData(data.hearing)) {
+                    const domExp = getCheckedLabelText('input[name="h-exp"]')[0] || formatHearingValue('exp', data.hearing.exp);
+                    const domType = getCheckedLabelText('input[name="h-type"]')[0] || formatHearingValue('htype', data.hearing.htype);
+                    const domCondition = getCheckedLabelText('input[name="h-condition"]');
+                    const domNeed = getCheckedLabelText('input[name="h-need"]');
+                    sec('區塊一：助聽器使用問卷');
+                    row('1. 目前是否有配戴助聽器？', domExp);
+                    row('2. 聽損原因', data.hearing.cause);
+                    row('3. 目前聽力狀況說明', data.hearing.status);
+                    row('4. 使用助聽器年數', data.hearing.years ? `${data.hearing.years} 年` : '');
+                    row('5. 助聽器型式', domType);
+                    row('6. 品牌與型號', data.hearing.brand);
+                    row('7. 目前使用助聽器之狀況（可複選）', domCondition.length ? domCondition.join('、') : (Array.isArray(data.hearing.condition) ? data.hearing.condition.join('、') : ''));
+                    row('8. 工作中需要語音溝通的情境（可複選）', domNeed.length ? domNeed.join('、') : (Array.isArray(data.hearing.need) ? data.hearing.need.join('、') : ''));
+                    row('9. 溝通情境補充說明', data.hearing.ctxDesc);
+                    row('10. 溝通頻率', data.hearing.ctxFreq);
+                    row('11. 聆聽完整度自評（1-10 分）', data.hearing.ctxScore);
+
+                    const total = Number(data.hearing.ind1 || 0) + Number(data.hearing.ind2 || 0);
+                    sec('區塊二：溝通聆聽需求檢核');
+                    row('指標一、職場聆聽需求（分數）', data.hearing.ind1);
+                    row('指標一、職場聆聽需求（內容）', getSelectedHearingIndicatorText('hearing-ind-1'));
+                    row('指標二、職場溝通需求（分數）', data.hearing.ind2);
+                    row('指標二、職場溝通需求（內容）', getSelectedHearingIndicatorText('hearing-ind-2'));
+                    row('新購助聽器之必要性（總分）', String(total));
+                    row('新購助聽器之必要性（等級）', hearingNecessityLevel(total));
                 }
 
                 const audios = c.audios || [];
@@ -4663,63 +4745,114 @@
             const c = casesData.find(x => x.id === currentElderCaseId);
             if (!c) return;
             const lines = [];
-            const sep = '─'.repeat(40);
+            const addSection = (title) => {
+                if (lines.length) lines.push('');
+                lines.push(`【${title}】`);
+            };
+            const addIf = (label, value) => {
+                const v = (value ?? '').toString().trim();
+                if (!v) return;
+                lines.push(`${label}：${v}`);
+            };
 
-            // ── 公司基本資料 ──
             lines.push('【中高齡職務再設計訪視紀錄】');
-            lines.push(sep);
-            lines.push(`申請單位：${c.company || ''}`);
-            if (c.phone)       lines.push(`聯絡電話：${c.phone}`);
-            if (c.district)    lines.push(`轄　　區：${c.district}`);
-            lines.push(`接案日期：${c.intakeDate || ''}`);
-            lines.push(`初訪日期：${c.visitDate || ''}`);
-            lines.push(`主責人員：${c.owner || ''}`);
-            if (c.visitors)    lines.push(`訪視人員：${c.visitors}`);
-            lines.push('');
+            lines.push('─'.repeat(40));
 
-            // ── 共用申請設備 ──
+            addSection('公司基本資料');
+            addIf('申請單位', c.company);
+            addIf('聯絡電話', c.phone);
+            addIf('轄區', c.district);
+            addIf('接案日期', c.intakeDate);
+            addIf('初訪日期', c.visitDate);
+            addIf('主責人員', c.owner);
+            addIf('訪視人員', c.visitors);
+
+            addSection('共用申請設備');
             if (c.sharedEquipment && c.sharedEquipment.trim()) {
-                lines.push('【共用申請設備】');
-                c.sharedEquipment.split('\n').filter(l => l.trim()).forEach(l => lines.push(`  ・${l.trim()}`));
-                lines.push('');
+                c.sharedEquipment.split('\n').filter(l => l.trim()).forEach(l => lines.push(`・${l.trim()}`));
+            } else {
+                lines.push('（未填寫）');
             }
 
-            // ── 各工作站 ──
             const companyPersonnel = c.companyPersonnel || [];
+            const equipmentAssignments = c.equipmentAssignments || {};
             (c.workstations || []).forEach((ws, idx) => {
-                // Resolve personnel: use companyPersonnel filtered by personnelIds, fallback to ws.personnel for old data
                 const wsPersonnel = companyPersonnel.filter(p => (ws.personnelIds || []).includes(p.id));
                 const personnelToShow = wsPersonnel.length > 0 ? wsPersonnel : (ws.personnel || []);
+                const wsPhotos = ws.photos || [];
+                const wsAudios = ws.audios || [];
+                const wsEnv = ws.env || {};
+
+                addSection(`工作站 ${idx + 1}：${ws.name || '未命名'}`);
+                addIf('納編人員數', `${personnelToShow.length} 人`);
+
+                lines.push('【主要工作內容】');
+                if ((ws.workContent || '').trim()) ws.workContent.split('\n').forEach(l => lines.push(l));
+                else lines.push('（未填寫）');
 
                 lines.push('');
-                lines.push(`${'═'.repeat(50)}`);
-                lines.push(`【工作站 ${idx + 1}：${ws.name || '未命名'}】（共 ${personnelToShow.length} 人）`);
-                lines.push(`${'═'.repeat(50)}`);
-                lines.push('');
+                lines.push('【工作困難】');
+                if ((ws.difficulties || '').trim()) ws.difficulties.split('\n').forEach(l => lines.push(l));
+                else lines.push('（未填寫）');
 
-                // 人員基本資料（僅姓名/性別/年齡/職稱/年資）
+                lines.push('');
+                lines.push('【改善建議】');
+                if ((ws.improvements || '').trim()) ws.improvements.split('\n').forEach(l => lines.push(l));
+                else lines.push('（未填寫）');
+
+                lines.push('');
+                lines.push('【納編人員】');
                 if (personnelToShow.length > 0) {
-                    lines.push('  ▌人員基本資料');
-                    lines.push(`  ${'姓名'.padEnd(8)}${'性別'.padEnd(6)}${'年齡'.padEnd(6)}${'職稱'.padEnd(10)}年資`);
-                    lines.push(`  ${'─'.repeat(42)}`);
                     personnelToShow.forEach(p => {
-                        lines.push(`  ${String(p.name || '').padEnd(8)}${String(p.gender || '').padEnd(6)}${String(p.age || '').padEnd(6)}${String(p.title || '').padEnd(10)}${p.seniority || ''}`);
+                        lines.push(`・${[p.name, p.gender, p.age ? `${p.age}歲` : '', p.title, p.seniority ? `年資${p.seniority}` : ''].filter(Boolean).join(' / ')}`);
                     });
-                    lines.push('');
+                } else {
+                    lines.push('（未勾選）');
                 }
 
-                // 工作站內容
-                if (ws.workContent && ws.workContent.trim()) {
-                    lines.push('  ▌主要工作內容');
-                    ws.workContent.split('\n').forEach(l => lines.push(`  ${l}`));
-                    lines.push('');
+                lines.push('');
+                lines.push('【現場客觀數據】');
+                addIf('環境照度 (Lux)', wsEnv.lux);
+                addIf('環境噪音 (dB)', wsEnv.noise);
+                addIf('工作桌高度 (cm)', wsEnv.deskHeight);
+                addIf('工作台高度 (cm)', wsEnv.workHeight);
+                addIf('移動距離 (m)', wsEnv.distance);
+                addIf('搬運重量 (kg)', wsEnv.weight);
+                if (!wsEnv.lux && !wsEnv.noise && !wsEnv.deskHeight && !wsEnv.workHeight && !wsEnv.distance && !wsEnv.weight) lines.push('（未填寫）');
+
+                lines.push('');
+                lines.push('【現場照片】');
+                if (wsPhotos.length > 0) {
+                    lines.push(`共 ${wsPhotos.length} 張`);
+                    wsPhotos.forEach((p, i) => lines.push(`${i + 1}. ${p.displayName || p.name || '未命名照片'}`));
+                } else {
+                    lines.push('（無）');
                 }
 
-                // 工作困難
-                if (ws.difficulties && ws.difficulties.trim()) {
-                    lines.push('  ▌遭遇困難');
-                    ws.difficulties.split('\n').forEach(l => lines.push(`  ${l}`));
-                    lines.push('');
+                lines.push('');
+                lines.push('【訪談錄音】');
+                if (wsAudios.length > 0) {
+                    lines.push(`共 ${wsAudios.length} 筆`);
+                    wsAudios.forEach((a, i) => {
+                        const hasT = (a.transcript || '').trim() ? '（有逐字稿）' : '（無逐字稿）';
+                        lines.push(`${i + 1}. ${a.displayName || a.name || '未命名錄音'} ${hasT}`);
+                        if ((a.transcript || '').trim()) {
+                            lines.push((a.transcript || '').trim());
+                        }
+                    });
+                } else {
+                    lines.push('（無）');
+                }
+
+                const assignedItems = Object.entries(equipmentAssignments)
+                    .filter(([, wsId]) => wsId === ws.id)
+                    .map(([item]) => item);
+                lines.push('');
+                lines.push('【設備分配】');
+                if (assignedItems.length > 0) {
+                    assignedItems.forEach(item => lines.push(`・${item}`));
+                } else {
+                    lines.push('（無）');
                 }
             });
 
@@ -5120,10 +5253,27 @@
                 weight: document.getElementById('env-weight')?.value ?? (c.env?.weight || '')
             };
             const hearing = {
+                exp: document.querySelector('input[name="h-exp"]:checked')?.value || c.hearing?.exp || '',
+                htype: document.querySelector('input[name="h-type"]:checked')?.value || c.hearing?.htype || '',
+                condition: (() => {
+                    const dom = Array.from(document.querySelectorAll('input[name="h-condition"]:checked')).map(x => x.value);
+                    return dom.length ? dom : (Array.isArray(c.hearing?.condition) ? c.hearing.condition : []);
+                })(),
+                need: (() => {
+                    const dom = Array.from(document.querySelectorAll('input[name="h-need"]:checked')).map(x => x.value);
+                    return dom.length ? dom : (Array.isArray(c.hearing?.need) ? c.hearing.need : []);
+                })(),
+                cause: document.getElementById('h-cause')?.value ?? c.hearing?.cause ?? '',
+                status: document.getElementById('h-status')?.value ?? c.hearing?.status ?? '',
+                years: document.getElementById('h-years')?.value ?? c.hearing?.years ?? '',
+                brand: document.getElementById('h-brand')?.value ?? c.hearing?.brand ?? '',
+                ctxDesc: document.getElementById('h-context-desc')?.value ?? c.hearing?.ctxDesc ?? '',
+                ctxFreq: document.getElementById('h-context-freq')?.value ?? c.hearing?.ctxFreq ?? '',
+                ctxScore: document.getElementById('h-context-score')?.value ?? c.hearing?.ctxScore ?? '',
                 ind1: document.querySelector('input[name="hearing-ind-1"]:checked')?.value || c.hearing?.ind1 || '',
                 ind2: document.querySelector('input[name="hearing-ind-2"]:checked')?.value || c.hearing?.ind2 || ''
             };
-            const hearingChecked = !!(hearing.ind1 || hearing.ind2);
+            const hearingChecked = hasHearingData(hearing);
 
             const checklistText = [];
             const safeChecklists = settings.checklists || {};
@@ -5198,6 +5348,7 @@
             addIf('一、個案之就業狀況', rpt.status);
             addIf('二、個案之生理限制', rpt.limits);
             addIf('三、個案就業問題診斷與分析', rpt.analysis);
+            addIf('四、改善方式、內容及輔具建議', rpt.strategy);
 
             addSection('成果報告');
             addIf('五、審查會決議', out.resolution);
@@ -5205,7 +5356,7 @@
             addIf('七、職務再設計前後效益評估', out.benefit);
             addIf('八、結案日期', out.closeDate);
 
-            addSection('客觀數據');
+            addSection('現場客觀數據登記');
             addIf('環境照度(Lux)', env.lux);
             addIf('環境噪音(dB)', env.noise);
             addIf('操作檯面高度(cm)', env.height);
@@ -5231,10 +5382,31 @@
             }
 
             if (hearingChecked) {
-                addSection('聽覺需求評估表');
-                addIf('指標一', hearing.ind1);
-                addIf('指標二', hearing.ind2);
-                addIf('總分', String(Number(hearing.ind1 || 0) + Number(hearing.ind2 || 0)));
+                const domExp = getCheckedLabelText('input[name="h-exp"]')[0] || formatHearingValue('exp', hearing.exp);
+                const domType = getCheckedLabelText('input[name="h-type"]')[0] || formatHearingValue('htype', hearing.htype);
+                const domCondition = getCheckedLabelText('input[name="h-condition"]');
+                const domNeed = getCheckedLabelText('input[name="h-need"]');
+                addSection('區塊一：助聽器使用問卷');
+                addIf('1. 目前是否有配戴助聽器？', domExp);
+                addIf('2. 聽損原因', hearing.cause);
+                addIf('3. 目前聽力狀況說明', hearing.status);
+                addIf('4. 使用助聽器年數', hearing.years ? `${hearing.years} 年` : '');
+                addIf('5. 助聽器型式', domType);
+                addIf('6. 品牌與型號', hearing.brand);
+                addIf('7. 目前使用助聽器之狀況（可複選）', domCondition.length ? domCondition.join('、') : (Array.isArray(hearing.condition) ? hearing.condition.join('、') : ''));
+                addIf('8. 工作中需要語音溝通的情境（可複選）', domNeed.length ? domNeed.join('、') : (Array.isArray(hearing.need) ? hearing.need.join('、') : ''));
+                addIf('9. 溝通情境補充說明', hearing.ctxDesc);
+                addIf('10. 溝通頻率', hearing.ctxFreq);
+                addIf('11. 聆聽完整度自評（1-10 分）', hearing.ctxScore);
+
+                const total = Number(hearing.ind1 || 0) + Number(hearing.ind2 || 0);
+                addSection('區塊二：溝通聆聽需求檢核');
+                addIf('指標一、職場聆聽需求（分數）', hearing.ind1);
+                addIf('指標一、職場聆聽需求（內容）', getSelectedHearingIndicatorText('hearing-ind-1'));
+                addIf('指標二、職場溝通需求（分數）', hearing.ind2);
+                addIf('指標二、職場溝通需求（內容）', getSelectedHearingIndicatorText('hearing-ind-2'));
+                addIf('新購助聽器之必要性（總分）', String(total));
+                addIf('新購助聽器之必要性（等級）', hearingNecessityLevel(total));
             }
 
             // 錄音逐字稿
