@@ -1499,6 +1499,77 @@
                 <!-- 工作站詳細區 -->
                 <div id="elder-ws-detail" class="hidden max-w-4xl mx-auto space-y-5">
 
+                    <div id="elder-personnel-record-shell" class="space-y-5">
+                        <div class="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm">
+                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-3">
+                                <div>
+                                    <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-users text-amber-500 mr-2"></i>納編人員</h3>
+                                    <p class="text-xs text-slate-400 mt-1">先勾選此工作站納編個案，再從其中選 1 位填寫紀錄。</p>
+                                </div>
+                                <label class="inline-flex items-center gap-2 text-xs font-bold text-slate-500">
+                                    <input type="checkbox" id="elder-hide-personnel-details" class="rounded border-slate-300 text-amber-600">
+                                    隱藏明細
+                                </label>
+                            </div>
+                            <div id="elder-personnel-summary" class="hidden mb-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-600"></div>
+                            <div id="elder-personnel-container-v2">
+                                <p class="text-sm text-slate-400">請先在左側欄匯入單位人員清單，再勾選此工作站人員。</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm">
+                            <div class="flex items-center gap-3 mb-5">
+                                <input type="text" id="elder-ws-name-v2" class="flex-1 text-xl md:text-2xl font-black text-slate-800 bg-transparent border-b-2 border-amber-300 focus:outline-none focus:border-amber-500 pb-1" placeholder="工作站名稱（如：包裝作業區）">
+                                <button id="elder-btn-save-ws-v2" class="bg-slate-800 text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-700 shadow">
+                                    <i class="fa-solid fa-floppy-disk mr-2"></i>儲存工作站設定
+                                </button>
+                            </div>
+                            <div class="flex items-center justify-end">
+                                <button id="elder-btn-delete-ws-v2" class="text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-xs font-bold transition-colors">
+                                    <i class="fa-solid fa-trash mr-1"></i>刪除工作站
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm">
+                            <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-5">
+                                <div>
+                                    <h3 class="font-bold text-lg text-slate-700"><i class="fa-solid fa-clipboard-list text-blue-500 mr-2"></i>個案紀錄</h3>
+                                    <p class="text-xs text-slate-400 mt-1">一次記錄 1 位個案，可引用上一位紀錄內容後再調整。</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <select id="elder-record-personnel" class="px-3 py-2 rounded-lg border border-slate-200 text-sm font-bold text-slate-700 bg-slate-50">
+                                        <option value="">請先勾選納編人員</option>
+                                    </select>
+                                    <button id="elder-btn-copy-prev-record" type="button" class="px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 text-sm font-bold hover:bg-blue-100">
+                                        引用上一位紀錄
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div><label class="block text-xs font-bold text-slate-600 mb-1">姓名</label><input type="text" id="elder-record-name" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-base"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 mb-1">序號</label><input type="text" id="elder-record-seq" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-base"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 mb-1">年齡</label><input type="text" id="elder-record-age" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-base"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 mb-1">部門</label><input type="text" id="elder-record-department" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-base"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 mb-1">職稱</label><input type="text" id="elder-record-title" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-base"></div>
+                                <div><label class="block text-xs font-bold text-slate-600 mb-1">申請項目</label><input type="text" id="elder-record-expected-items" class="w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-base"></div>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-sm font-bold text-slate-600 mb-1 block">工作內容</label>
+                                    <textarea id="elder-record-work-content" rows="3" class="auto-resize w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-base" placeholder="填寫該個案的工作內容"></textarea>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-bold text-slate-600 mb-1 block">工作困擾或不適障礙</label>
+                                    <textarea id="elder-record-difficulties" rows="3" class="auto-resize w-full p-3 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-red-400 text-base" placeholder="填寫工作困擾或不適障礙"></textarea>
+                                </div>
+                            </div>
+                            <button id="elder-btn-submit-record-primary" type="button" class="mt-5 w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-base hover:bg-emerald-700 transition-colors">
+                                <i class="fa-solid fa-paper-plane mr-2"></i>送出個案紀錄
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- 工作站標頭 -->
 
                     <div class="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm">
@@ -1584,7 +1655,10 @@
                         <div id="elder-pending-photos" class="hidden mx-5 mt-4 p-4 bg-amber-50 rounded-xl border-2 border-dashed border-amber-300">
                             <h4 class="text-xs font-bold text-amber-800 mb-2"><i class="fa-solid fa-hourglass-half mr-1"></i>待上傳</h4>
                             <div id="elder-pending-grid" class="grid grid-cols-3 md:grid-cols-5 gap-2 mb-3"></div>
-                            <button id="elder-btn-upload-photos" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 text-sm transition-colors">
+                            <button id="elder-btn-submit-record-v2" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 text-sm transition-colors mb-2">
+                                <i class="fa-solid fa-paper-plane mr-2"></i>送出個案紀錄
+                            </button>
+                            <button id="elder-btn-upload-photos" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 text-sm transition-colors hidden">
                                 <i class="fa-solid fa-cloud-arrow-up mr-2"></i>確認上傳全部照片
                             </button>
                         </div>
@@ -6899,6 +6973,641 @@ ${rawDraft}
             }
         });
 
+        // ==========================================
+        // Elder workspace v2: personnel-centric records
+        // ==========================================
+        let currentElderPersonnelId = null;
+        let elderLastRecordTemplate = null;
+
+        function getCurrentElderCase() {
+            return casesData.find(x => x.id === currentElderCaseId);
+        }
+
+        function getCurrentElderWorkstation() {
+            const c = getCurrentElderCase();
+            if (!c) return null;
+            return (c.workstations || []).find(w => w.id === currentWorkstationId) || null;
+        }
+
+        function getCompanyPersonnelById(companyPersonnel, pid) {
+            return (companyPersonnel || []).find(p => p.id === pid) || null;
+        }
+
+        function toCleanText(value) {
+            return String(value || '').trim();
+        }
+
+        function elderPersonLabel(p, seqAfter = false) {
+            if (!p) return '未命名';
+            const seq = toCleanText(p.seqNo || p.seq || p.number);
+            const name = toCleanText(p.name) || '未命名';
+            if (!seq) return name;
+            return seqAfter ? `${name} ${seq}` : `${seq} ${name}`;
+        }
+
+        function elderPhotoFileBase(person) {
+            const safeName = sanitizeFileName(toCleanText(person?.name) || '未命名');
+            const safeDept = sanitizeFileName(toCleanText(person?.department) || '未分部門');
+            return `${safeName}_${safeDept}`;
+        }
+
+        function elderDownloadBlob(blob, fileName) {
+            try {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            } catch (_) {}
+        }
+
+        function parsePersonnelRows(rows) {
+            const find = (row, ...cands) => {
+                const key = Object.keys(row || {}).find(k => cands.some(c => String(k).includes(c)));
+                return key ? String(row[key] || '').trim() : '';
+            };
+            return (rows || []).map(row => ({
+                id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                seqNo: find(row, '序號', '編號', '流水號'),
+                name: find(row, '姓名', '名字'),
+                gender: find(row, '性別'),
+                age: find(row, '年齡'),
+                department: find(row, '部門', '單位', '所屬部門'),
+                title: find(row, '職稱', '職位'),
+                seniority: find(row, '年資', '到職'),
+                workDesc: find(row, '工作內容', '工作說明', '工作描述'),
+                difficulties: find(row, '工作困擾', '困擾', '不適障礙', '障礙'),
+                expectedItems: find(row, '申請項目', '期待', '申請')
+            })).filter(person => person.name);
+        }
+
+        async function readPersonnelExcelFile(file) {
+            const data = await file.arrayBuffer();
+            const wb = XLSX.read(data);
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+            return parsePersonnelRows(rows);
+        }
+
+        function normalizeElderRecord(record = {}, person = null) {
+            return {
+                id: record.id || `rec_${Date.now()}`,
+                personnelId: record.personnelId || person?.id || '',
+                seqNo: toCleanText(record.seqNo || person?.seqNo || person?.seq || ''),
+                name: toCleanText(record.name || person?.name || ''),
+                age: toCleanText(record.age || person?.age || ''),
+                department: toCleanText(record.department || person?.department || ''),
+                title: toCleanText(record.title || person?.title || ''),
+                workContent: toCleanText(record.workContent || person?.workDesc || ''),
+                difficulties: toCleanText(record.difficulties || person?.difficulties || ''),
+                expectedItems: toCleanText(record.expectedItems || person?.expectedItems || ''),
+                photos: Array.isArray(record.photos) ? record.photos : [],
+                updatedAt: record.updatedAt || '',
+                createdAt: record.createdAt || formatLocalDateTime()
+            };
+        }
+
+        function getElderRecordForPersonnel(ws, person) {
+            const existing = (ws?.records || []).find(r => r.personnelId === person?.id);
+            return normalizeElderRecord(existing || {}, person);
+        }
+
+        function syncLegacyElderFieldsFromV2() {
+            const wsName = document.getElementById('elder-ws-name-v2')?.value || '';
+            const legacyWsName = document.getElementById('elder-ws-name');
+            if (legacyWsName) legacyWsName.value = wsName;
+        }
+
+        function toggleLegacyElderSections() {
+            const ids = ['elder-ws-name', 'elder-work-content', 'elder-difficulties', 'elder-improvements', 'elder-btn-save-ws', 'elder-btn-delete-ws', 'elder-personnel-container'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const card = el.closest('.bg-white.rounded-2xl');
+                if (card) card.classList.add('hidden');
+            });
+        }
+
+        function renderElderRecordSelector(companyPersonnel, ws) {
+            const select = document.getElementById('elder-record-personnel');
+            if (!select) return;
+            const selectedIds = Array.from(new Set(ws?.personnelIds || []));
+            const selectedPeople = selectedIds.map(pid => getCompanyPersonnelById(companyPersonnel, pid)).filter(Boolean);
+            if (selectedPeople.length === 0) {
+                currentElderPersonnelId = null;
+                select.innerHTML = '<option value="">請先勾選納編人員</option>';
+                return;
+            }
+            if (!selectedIds.includes(currentElderPersonnelId)) currentElderPersonnelId = selectedIds[0];
+            select.innerHTML = selectedPeople.map(person => {
+                const selected = person.id === currentElderPersonnelId ? 'selected' : '';
+                return `<option value="${person.id}" ${selected}>${elderPersonLabel(person, true)}</option>`;
+            }).join('');
+        }
+
+        function updateElderPersonnelSummary(companyPersonnel, ws) {
+            const summary = document.getElementById('elder-personnel-summary');
+            const hide = document.getElementById('elder-hide-personnel-details')?.checked;
+            if (!summary) return;
+            const selectedPeople = (ws?.personnelIds || []).map(pid => getCompanyPersonnelById(companyPersonnel, pid)).filter(Boolean);
+            if (!hide) {
+                summary.classList.add('hidden');
+                summary.textContent = '';
+                return;
+            }
+            summary.classList.remove('hidden');
+            summary.textContent = selectedPeople.length
+                ? selectedPeople.map(person => elderPersonLabel(person)).join('、')
+                : '尚未勾選納編人員';
+        }
+
+        renderElderCompanyPersonnel = function(companyPersonnel, workstations) {
+            const container = document.getElementById('elder-company-personnel-list');
+            if (!container) return;
+            if (!companyPersonnel || companyPersonnel.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">尚未匯入人員</p>';
+                return;
+            }
+            const assignMap = {};
+            (workstations || []).forEach(ws => {
+                (ws.personnelIds || []).forEach(pid => {
+                    if (!assignMap[pid]) assignMap[pid] = [];
+                    assignMap[pid].push(ws.name || '未命名工作站');
+                });
+            });
+            container.innerHTML = companyPersonnel.map(person => {
+                const assigned = assignMap[person.id] || [];
+                const tone = assigned.length ? 'border-slate-200 bg-slate-50 text-slate-700' : 'border-orange-200 bg-orange-50 text-orange-700';
+                return `
+                    <div class="px-2.5 py-2 rounded-xl border ${tone}">
+                        <p class="text-xs font-bold truncate">${elderPersonLabel(person, true)}</p>
+                        <p class="text-[11px] text-slate-400 truncate">${[person.department, person.title].filter(Boolean).join(' / ') || '未填部門與職稱'}</p>
+                        <p class="text-[11px] text-slate-400 truncate">${assigned.length ? assigned.join('、') : '未納編到工作站'}</p>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        renderElderPersonnelCheckboxes = function(companyPersonnel, currentPersonnelIds) {
+            const container = document.getElementById('elder-personnel-container-v2');
+            const legacyContainer = document.getElementById('elder-personnel-container');
+            if (legacyContainer) legacyContainer.innerHTML = '';
+            if (!container) return;
+            if (!companyPersonnel || companyPersonnel.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400">請先在左側欄匯入單位人員清單，再勾選此工作站人員。</p>';
+                updateElderPersonnelSummary([], { personnelIds: [] });
+                return;
+            }
+            const checked = new Set(currentPersonnelIds || []);
+            const hide = document.getElementById('elder-hide-personnel-details')?.checked;
+            container.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-2">${companyPersonnel.map(person => {
+                const isChecked = checked.has(person.id);
+                const details = [person.department, person.title, person.age ? `${person.age}歲` : ''].filter(Boolean).join(' / ');
+                return `
+                    <label class="flex items-start gap-3 px-3 py-3 rounded-xl border-2 cursor-pointer transition-colors ${isChecked ? 'border-amber-400 bg-amber-50' : 'border-slate-200 bg-white hover:border-amber-200'}">
+                        <input type="checkbox" class="elder-personnel-chk mt-1 w-4 h-4 accent-amber-600 shrink-0" data-pid="${person.id}" ${isChecked ? 'checked' : ''}>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-bold text-slate-800 truncate">${elderPersonLabel(person, true)}</p>
+                            <div class="${hide ? 'hidden' : ''}">
+                                <p class="text-xs text-slate-500 truncate">${details || '未填部門、職稱與年齡'}</p>
+                                <p class="text-xs text-slate-400 truncate">${toCleanText(person.workDesc) || '未填工作內容'}</p>
+                            </div>
+                        </div>
+                    </label>
+                `;
+            }).join('')}</div>`;
+            updateElderPersonnelSummary(companyPersonnel, { personnelIds: Array.from(checked) });
+        };
+
+        renderElderWorkstationList = function(workstations) {
+            const list = document.getElementById('elder-ws-list');
+            if (!list) return;
+            if (!workstations || workstations.length === 0) {
+                list.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">尚無工作站，點擊上方新增</p>';
+                return;
+            }
+            list.innerHTML = workstations.map(ws => {
+                const recordCount = (ws.records || []).length;
+                const photoCount = (ws.records || []).reduce((sum, record) => sum + ((record.photos || []).length), 0);
+                return `
+                    <div class="elder-ws-item p-3 rounded-xl border cursor-pointer transition-colors ${ws.id === currentWorkstationId ? 'bg-amber-100 border-amber-400' : 'bg-white border-slate-200 hover:bg-amber-50 hover:border-amber-300'}"
+                        onclick="window.selectElderWorkstation('${ws.id}')">
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="text-sm font-bold text-slate-800 truncate">${ws.name || '未命名工作站'}</span>
+                            <span class="text-xs text-slate-500 shrink-0 bg-slate-100 px-2 py-0.5 rounded-full">${(ws.personnelIds || []).length}人</span>
+                        </div>
+                        <div class="flex gap-3 mt-1 text-xs text-slate-400">
+                            <span><i class="fa-solid fa-clipboard-list mr-1"></i>${recordCount}</span>
+                            <span><i class="fa-solid fa-camera mr-1"></i>${photoCount}</span>
+                            <span><i class="fa-solid fa-microphone mr-1"></i>${(ws.audios || []).length}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        function loadElderRecordForm(personnelId) {
+            const c = getCurrentElderCase();
+            const ws = getCurrentElderWorkstation();
+            if (!c || !ws) return;
+            const person = getCompanyPersonnelById(c.companyPersonnel || [], personnelId);
+            const record = getElderRecordForPersonnel(ws, person);
+            currentElderPersonnelId = personnelId || '';
+            const map = {
+                'elder-record-name': record.name,
+                'elder-record-seq': record.seqNo,
+                'elder-record-age': record.age,
+                'elder-record-department': record.department,
+                'elder-record-title': record.title,
+                'elder-record-expected-items': record.expectedItems,
+                'elder-record-work-content': record.workContent,
+                'elder-record-difficulties': record.difficulties
+            };
+            Object.entries(map).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) el.value = value || '';
+            });
+            elderPendingPhotos = [];
+            renderElderPendingPhotos();
+            renderElderPhotos(record.photos || []);
+            triggerAutoResize();
+        }
+
+        function collectElderWorkstationsForSaveV2() {
+            const c = getCurrentElderCase();
+            if (!c) return null;
+            syncLegacyElderFieldsFromV2();
+            const workstations = (c.workstations || []).map(ws => {
+                if (ws.id !== currentWorkstationId) return ws;
+                return {
+                    ...ws,
+                    name: document.getElementById('elder-ws-name-v2')?.value.trim() || ws.name,
+                    personnelIds: Array.from(document.querySelectorAll('.elder-personnel-chk:checked')).map(cb => cb.dataset.pid),
+                    env: {
+                        lux: document.getElementById('elder-env-lux')?.value || '',
+                        noise: document.getElementById('elder-env-noise')?.value || '',
+                        deskHeight: document.getElementById('elder-env-desk-height')?.value || '',
+                        workHeight: document.getElementById('elder-env-work-height')?.value || '',
+                        distance: document.getElementById('elder-env-distance')?.value || '',
+                        weight: document.getElementById('elder-env-weight')?.value || ''
+                    }
+                };
+            });
+            return { c, workstations };
+        }
+
+        saveCurrentElderWorkstation = async function(silent = false) {
+            if (!currentElderCaseId || !currentWorkstationId || !currentUser) return;
+            if (document.getElementById('view-ws-elder')?.classList.contains('hidden')) return;
+            const payload = collectElderWorkstationsForSaveV2();
+            if (!payload) return;
+            setElderSaveIndicator('saving');
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations: payload.workstations, updatedAt: serverTimestamp() });
+                renderElderWorkstationList(payload.workstations);
+                renderElderCompanyPersonnel(payload.c.companyPersonnel || [], payload.workstations);
+                const currentWs = payload.workstations.find(ws => ws.id === currentWorkstationId);
+                renderElderPersonnelCheckboxes(payload.c.companyPersonnel || [], currentWs?.personnelIds || []);
+                renderElderRecordSelector(payload.c.companyPersonnel || [], currentWs || {});
+                updateElderPersonnelSummary(payload.c.companyPersonnel || [], currentWs || {});
+                setElderSaveIndicator('saved');
+                if (!silent) showToast('工作站設定已儲存');
+            } catch (e) {
+                setElderSaveIndicator('error');
+                throw e;
+            }
+        };
+
+        window.selectElderWorkstation = function(wsId) {
+            const c = getCurrentElderCase();
+            if (!c) return;
+            const ws = (c.workstations || []).find(w => w.id === wsId);
+            if (!ws) return;
+            currentWorkstationId = wsId;
+            document.getElementById('elder-ws-name-v2').value = ws.name || '';
+            syncLegacyElderFieldsFromV2();
+            const wsEnv = ws.env || {};
+            document.getElementById('elder-env-lux').value = wsEnv.lux || '';
+            document.getElementById('elder-env-noise').value = wsEnv.noise || '';
+            document.getElementById('elder-env-desk-height').value = wsEnv.deskHeight || '';
+            document.getElementById('elder-env-work-height').value = wsEnv.workHeight || '';
+            document.getElementById('elder-env-distance').value = wsEnv.distance || '';
+            document.getElementById('elder-env-weight').value = wsEnv.weight || '';
+            renderElderWorkstationList(c.workstations || []);
+            renderElderCompanyPersonnel(c.companyPersonnel || [], c.workstations || []);
+            renderElderPersonnelCheckboxes(c.companyPersonnel || [], ws.personnelIds || []);
+            renderElderRecordSelector(c.companyPersonnel || [], ws);
+            renderElderEquipmentAssignment(c.sharedEquipment || '', c.companyPersonnel || [], c.equipmentAssignments || {});
+            renderElderAudios(ws.audios || []);
+            loadElderRecordForm(currentElderPersonnelId);
+            document.getElementById('elder-empty-state').classList.add('hidden');
+            document.getElementById('elder-ws-detail').classList.remove('hidden');
+            toggleLegacyElderSections();
+            initSectionClearButtons();
+            triggerAutoResize();
+        };
+
+        renderElderPendingPhotos = function() {
+            const container = document.getElementById('elder-pending-photos');
+            const grid = document.getElementById('elder-pending-grid');
+            if (!container || !grid) return;
+            if (elderPendingPhotos.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            container.classList.remove('hidden');
+            grid.innerHTML = elderPendingPhotos.map((p, i) => `
+                <div class="relative aspect-square">
+                    <img src="${p.previewUrl}" class="w-full h-full object-cover rounded-lg">
+                    <button onclick="window.removeElderPendingPhoto(${i})" class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center leading-none">×</button>
+                </div>
+            `).join('');
+        };
+
+        renderElderPhotos = function(photos) {
+            const container = document.getElementById('elder-photos-container');
+            if (!container) return;
+            if (!photos || photos.length === 0) {
+                container.innerHTML = '<p class="text-sm text-slate-400">此個案尚未送出照片</p>';
+                return;
+            }
+            container.innerHTML = photos.map((p, i) => `
+                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <img src="${p.previewUrl || p.downloadUrl}" class="w-14 h-14 object-cover rounded-lg cursor-pointer shrink-0" onclick="window.openPreview('${p.downloadUrl||p.previewUrl}','${p.displayName||p.name}','image')">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-slate-700 truncate">${p.displayName || p.name}</p>
+                        <p class="text-xs text-slate-400 truncate">${p.name || ''}</p>
+                    </div>
+                    <button onclick="window.deleteElderPhoto(${i})" class="text-red-400 hover:text-red-600 px-2 py-1 rounded shrink-0"><i class="fa-solid fa-trash text-sm"></i></button>
+                </div>
+            `).join('');
+        };
+
+        window.deleteElderPhoto = async function(index) {
+            const c = getCurrentElderCase();
+            const ws = getCurrentElderWorkstation();
+            if (!c || !ws || !currentElderPersonnelId) return;
+            if (!confirm('確定刪除此個案照片？')) return;
+            const workstations = (c.workstations || []).map(item => {
+                if (item.id !== currentWorkstationId) return item;
+                return {
+                    ...item,
+                    records: (item.records || []).map(record => {
+                        if (record.personnelId !== currentElderPersonnelId) return record;
+                        const photos = [...(record.photos || [])];
+                        photos.splice(index, 1);
+                        return { ...record, photos, updatedAt: formatLocalDateTime() };
+                    })
+                };
+            });
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
+            const currentWs = workstations.find(item => item.id === currentWorkstationId);
+            const record = (currentWs?.records || []).find(item => item.personnelId === currentElderPersonnelId);
+            renderElderPhotos(record?.photos || []);
+            renderElderWorkstationList(workstations);
+        };
+
+        async function submitCurrentElderRecord() {
+            const c = getCurrentElderCase();
+            const ws = getCurrentElderWorkstation();
+            if (!c || !ws) return;
+            if (!currentElderPersonnelId) {
+                alert('請先選擇 1 位個案再送出紀錄');
+                return;
+            }
+            await saveCurrentElderWorkstation(true);
+            const person = getCompanyPersonnelById(c.companyPersonnel || [], currentElderPersonnelId);
+            if (!person) {
+                alert('找不到目前個案資料，請重新選擇');
+                return;
+            }
+            const savedRecord = getElderRecordForPersonnel(ws, person);
+            const record = normalizeElderRecord({
+                ...savedRecord,
+                personnelId: currentElderPersonnelId,
+                name: document.getElementById('elder-record-name')?.value || '',
+                seqNo: document.getElementById('elder-record-seq')?.value || '',
+                age: document.getElementById('elder-record-age')?.value || '',
+                department: document.getElementById('elder-record-department')?.value || '',
+                title: document.getElementById('elder-record-title')?.value || '',
+                expectedItems: document.getElementById('elder-record-expected-items')?.value || '',
+                workContent: document.getElementById('elder-record-work-content')?.value || '',
+                difficulties: document.getElementById('elder-record-difficulties')?.value || '',
+                updatedAt: formatLocalDateTime(),
+                createdAt: savedRecord.createdAt || formatLocalDateTime()
+            }, person);
+
+            const uploadedPhotos = [];
+            for (let i = 0; i < elderPendingPhotos.length; i++) {
+                const pending = elderPendingPhotos[i];
+                const ext = (pending.file?.name || '').toLowerCase().endsWith('.png') ? 'png' : 'jpg';
+                const fileName = `${elderPhotoFileBase(record)}_${String(i + 1).padStart(2, '0')}.${ext}`;
+                const result = await uploadToGoogleDrive(pending.file, fileName);
+                uploadedPhotos.push({
+                    name: fileName,
+                    displayName: pending.displayName || fileName,
+                    previewUrl: result.previewUrl,
+                    downloadUrl: result.downloadUrl
+                });
+            }
+
+            const workstations = (c.workstations || []).map(item => {
+                if (item.id !== currentWorkstationId) return item;
+                const records = [...(item.records || [])];
+                const idx = records.findIndex(r => r.personnelId === currentElderPersonnelId);
+                const nextRecord = {
+                    ...record,
+                    photos: [...(savedRecord.photos || []), ...uploadedPhotos]
+                };
+                if (idx >= 0) records[idx] = nextRecord;
+                else records.push(nextRecord);
+                return { ...item, records };
+            });
+
+            await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
+            elderLastRecordTemplate = {
+                workContent: record.workContent,
+                difficulties: record.difficulties,
+                expectedItems: record.expectedItems
+            };
+            elderPendingPhotos = [];
+            renderElderPendingPhotos();
+            const currentWs = workstations.find(item => item.id === currentWorkstationId);
+            const currentRecord = (currentWs?.records || []).find(item => item.personnelId === currentElderPersonnelId);
+            renderElderPhotos(currentRecord?.photos || []);
+            renderElderWorkstationList(workstations);
+            showToast('個案紀錄已送出');
+        }
+
+        function copyPreviousElderRecord() {
+            const ws = getCurrentElderWorkstation();
+            if (!ws || !currentElderPersonnelId) return;
+            const records = (ws.records || [])
+                .filter(record => record.personnelId !== currentElderPersonnelId)
+                .sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+            const source = records[0] || elderLastRecordTemplate;
+            if (!source) {
+                alert('目前沒有可引用的上一位紀錄');
+                return;
+            }
+            if (document.getElementById('elder-record-work-content')) document.getElementById('elder-record-work-content').value = source.workContent || '';
+            if (document.getElementById('elder-record-difficulties')) document.getElementById('elder-record-difficulties').value = source.difficulties || '';
+            if (document.getElementById('elder-record-expected-items')) document.getElementById('elder-record-expected-items').value = source.expectedItems || '';
+            triggerAutoResize();
+            showToast('已引用上一位紀錄內容');
+        }
+
+        document.getElementById('elder-record-personnel')?.addEventListener('change', (e) => {
+            currentElderPersonnelId = e.target.value || null;
+            loadElderRecordForm(currentElderPersonnelId);
+        });
+        document.getElementById('elder-hide-personnel-details')?.addEventListener('change', () => {
+            const c = getCurrentElderCase();
+            const ws = getCurrentElderWorkstation();
+            renderElderPersonnelCheckboxes(c?.companyPersonnel || [], ws?.personnelIds || []);
+        });
+        document.getElementById('elder-btn-save-ws-v2')?.addEventListener('click', async () => {
+            try { await saveCurrentElderWorkstation(false); } catch (e) { alert(e.message || e); }
+        });
+        document.getElementById('elder-btn-delete-ws-v2')?.addEventListener('click', () => {
+            document.getElementById('elder-btn-delete-ws')?.click();
+        });
+        document.getElementById('elder-btn-copy-prev-record')?.addEventListener('click', copyPreviousElderRecord);
+        document.getElementById('elder-btn-submit-record-v2')?.addEventListener('click', async () => {
+            try { await submitCurrentElderRecord(); } catch (e) { alert(e.message || e); }
+        });
+        document.getElementById('elder-btn-submit-record-primary')?.addEventListener('click', async () => {
+            try { await submitCurrentElderRecord(); } catch (e) { alert(e.message || e); }
+        });
+        document.getElementById('elder-photo-upload')?.addEventListener('change', (e) => {
+            Array.from(e.target.files || []).forEach((file, idx) => {
+                const ext = (file.name || '').toLowerCase().endsWith('.png') ? 'png' : 'jpg';
+                elderDownloadBlob(file, `capture_${Date.now()}_${idx + 1}.${ext}`);
+            });
+        });
+
+        document.addEventListener('change', (e) => {
+            const t = e.target;
+            if (!(t instanceof Element)) return;
+            if (t.matches('.elder-personnel-chk')) {
+                const c = getCurrentElderCase();
+                const checkedIds = Array.from(document.querySelectorAll('.elder-personnel-chk:checked')).map(cb => cb.dataset.pid);
+                renderElderRecordSelector(c?.companyPersonnel || [], { personnelIds: checkedIds });
+                updateElderPersonnelSummary(c?.companyPersonnel || [], { personnelIds: checkedIds });
+                saveCurrentElderWorkstation(true).catch(() => {});
+            }
+        });
+
+        document.getElementById('elder-company-excel')?.addEventListener('change', async (e) => {
+            e.stopImmediatePropagation();
+            const file = e.target.files?.[0];
+            if (!file || !currentElderCaseId || !currentUser) return;
+            try {
+                const personnel = await readPersonnelExcelFile(file);
+                if (!personnel.length) {
+                    alert('找不到有效人員，請確認 Excel 內有姓名欄位');
+                    return;
+                }
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { companyPersonnel: personnel, updatedAt: serverTimestamp() });
+                const c = getCurrentElderCase();
+                const ws = getCurrentElderWorkstation();
+                renderElderCompanyPersonnel(personnel, c?.workstations || []);
+                renderElderPersonnelCheckboxes(personnel, ws?.personnelIds || []);
+                renderElderRecordSelector(personnel, ws || {});
+                showToast(`已匯入 ${personnel.length} 位人員`);
+            } catch (err) {
+                alert('匯入 Excel 失敗：' + (err.message || err));
+            } finally {
+                e.target.value = '';
+            }
+        }, true);
+
+        document.getElementById('form-company-excel')?.addEventListener('change', async (e) => {
+            e.stopImmediatePropagation();
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+                formImportedPersonnel = await readPersonnelExcelFile(file);
+                if (!formImportedPersonnel.length) {
+                    alert('找不到有效人員，請確認 Excel 內有姓名欄位');
+                    return;
+                }
+                const preview = document.getElementById('form-personnel-preview');
+                if (preview) {
+                    preview.className = 'text-xs text-emerald-700 font-bold';
+                    preview.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i>已匯入 ${formImportedPersonnel.length} 位人員：` +
+                        formImportedPersonnel.slice(0, 5).map(person => elderPersonLabel(person, true)).join('、') +
+                        (formImportedPersonnel.length > 5 ? '...' : '');
+                }
+                showToast(`已匯入 ${formImportedPersonnel.length} 位人員，新增案件時會一起帶入`);
+            } catch (err) {
+                alert('匯入 Excel 失敗：' + (err.message || err));
+            } finally {
+                e.target.value = '';
+            }
+        }, true);
+
+        document.getElementById('elder-btn-download-text')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            const c = getCurrentElderCase();
+            if (!c) return;
+            const lines = [];
+            const add = (text = '') => lines.push(text);
+            const addKV = (label, value) => {
+                const text = toCleanText(value);
+                if (text) lines.push(`${label}：${text}`);
+            };
+
+            add('中高齡／勞工就業通工作站紀錄');
+            add('========================================');
+            addKV('公司', c.company);
+            addKV('訪視日期', c.visitDate);
+            addKV('轄區', c.district);
+            addKV('負責人', c.owner);
+            addKV('訪視人員', c.visitors);
+
+            (c.workstations || []).forEach((ws, idx) => {
+                add('');
+                add(`工作站 ${idx + 1}：${toCleanText(ws.name) || '未命名工作站'}`);
+                add(`納編人員：${(ws.personnelIds || []).map(pid => elderPersonLabel(getCompanyPersonnelById(c.companyPersonnel || [], pid), true)).join('、') || '無'}`);
+                const env = ws.env || {};
+                const envSummary = [
+                    env.lux ? `照度 ${env.lux} Lux` : '',
+                    env.noise ? `噪音 ${env.noise} dB` : '',
+                    env.deskHeight ? `桌高 ${env.deskHeight} cm` : '',
+                    env.workHeight ? `台高 ${env.workHeight} cm` : '',
+                    env.distance ? `移動距離 ${env.distance} m` : '',
+                    env.weight ? `搬運重量 ${env.weight} kg` : ''
+                ].filter(Boolean).join('、');
+                add(`環境量測：${envSummary || '未填寫'}`);
+                add('個案紀錄：');
+                if (!(ws.records || []).length) {
+                    add('  無');
+                } else {
+                    (ws.records || []).forEach((record, rIdx) => {
+                        add(`  ${rIdx + 1}. ${toCleanText(record.name) || '未命名'} / ${toCleanText(record.seqNo) || '-'} / ${toCleanText(record.department) || '未填部門'} / ${toCleanText(record.title) || '未填職稱'}`);
+                        add(`     年齡：${toCleanText(record.age) || '未填寫'}`);
+                        add(`     工作內容：${toCleanText(record.workContent) || '未填寫'}`);
+                        add(`     工作困擾：${toCleanText(record.difficulties) || '未填寫'}`);
+                        add(`     申請項目：${toCleanText(record.expectedItems) || '未填寫'}`);
+                        add(`     照片：${(record.photos || []).map(photo => photo.name || photo.displayName).join('、') || '無'}`);
+                    });
+                }
+            });
+
+            const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+            elderDownloadBlob(blob, `工作站紀錄_${sanitizeFileName(c.company || '未命名單位')}_${c.visitDate || ''}.txt`);
+            showToast('已下載紀錄檔');
+        }, true);
+
+        document.getElementById('btn-edit-case')?.addEventListener('click', () => {
+            toggleLegacyElderSections();
+        });
+
     </script>
 
     <!-- LINE QR 名片 Modal -->
@@ -6927,6 +7636,7 @@ ${rawDraft}
 
 </body>
 </html>
+
 
 
 
