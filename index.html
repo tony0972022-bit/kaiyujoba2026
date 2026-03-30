@@ -1198,6 +1198,23 @@
 
                 <!-- 個案摘要（常駐） -->
                 <div class="p-4 border-b border-slate-100">
+                    <button onclick="document.getElementById('elder-opening-body').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-3 rounded-xl bg-amber-50 hover:bg-amber-100 transition-colors mb-3">
+                        <span class="font-bold text-amber-800 flex items-center gap-2 text-sm"><i class="fa-solid fa-microphone-lines text-amber-500"></i>訪視開場講稿</span>
+                        <i class="fa-solid fa-chevron-down text-amber-500 transition-transform text-sm"></i>
+                    </button>
+                    <div id="elder-opening-body" class="hidden pb-3">
+                        <div id="elder-opening-script" class="bg-white rounded-xl p-4 border border-amber-200 text-sm text-slate-700 leading-relaxed whitespace-pre-wrap font-medium"></div>
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('elder-opening-script').textContent).then(()=>window.showToast('已複製開場白'))" class="mt-3 w-full text-xs text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-2 rounded-lg font-bold transition-colors">
+                            <i class="fa-regular fa-copy mr-1"></i>複製講稿
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-sm text-slate-700"><i class="fa-solid fa-layer-group text-blue-500 mr-1"></i>工作站列表</h3>
+                        <button id="elder-btn-add-ws-top" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-700"><i class="fa-solid fa-plus mr-1"></i>新增</button>
+                    </div>
+                    <div id="elder-ws-list-top" class="space-y-2 mb-3">
+                        <p class="text-xs text-slate-400 text-center py-4">尚無工作站</p>
+                    </div>
                     <div class="flex items-start justify-between gap-2">
                         <div class="flex-1 min-w-0">
                             <h2 id="dis-client-name" class="text-lg font-black text-slate-800 leading-snug truncate">個案姓名</h2>
