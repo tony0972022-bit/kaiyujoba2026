@@ -4694,10 +4694,6 @@
 
         document.getElementById('elder-photo-upload').addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
-            files.forEach((file, idx) => {
-                const ext = (file.name || '').toLowerCase().endsWith('.png') ? 'png' : 'jpg';
-                elderDownloadBlob(file, `capture_${Date.now()}_${idx + 1}.${ext}`);
-            });
             e.target.value = '';
             for (const file of files) {
                 const compressed = await compressImage(file);
@@ -7053,10 +7049,10 @@ ${rawDraft}
             return seqAfter ? `${nameWithGender} ${seq}` : `${seq} ${nameWithGender}`;
         }
 
-        function elderPhotoFileBase(person) {
-            const safeName = sanitizeFileName(toCleanText(person?.name) || '未命名');
-            const safeDept = sanitizeFileName(toCleanText(person?.department) || '未分部門');
-            return `${safeName}_${safeDept}`;
+        function elderPhotoFileBase(person, workstation = null) {
+            const safeName = sanitizeFileName(toCleanText(person?.name) || '未命名個案');
+            const safeWorkstation = sanitizeFileName(toCleanText(workstation?.name || workstation) || '未命名工作站');
+            return `${safeName}_${safeWorkstation}`;
         }
 
         function elderDownloadBlob(blob, fileName) {
@@ -7480,7 +7476,7 @@ ${rawDraft}
             for (let i = 0; i < elderPendingPhotos.length; i++) {
                 const pending = elderPendingPhotos[i];
                 const ext = (pending.file?.name || '').toLowerCase().endsWith('.png') ? 'png' : 'jpg';
-                const fileName = `${elderPhotoFileBase(record)}_${String(i + 1).padStart(2, '0')}.${ext}`;
+                const fileName = `${elderPhotoFileBase(record, ws)}_${String(i + 1).padStart(2, '0')}.${ext}`;
                 const result = await uploadToGoogleDrive(pending.file, fileName);
                 uploadedPhotos.push({
                     name: fileName,
@@ -7561,13 +7557,6 @@ ${rawDraft}
         document.getElementById('elder-btn-submit-record-primary')?.addEventListener('click', async () => {
             try { await submitCurrentElderRecord(); } catch (e) { alert(e.message || e); }
         });
-        document.getElementById('elder-photo-upload')?.addEventListener('change', (e) => {
-            Array.from(e.target.files || []).forEach((file, idx) => {
-                const ext = (file.name || '').toLowerCase().endsWith('.png') ? 'png' : 'jpg';
-                elderDownloadBlob(file, `capture_${Date.now()}_${idx + 1}.${ext}`);
-            });
-        });
-
         document.addEventListener('change', (e) => {
             const t = e.target;
             if (!(t instanceof Element)) return;
