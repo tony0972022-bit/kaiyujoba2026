@@ -1501,7 +1501,18 @@
             <div id="elder-main-area" class="flex-1 overflow-y-auto p-4 md:p-6 pb-20">
 
                 <!-- 訪視開場白（中高齡） -->
-                <div class="bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl border border-amber-200 shadow-sm overflow-hidden mb-4">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-4">
+                    <div class="p-4 md:p-5 border-b border-slate-100 flex items-center justify-between gap-3">
+                        <h3 class="font-bold text-slate-700 text-base md:text-lg"><i class="fa-solid fa-layer-group text-blue-500 mr-2"></i>工作區切換</h3>
+                        <button id="elder-btn-add-ws-inline" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs md:text-sm font-bold hover:bg-blue-700">
+                            <i class="fa-solid fa-plus mr-1"></i>新增工作站
+                        </button>
+                    </div>
+                    <div id="elder-ws-quick-list" class="p-4 md:p-5 grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <p class="text-sm text-slate-400">尚無工作站</p>
+                    </div>
+                </div>
+                <div class="hidden bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl border border-amber-200 shadow-sm overflow-hidden mb-4">
                     <button onclick="document.getElementById('elder-opening-body').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-4 hover:bg-amber-100 transition-colors">
                         <span class="font-bold text-amber-800 flex items-center gap-2"><i class="fa-solid fa-microphone-lines text-amber-500"></i>訪視開場白稿</span>
                         <i class="fa-solid fa-chevron-down text-amber-500 transition-transform text-sm"></i>
@@ -7224,12 +7235,13 @@ ${rawDraft}
 
         renderElderWorkstationList = function(workstations) {
             const list = document.getElementById('elder-ws-list');
+            const quickList = document.getElementById('elder-ws-quick-list');
             if (!list) return;
             if (!workstations || workstations.length === 0) {
                 list.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">尚無工作站，點擊上方新增</p>';
                 return;
             }
-            list.innerHTML = workstations.map(ws => {
+            const sidebarHtml = workstations.map(ws => {
                 const recordCount = (ws.records || []).length;
                 const photoCount = (ws.records || []).reduce((sum, record) => sum + ((record.photos || []).length), 0);
                 return `
@@ -7247,6 +7259,27 @@ ${rawDraft}
                     </div>
                 `;
             }).join('');
+            list.innerHTML = sidebarHtml;
+            if (quickList) {
+                quickList.innerHTML = workstations.map(ws => {
+                    const recordCount = (ws.records || []).length;
+                    const selectedClass = ws.id === currentWorkstationId
+                        ? 'bg-blue-50 border-blue-400 text-blue-700'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-blue-50 hover:border-blue-300';
+                    return `
+                        <button type="button" class="w-full text-left rounded-xl border px-4 py-3 transition-colors ${selectedClass}" onclick="window.selectElderWorkstation('${ws.id}')">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="font-bold truncate">${ws.name || '未命名工作站'}</span>
+                                <span class="text-xs shrink-0 bg-white/80 px-2 py-0.5 rounded-full">${(ws.personnelIds || []).length}人</span>
+                            </div>
+                            <div class="mt-2 text-xs text-slate-500 flex items-center gap-3">
+                                <span><i class="fa-solid fa-user-check mr-1"></i>${(ws.personnelIds || []).length}</span>
+                                <span><i class="fa-solid fa-clipboard-list mr-1"></i>${recordCount}</span>
+                            </div>
+                        </button>
+                    `;
+                }).join('');
+            }
         };
 
         function loadElderRecordForm(personnelId) {
@@ -7519,6 +7552,9 @@ ${rawDraft}
             document.getElementById('elder-btn-delete-ws')?.click();
         });
         document.getElementById('elder-btn-copy-prev-record')?.addEventListener('click', copyPreviousElderRecord);
+        document.getElementById('elder-btn-add-ws-inline')?.addEventListener('click', () => {
+            document.getElementById('elder-btn-add-ws')?.click();
+        });
         document.getElementById('elder-btn-submit-record-v2')?.addEventListener('click', async () => {
             try { await submitCurrentElderRecord(); } catch (e) { alert(e.message || e); }
         });
