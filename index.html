@@ -4654,7 +4654,12 @@
         }
 
         document.getElementById('elder-photo-upload').addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files); e.target.value = '';
+            const files = Array.from(e.target.files);
+            files.forEach((file, idx) => {
+                const ext = (file.name || '').toLowerCase().endsWith('.png') ? 'png' : 'jpg';
+                elderDownloadBlob(file, `capture_${Date.now()}_${idx + 1}.${ext}`);
+            });
+            e.target.value = '';
             for (const file of files) {
                 const compressed = await compressImage(file);
                 elderPendingPhotos.push({ file: compressed, previewUrl: URL.createObjectURL(compressed), name: `elder_photo_${Date.now()}_${Math.random().toString(36).slice(2,6)}.jpg`, displayName: new Date().toLocaleString() });
@@ -7001,8 +7006,10 @@ ${rawDraft}
             if (!p) return '未命名';
             const seq = toCleanText(p.seqNo || p.seq || p.number);
             const name = toCleanText(p.name) || '未命名';
-            if (!seq) return name;
-            return seqAfter ? `${name} ${seq}` : `${seq} ${name}`;
+            const gender = toCleanText(p.gender);
+            const nameWithGender = gender ? `${name} ${gender}` : name;
+            if (!seq) return nameWithGender;
+            return seqAfter ? `${nameWithGender} ${seq}` : `${seq} ${nameWithGender}`;
         }
 
         function elderPhotoFileBase(person) {
@@ -7110,15 +7117,18 @@ ${rawDraft}
 
         function updateElderPersonnelSummary(companyPersonnel, ws) {
             const summary = document.getElementById('elder-personnel-summary');
+            const container = document.getElementById('elder-personnel-container-v2');
             const hide = document.getElementById('elder-hide-personnel-details')?.checked;
             if (!summary) return;
             const selectedPeople = (ws?.personnelIds || []).map(pid => getCompanyPersonnelById(companyPersonnel, pid)).filter(Boolean);
             if (!hide) {
                 summary.classList.add('hidden');
                 summary.textContent = '';
+                if (container) container.classList.remove('hidden');
                 return;
             }
             summary.classList.remove('hidden');
+            if (container) container.classList.add('hidden');
             summary.textContent = selectedPeople.length
                 ? selectedPeople.map(person => elderPersonLabel(person)).join('、')
                 : '尚未勾選納編人員';
@@ -7371,14 +7381,17 @@ ${rawDraft}
         };
 
         async function submitCurrentElderRecord() {
-            const c = getCurrentElderCase();
-            const ws = getCurrentElderWorkstation();
+            let c = getCurrentElderCase();
+            let ws = getCurrentElderWorkstation();
             if (!c || !ws) return;
             if (!currentElderPersonnelId) {
                 alert('請先選擇 1 位個案再送出紀錄');
                 return;
             }
             await saveCurrentElderWorkstation(true);
+            c = getCurrentElderCase();
+            ws = getCurrentElderWorkstation();
+            if (!c || !ws) return;
             const person = getCompanyPersonnelById(c.companyPersonnel || [], currentElderPersonnelId);
             if (!person) {
                 alert('找不到目前個案資料，請重新選擇');
@@ -7497,6 +7510,7 @@ ${rawDraft}
                 const checkedIds = Array.from(document.querySelectorAll('.elder-personnel-chk:checked')).map(cb => cb.dataset.pid);
                 renderElderRecordSelector(c?.companyPersonnel || [], { personnelIds: checkedIds });
                 updateElderPersonnelSummary(c?.companyPersonnel || [], { personnelIds: checkedIds });
+                loadElderRecordForm(currentElderPersonnelId);
                 saveCurrentElderWorkstation(true).catch(() => {});
             }
         });
