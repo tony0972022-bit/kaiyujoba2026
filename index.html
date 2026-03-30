@@ -333,6 +333,10 @@
                             <label class="block text-base font-medium text-slate-600 mb-1">聯絡電話</label>
                             <input type="tel" id="form-phone" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg">
                         </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-base font-medium text-slate-600 mb-1">申請單位地址</label>
+                            <input type="text" id="form-company-address" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg" placeholder="填寫申請單位／工作地址">
+                        </div>
                     </div>
 
                     <div>
@@ -1433,6 +1437,10 @@
                 <div class="p-4 border-b border-slate-100 space-y-1">
                     <h2 id="elder-ws-company" class="text-lg font-black text-slate-800 leading-snug">公司名稱</h2>
                     <p id="elder-ws-meta" class="text-xs text-slate-500">初訪日：-</p>
+                    <button id="elder-copy-address" type="button" class="w-full mt-2 text-left bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors">
+                        <p class="text-[11px] font-bold text-slate-500 mb-1">申請單位地址</p>
+                        <p id="elder-company-address" class="text-xs text-slate-700 break-words">未填寫地址</p>
+                    </button>
                     <div class="flex gap-2 mt-2">
                         <button id="elder-btn-edit" class="flex-1 text-xs text-blue-700 bg-white border border-blue-200 py-1.5 rounded-lg font-bold hover:bg-blue-50"><i class="fa-solid fa-pen mr-1"></i>編輯基本資料</button>
                         <button id="elder-btn-delete-case" class="text-xs text-red-600 bg-white border border-red-200 px-3 py-1.5 rounded-lg font-bold hover:bg-red-50"><i class="fa-solid fa-trash"></i></button>
@@ -4345,6 +4353,9 @@
 
             document.getElementById('elder-ws-company').textContent = c.company || '未命名企業';
             document.getElementById('elder-ws-meta').textContent = `初訪日：${c.visitDate || '-'}　主責：${c.owner || ''}`;
+            const elderAddressEl = document.getElementById('elder-company-address');
+            const elderAddress = String(c.companyAddress || getDistrictByName(c.district || '')?.address || '').trim();
+            if (elderAddressEl) elderAddressEl.textContent = elderAddress || '未填寫地址';
             document.getElementById('elder-shared-equipment').value = c.sharedEquipment || '';
             document.getElementById('elder-report-completed').checked = isReportCompleted(c);
             document.getElementById('elder-app-title').textContent = c.company || '中高齡工作站';
@@ -4977,6 +4988,7 @@
             document.getElementById('form-client-email').value = c.clientEmail || '';
             document.getElementById('form-education').value = c.education || '';
             document.getElementById('form-hire-date').value = c.hireDate || '';
+            document.getElementById('form-company-address').value = c.companyAddress || '';
             document.getElementById('form-seniority').value = c.seniority || '';
             const intakeDateField = document.getElementById('form-intake-date'); if (intakeDateField) intakeDateField.value = c.intakeDate || '';
             document.getElementById('form-visit-date').value = c.visitDate || c.date || '';
@@ -5656,6 +5668,7 @@
                 phone: document.getElementById('form-phone').value,
                 clientMobile: document.getElementById('form-client-mobile')?.value || '',
                 clientEmail: document.getElementById('form-client-email')?.value || '',
+                companyAddress: document.getElementById('form-company-address')?.value || '',
                 education: document.getElementById('form-education')?.value || '',
                 hireDate: hireDateNormalized,
                 seniority: document.getElementById('form-seniority')?.value || '',
@@ -7637,6 +7650,20 @@ ${rawDraft}
 
         document.getElementById('btn-edit-case')?.addEventListener('click', () => {
             toggleLegacyElderSections();
+        });
+
+        document.getElementById('elder-copy-address')?.addEventListener('click', async () => {
+            const address = document.getElementById('elder-company-address')?.textContent?.trim() || '';
+            if (!address || address === '未填寫地址') {
+                showToast('目前沒有可複製的地址');
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(address);
+                showToast('地址已複製');
+            } catch (_) {
+                showToast('地址複製失敗');
+            }
         });
 
     </script>
