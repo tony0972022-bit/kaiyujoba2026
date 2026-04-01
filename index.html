@@ -7191,6 +7191,9 @@ ${rawDraft}
 
         function normalizeElderRecord(record = {}, person = null) {
             return {
+                // 先保留所有原始欄位（status, statusNote, audios 等不在白名單的欄位）
+                ...record,
+                // 再覆寫需要標準化的欄位
                 id: record.id || `rec_${Date.now()}`,
                 personnelId: record.personnelId || person?.id || '',
                 seqNo: toCleanText(record.seqNo || person?.seqNo || person?.seq || ''),
@@ -7883,6 +7886,8 @@ ${rawDraft}
 
         // 目前哪位人員正在錄音
         let currentPersonRecordingId = null;
+        // 目前哪張人員卡片是展開的
+        let currentOpenPersonCardId = null;
 
         function renderElderPersonRecords(companyPersonnel, ws) {
             const container = document.getElementById('elder-records-container');
@@ -8008,17 +8013,74 @@ ${rawDraft}
             if (sel.value !== '其他') noteEl.value = '';
         };
 
+        // 靜默儲存（不重新渲染卡片、不顯示 toast），用於切換時自動存檔
+        async function silentSavePersonRecord(personId) {
+            try {
+                const c = getCurrentElderCase();
+                const ws = getCurrentElderWorkstation();
+                if (!c || !ws) return;
+                const person = getCompanyPersonnelById(c.companyPersonnel || [], personId);
+                if (!person) return;
+                const savedRecord = getElderRecordForPersonnel(ws, person);
+                const notes = document.getElementById(`record-notes-${personId}`)?.value ?? savedRecord.workContent;
+                const items = document.getElementById(`record-items-${personId}`)?.value ?? savedRecord.expectedItems;
+                const status = document.getElementById(`record-status-${personId}`)?.value ?? savedRecord.status ?? '';
+                const statusNote = status === '其他'
+                    ? (document.getElementById(`record-status-note-${personId}`)?.value ?? savedRecord.statusNote ?? '')
+                    : '';
+                // 直接組 record，不走 normalizeElderRecord（避免覆蓋 photos）
+                const record = {
+                    ...savedRecord,
+                    personnelId: personId,
+                    workContent: notes,
+                    difficulties: '',
+                    expectedItems: items,
+                    status,
+                    statusNote,
+                    updatedAt: formatLocalDateTime()
+                };
+                const workstations = (c.workstations || []).map(ws2 => {
+                    if (ws2.id !== currentWorkstationId) return ws2;
+                    const records = [...(ws2.records || [])];
+                    const idx = records.findIndex(r => r.personnelId === personId);
+                    if (idx >= 0) records[idx] = { ...records[idx], ...record };
+                    else records.push({ ...normalizeElderRecord({}, person), ...record });
+                    return { ...ws2, records };
+                });
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
+            } catch(e) { console.warn('silentSave failed:', e); }
+        }
+
         window.toggleElderRecordCard = async function(personId) {
             const body = document.getElementById(`record-body-${personId}`);
             const icon = document.getElementById(`record-icon-${personId}`);
             if (!body) return;
             const isOpening = body.classList.contains('hidden');
 
-            // 若有其他人正在錄音，切換前自動停止並儲存
-            if (isOpening && elderIsRecording && currentPersonRecordingId && currentPersonRecordingId !== personId) {
-                showToast(`已自動停止 ${currentPersonRecordingId} 的錄音`);
-                await stopElderRecording();
-                currentPersonRecordingId = null;
+            if (isOpening) {
+                // 1. 若有其他人正在錄音，先自動停止
+                if (elderIsRecording && currentPersonRecordingId && currentPersonRecordingId !== personId) {
+                    await stopElderRecording();
+                    _updatePersonRecBtn(currentPersonRecordingId, false);
+                    currentPersonRecordingId = null;
+                    showToast('已自動停止上一位的錄音並存檔');
+                }
+                // 2. 自動存檔上一張開著的卡片
+                if (currentOpenPersonCardId && currentOpenPersonCardId !== personId) {
+                    const prevBody = document.getElementById(`record-body-${currentOpenPersonCardId}`);
+                    if (prevBody && !prevBody.classList.contains('hidden')) {
+                        await silentSavePersonRecord(currentOpenPersonCardId);
+                        // 關閉上一張卡片
+                        prevBody.classList.add('hidden');
+                        const prevIcon = document.getElementById(`record-icon-${currentOpenPersonCardId}`);
+                        if (prevIcon) prevIcon.style.transform = '';
+                    }
+                }
+                currentOpenPersonCardId = personId;
+            } else {
+                // 收合時：也自動存一次
+                await silentSavePersonRecord(personId);
+                if (currentOpenPersonCardId === personId) currentOpenPersonCardId = null;
             }
 
             body.classList.toggle('hidden');
@@ -8223,13 +8285,18 @@ ${rawDraft}
                 const label = status ? `已標記為「${status === '其他' ? statusNote || '其他原因' : status}」` : '個案紀錄已儲存';
                 showToast(label);
                 renderElderWorkstationList(workstations);
-                // 🆕 重新渲染品項區（更新共用名單）與個案卡片
                 const newWs = workstations.find(w => w.id === currentWorkstationId);
                 if (newWs) {
                     renderElderPersonRecords(c.companyPersonnel || [], newWs);
                     renderElderItemsSection(c.companyPersonnel || [], newWs);
                     renderElderItemsSidebar();
                 }
+                // 重新渲染後把此卡片重新打開（渲染會把所有卡片預設關閉）
+                const body = document.getElementById(`record-body-${personId}`);
+                const icon = document.getElementById(`record-icon-${personId}`);
+                if (body) { body.classList.remove('hidden'); triggerAutoResize(); }
+                if (icon) icon.style.transform = 'rotate(180deg)';
+                currentOpenPersonCardId = personId;
             } catch(e) { alert('儲存失敗：' + e.message); }
         };
 
