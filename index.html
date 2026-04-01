@@ -7680,26 +7680,57 @@ ${rawDraft}
             toggleLegacyElderSections();
         });
 
-        // ====== 中高齡工作站：逐張下載所有照片 ======
+        // ====== 中高齡工作站：逐張/逐檔下載所有照片與錄音 ======
         document.getElementById('elder-btn-download-photos')?.addEventListener('click', async () => {
             const c = casesData.find(x => x.id === currentElderCaseId);
             if (!c) return;
-            const allPhotos = [];
+
+            const safeStr = s => (s || '').toString().replace(/[\\/:*?"<>|]/g, '_').trim() || '未命名';
+            const getExt = (str, fallback) => {
+                const ext = (str || '').split('.').pop().toLowerCase();
+                return ['jpg','jpeg','png','gif','webp','heic'].includes(ext) ? ext : fallback;
+            };
+            const allFiles = [];
+
             (c.workstations || []).forEach((ws, wsIdx) => {
+                const wsName = safeStr(ws.name || `工作站${wsIdx + 1}`);
+
+                // ── 新版：照片存在個人紀錄 ws.records[].photos ──
+                (ws.records || []).forEach(record => {
+                    const personName = safeStr(record.name || record.personnelId || '人員');
+                    (record.photos || []).forEach((p, pIdx) => {
+                        const url = p.downloadUrl || p.previewUrl;
+                        if (!url) return;
+                        const ext = getExt(p.displayName || p.name, 'jpg');
+                        allFiles.push({ url, filename: `${wsName}_${personName}_${pIdx + 1}.${ext}`, type: 'photo' });
+                    });
+                });
+
+                // ── 舊版相容：照片直接在 ws.photos ──
                 (ws.photos || []).forEach((p, pIdx) => {
                     const url = p.downloadUrl || p.previewUrl;
                     if (!url) return;
-                    const wsName = (ws.name || `工作站${wsIdx + 1}`).replace(/[\\/:*?"<>|]/g, '_');
-                    const ext = (p.displayName || p.name || 'photo').split('.').pop().toLowerCase();
-                    const validExt = ['jpg','jpeg','png','gif','webp','heic'].includes(ext) ? ext : 'jpg';
-                    const filename = `${wsName}_${pIdx + 1}.${validExt}`;
-                    allPhotos.push({ url, filename });
+                    const ext = getExt(p.displayName || p.name, 'jpg');
+                    allFiles.push({ url, filename: `${wsName}_現場_${pIdx + 1}.${ext}`, type: 'photo' });
+                });
+
+                // ── 錄音：ws.audios ──
+                (ws.audios || []).forEach((a, aIdx) => {
+                    const url = a.downloadUrl || a.previewUrl;
+                    if (!url) return;
+                    const ext = getExt(a.displayName || a.name, 'm4a');
+                    const label = safeStr(a.displayName || a.name || `錄音${aIdx + 1}`);
+                    allFiles.push({ url, filename: `${wsName}_${label}.${ext}`, type: 'audio' });
                 });
             });
-            if (!allPhotos.length) { showToast('此案件目前沒有任何照片'); return; }
-            showToast(`開始下載 ${allPhotos.length} 張照片，請稍候...`);
-            for (let i = 0; i < allPhotos.length; i++) {
-                const { url, filename } = allPhotos[i];
+
+            if (!allFiles.length) { showToast('此案件目前沒有任何照片或錄音'); return; }
+            const photoCount = allFiles.filter(f => f.type === 'photo').length;
+            const audioCount = allFiles.filter(f => f.type === 'audio').length;
+            showToast(`開始下載：照片 ${photoCount} 張、錄音 ${audioCount} 檔，請稍候...`);
+
+            for (let i = 0; i < allFiles.length; i++) {
+                const { url, filename } = allFiles[i];
                 await new Promise(resolve => {
                     const a = document.createElement('a');
                     a.href = url;
@@ -7711,7 +7742,7 @@ ${rawDraft}
                     setTimeout(resolve, 800);
                 });
             }
-            showToast(`已完成 ${allPhotos.length} 張照片下載`);
+            showToast(`已完成下載：照片 ${photoCount} 張、錄音 ${audioCount} 檔`);
         });
 
         document.getElementById('elder-copy-address')?.addEventListener('click', async () => {
