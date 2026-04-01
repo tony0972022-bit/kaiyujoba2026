@@ -4576,10 +4576,7 @@
             if (t.matches('#elder-ws-name, #elder-work-content, #elder-difficulties, #elder-improvements, #elder-env-lux, #elder-env-noise, #elder-env-desk-height, #elder-env-work-height, #elder-env-distance, #elder-env-weight, #elder-ws-work-process')) {
                 scheduleElderWorkstationAutoSave();
             }
-            // 🆕 品項文字/數量輸入也觸發自動儲存
-            if (t.matches('.item-text, .item-qty') && currentElderCaseId && currentWorkstationId) {
-                scheduleElderWorkstationAutoSave();
-            }
+            // 品項欄位不觸發自動儲存（會導致輸入中的文字跳掉），改由工作站儲存按鈕統一收集
         });
         document.addEventListener('change', (e) => {
             const t = e.target;
@@ -7871,6 +7868,22 @@ ${rawDraft}
         // ==========================================
         // 🆕 個案紀錄卡片（4. 個案紀錄 per-person cards）
         // ==========================================
+        // 取消狀態的設定
+        const PERSON_STATUS_OPTIONS = [
+            { value: '', label: '正常（出席）' },
+            { value: '請假', label: '請假' },
+            { value: '外出', label: '外出' },
+            { value: '放棄申請', label: '放棄申請' },
+            { value: '其他', label: '其他原因' }
+        ];
+
+        function isPersonCancelled(record) {
+            return !!(record && record.status);
+        }
+
+        // 目前哪位人員正在錄音
+        let currentPersonRecordingId = null;
+
         function renderElderPersonRecords(companyPersonnel, ws) {
             const container = document.getElementById('elder-records-container');
             if (!container) return;
@@ -7881,56 +7894,282 @@ ${rawDraft}
             }
             container.innerHTML = people.map(person => {
                 const record = getElderRecordForPersonnel(ws, person);
+                const cancelled = isPersonCancelled(record);
                 const photoCount = (record.photos || []).length;
-                const thumbs = (record.photos || []).slice(0, 4).map(p =>
-                    `<img src="${p.previewUrl || p.downloadUrl}" class="w-10 h-10 object-cover rounded-lg border border-slate-200 cursor-pointer shrink-0" onclick="window.openPreview('${p.downloadUrl||p.previewUrl}','${p.displayName||p.name}','image')">`
+                const thumbs = (record.photos || []).slice(0, 3).map(p =>
+                    `<img src="${p.previewUrl || p.downloadUrl}" class="w-12 h-12 object-cover rounded-lg border border-slate-200 cursor-pointer shrink-0" onclick="window.openPreview('${p.downloadUrl||p.previewUrl}','${p.displayName||p.name}','image')">`
                 ).join('');
                 const notesVal = [record.workContent, record.difficulties ? '【困擾障礙】\n' + record.difficulties : ''].filter(Boolean).join('\n\n');
                 const seq = toCleanText(person.seqNo || person.seq || record.seqNo || '-');
                 const details = [person.gender ? `${person.gender}` : '', person.age ? `${person.age}歲` : '', person.title || '', person.department || ''].filter(Boolean);
+                const statusOpts = PERSON_STATUS_OPTIONS.map(o =>
+                    `<option value="${o.value}" ${record.status === o.value ? 'selected' : ''}>${o.label}</option>`
+                ).join('');
+                const statusBadge = cancelled
+                    ? `<span class="text-xs px-2 py-0.5 rounded-full font-bold shrink-0 bg-red-100 text-red-700"><i class="fa-solid fa-ban mr-1"></i>${record.status === '其他' ? (record.statusNote || '其他') : record.status}</span>`
+                    : '';
+                const cardBorder = cancelled ? 'border-red-200' : 'border-slate-200';
+                const headerBg = cancelled ? 'bg-red-50 hover:bg-red-100' : 'bg-slate-50 hover:bg-amber-50';
+                const isRecording = (currentPersonRecordingId === person.id) && elderIsRecording;
                 return `
-                    <div class="border border-slate-200 rounded-xl overflow-hidden mb-3">
-                        <button type="button" class="w-full p-3 text-left bg-slate-50 hover:bg-amber-50 transition-colors flex items-center justify-between gap-2"
+                    <div class="border ${cardBorder} rounded-xl overflow-hidden mb-3" id="person-card-${person.id}">
+                        <button type="button" class="w-full p-3 text-left ${headerBg} transition-colors flex items-center justify-between gap-2"
                             onclick="window.toggleElderRecordCard('${person.id}')">
                             <div class="flex items-center gap-2 flex-wrap min-w-0">
-                                <span class="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-black shrink-0">${seq}</span>
-                                <span class="font-bold text-slate-800">${person.name}</span>
+                                <span class="text-xs ${cancelled ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'} px-2 py-0.5 rounded-full font-black shrink-0">${seq}</span>
+                                <span class="font-bold ${cancelled ? 'text-slate-400 line-through' : 'text-slate-800'}">${person.name}</span>
+                                ${statusBadge}
                                 ${details.map(d => `<span class="text-xs text-slate-400 shrink-0">${d}</span>`).join('')}
                             </div>
-                            <i class="fa-solid fa-chevron-down text-slate-400 shrink-0 transition-transform" id="record-icon-${person.id}"></i>
+                            <div class="flex items-center gap-2 shrink-0">
+                                ${isRecording ? `<span class="text-xs bg-red-600 text-white px-2 py-0.5 rounded-full animate-pulse">● 錄音中</span>` : ''}
+                                ${photoCount > 0 ? `<span class="text-xs text-slate-400"><i class="fa-solid fa-image mr-0.5"></i>${photoCount}</span>` : ''}
+                                <i class="fa-solid fa-chevron-down text-slate-400 transition-transform" id="record-icon-${person.id}"></i>
+                            </div>
                         </button>
-                        <div id="record-body-${person.id}" class="hidden p-4 border-t border-slate-100 space-y-3">
-                            <div>
-                                <label class="text-xs font-bold text-slate-600 mb-1 block">a. 各別記錄區（工作內容、工作困擾）</label>
-                                <textarea id="record-notes-${person.id}" rows="3" class="auto-resize w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-sm" placeholder="此個案的工作內容、工作困擾...">${notesVal}</textarea>
+                        <div id="record-body-${person.id}" class="hidden border-t border-slate-100">
+
+                            <!-- 出席狀況 -->
+                            <div class="px-4 pt-3 pb-2">
+                                <label class="text-xs font-bold text-slate-500 mb-1 block">出席狀況</label>
+                                <div class="flex gap-2 items-start flex-wrap">
+                                    <select id="record-status-${person.id}" class="flex-1 min-w-32 p-2 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-sm"
+                                        onchange="window.togglePersonStatusNote('${person.id}')">
+                                        ${statusOpts}
+                                    </select>
+                                    <input type="text" id="record-status-note-${person.id}"
+                                        class="flex-1 min-w-40 p-2 border border-amber-300 rounded-xl bg-amber-50 text-sm ${record.status === '其他' ? '' : 'hidden'}"
+                                        placeholder="請說明原因..." value="${toCleanText(record.statusNote || '')}">
+                                </div>
+                                ${cancelled ? `<p class="text-xs text-red-400 mt-1.5"><i class="fa-solid fa-info-circle mr-1"></i>已取消申請，不會出現在共用品項名單中</p>` : ''}
                             </div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-600 mb-1 block">b. 申請項目</label>
-                                <input type="text" id="record-items-${person.id}" class="w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-sm" placeholder="如：升降台車1台、拖板車1台..." value="${toCleanText(record.expectedItems || '')}">
+
+                            <!-- 1. 現場客觀數據 -->
+                            <div class="px-4 pb-3 border-b border-slate-100">
+                                <label class="text-xs font-bold text-slate-500 mb-1 block">現場客觀數據</label>
+                                <textarea id="record-notes-${person.id}" rows="3"
+                                    class="auto-resize w-full p-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-sm"
+                                    placeholder="工作內容、現場觀察、困擾障礙...">${notesVal}</textarea>
+                                <input type="text" id="record-items-${person.id}"
+                                    class="w-full mt-2 p-2.5 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-amber-400 text-sm"
+                                    placeholder="申請項目（如：升降台車1台）..." value="${toCleanText(record.expectedItems || '')}">
                             </div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-600 mb-1 block">c. 照片 (${photoCount}張)</label>
-                                ${thumbs ? `<div class="flex flex-wrap gap-2 mb-2">${thumbs}</div>` : ''}
-                                <button type="button" class="text-xs text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg font-bold transition-colors" onclick="window.setElderPersonAndScrollToPhoto('${person.id}')">
-                                    <i class="fa-solid fa-camera mr-1"></i>${photoCount > 0 ? '查看/新增照片' : '新增照片'}
+
+                            <!-- 2. 拍照 -->
+                            <div class="px-4 py-3 border-b border-slate-100">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="text-xs font-bold text-slate-500">拍照 <span class="font-normal text-slate-400">(${photoCount}張)</span></label>
+                                    <button type="button"
+                                        class="text-sm font-bold text-white bg-blue-500 hover:bg-blue-600 active:scale-95 px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-2"
+                                        onclick="window.triggerPersonPhotoUpload('${person.id}')">
+                                        <i class="fa-solid fa-camera"></i>拍照 / 上傳
+                                    </button>
+                                    <input type="file" id="person-photo-input-${person.id}" accept="image/*" multiple capture="environment" class="hidden"
+                                        onchange="window.handlePersonPhotoFiles('${person.id}', this)">
+                                </div>
+                                ${thumbs || photoCount > 3 ? `
+                                <div class="flex flex-wrap gap-2 items-center">
+                                    ${thumbs}
+                                    ${photoCount > 3 ? `<span class="text-xs text-slate-400 font-bold">+${photoCount - 3}張</span>` : ''}
+                                </div>` : ''}
+                                <div id="person-photo-uploading-${person.id}" class="hidden text-xs text-blue-600 font-bold mt-1"><i class="fa-solid fa-spinner fa-spin mr-1"></i>上傳中...</div>
+                            </div>
+
+                            <!-- 3. 錄音 -->
+                            <div class="px-4 py-3 border-b border-slate-100">
+                                <div class="flex items-center justify-between">
+                                    <label class="text-xs font-bold text-slate-500">錄音</label>
+                                    <button type="button" id="person-rec-btn-${person.id}"
+                                        class="text-sm font-bold px-4 py-2 rounded-xl transition-all shadow-sm flex items-center gap-2 active:scale-95 ${isRecording ? 'bg-red-600 text-white' : 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'}"
+                                        onclick="window.togglePersonRecording('${person.id}')">
+                                        <i class="fa-solid ${isRecording ? 'fa-stop' : 'fa-circle'} text-xs"></i>${isRecording ? '停止錄音' : '開始錄音'}
+                                    </button>
+                                </div>
+                                <div id="person-rec-status-${person.id}" class="${isRecording ? '' : 'hidden'} text-xs text-red-600 font-bold mt-1.5">● 錄音中...</div>
+                            </div>
+
+                            <!-- 儲存 -->
+                            <div class="px-4 py-3">
+                                <button type="button" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors active:scale-95"
+                                    onclick="window.saveElderPersonRecord('${person.id}')">
+                                    <i class="fa-solid fa-floppy-disk mr-2"></i>儲存此個案紀錄
                                 </button>
                             </div>
-                            <button type="button" class="w-full bg-emerald-600 text-white py-2 rounded-xl font-bold text-sm hover:bg-emerald-700 transition-colors active:scale-95" onclick="window.saveElderPersonRecord('${person.id}')">
-                                <i class="fa-solid fa-floppy-disk mr-2"></i>儲存此個案紀錄
-                            </button>
                         </div>
                     </div>`;
             }).join('');
         }
 
-        window.toggleElderRecordCard = function(personId) {
+        window.togglePersonStatusNote = function(personId) {
+            const sel = document.getElementById(`record-status-${personId}`);
+            const noteEl = document.getElementById(`record-status-note-${personId}`);
+            if (!sel || !noteEl) return;
+            noteEl.classList.toggle('hidden', sel.value !== '其他');
+            if (sel.value !== '其他') noteEl.value = '';
+        };
+
+        window.toggleElderRecordCard = async function(personId) {
             const body = document.getElementById(`record-body-${personId}`);
             const icon = document.getElementById(`record-icon-${personId}`);
             if (!body) return;
-            const hidden = body.classList.toggle('hidden');
-            if (icon) icon.style.transform = hidden ? '' : 'rotate(180deg)';
-            if (!hidden) triggerAutoResize();
+            const isOpening = body.classList.contains('hidden');
+
+            // 若有其他人正在錄音，切換前自動停止並儲存
+            if (isOpening && elderIsRecording && currentPersonRecordingId && currentPersonRecordingId !== personId) {
+                showToast(`已自動停止 ${currentPersonRecordingId} 的錄音`);
+                await stopElderRecording();
+                currentPersonRecordingId = null;
+            }
+
+            body.classList.toggle('hidden');
+            if (icon) icon.style.transform = body.classList.contains('hidden') ? '' : 'rotate(180deg)';
+            if (!body.classList.contains('hidden')) triggerAutoResize();
         };
+
+        // 2. 拍照：直接觸發 file input
+        window.triggerPersonPhotoUpload = function(personId) {
+            document.getElementById(`person-photo-input-${personId}`)?.click();
+        };
+
+        // 拍照：選完直接上傳到 GAS 並存入 record.photos
+        window.handlePersonPhotoFiles = async function(personId, inputEl) {
+            const files = Array.from(inputEl.files);
+            inputEl.value = '';
+            if (!files.length) return;
+            const c = getCurrentElderCase();
+            const ws = getCurrentElderWorkstation();
+            if (!c || !ws) { alert('請先開啟工作站'); return; }
+            const person = getCompanyPersonnelById(c.companyPersonnel || [], personId);
+            if (!person) return;
+
+            const uploadingEl = document.getElementById(`person-photo-uploading-${personId}`);
+            if (uploadingEl) uploadingEl.classList.remove('hidden');
+
+            const savedRecord = getElderRecordForPersonnel(ws, person);
+            const uploaded = [];
+            for (const file of files) {
+                try {
+                    const compressed = await compressImage(file);
+                    const fileName = `elder_person_photo_${personId}_${Date.now()}_${Math.random().toString(36).slice(2,5)}.jpg`;
+                    const result = await uploadToGoogleDrive(compressed, fileName);
+                    uploaded.push({ name: fileName, displayName: new Date().toLocaleString(), previewUrl: result.previewUrl, downloadUrl: result.downloadUrl });
+                } catch(err) {
+                    showToast('⚠️ 照片上傳失敗：' + err.message);
+                }
+            }
+            if (uploadingEl) uploadingEl.classList.add('hidden');
+
+            if (!uploaded.length) return;
+            const newPhotos = [...(savedRecord.photos || []), ...uploaded];
+            const record = normalizeElderRecord({ ...savedRecord, photos: newPhotos, personnelId: personId, updatedAt: formatLocalDateTime() }, person);
+            const workstations = (c.workstations || []).map(item => {
+                if (item.id !== currentWorkstationId) return item;
+                const records = [...(item.records || [])];
+                const idx = records.findIndex(r => r.personnelId === personId);
+                if (idx >= 0) records[idx] = { ...records[idx], ...record };
+                else records.push(record);
+                return { ...item, records };
+            });
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
+                showToast(`✓ 已上傳 ${uploaded.length} 張照片`);
+                const newWs = workstations.find(w => w.id === currentWorkstationId);
+                if (newWs) renderElderPersonRecords(c.companyPersonnel || [], newWs);
+            } catch(e) { alert('儲存失敗：' + e.message); }
+        };
+
+        // 3. 錄音：per-person toggle
+        window.togglePersonRecording = async function(personId) {
+            if (!currentElderCaseId || !currentWorkstationId) { alert('請先選擇工作站'); return; }
+            const c = getCurrentElderCase();
+            const ws = getCurrentElderWorkstation();
+            if (!c || !ws) return;
+            const person = getCompanyPersonnelById(c.companyPersonnel || [], personId);
+
+            if (elderIsRecording && currentPersonRecordingId === personId) {
+                // 停止此人的錄音
+                await stopElderRecording();
+                currentPersonRecordingId = null;
+                // 更新按鈕狀態
+                _updatePersonRecBtn(personId, false);
+            } else {
+                // 若有其他人錄音中，先停止
+                if (elderIsRecording && currentPersonRecordingId) {
+                    await stopElderRecording();
+                    _updatePersonRecBtn(currentPersonRecordingId, false);
+                }
+                currentPersonRecordingId = personId;
+                // 重寫 uploadElderAudio 使用的 displayLabel 包含人名
+                const personLabel = person ? person.name : personId;
+                // 暫存原始函式，開始錄音（錄音結束時 uploadElderAudio 會自動命名）
+                window._personRecordingLabel = personLabel;
+                await startElderRecordingForPerson(personId, personLabel);
+                _updatePersonRecBtn(personId, true);
+            }
+        };
+
+        function _updatePersonRecBtn(personId, isRec) {
+            const btn = document.getElementById(`person-rec-btn-${personId}`);
+            const status = document.getElementById(`person-rec-status-${personId}`);
+            if (btn) {
+                btn.innerHTML = `<i class="fa-solid ${isRec ? 'fa-stop' : 'fa-circle'} text-xs"></i>${isRec ? '停止錄音' : '開始錄音'}`;
+                btn.className = btn.className.replace(isRec ? /bg-red-50 text-red-600 border border-red-200 hover:bg-red-100/ : /bg-red-600 text-white/,
+                    isRec ? 'bg-red-600 text-white' : 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100');
+            }
+            if (status) status.classList.toggle('hidden', !isRec);
+        }
+
+        // 以人名為標籤開始錄音（複用既有 startElderRecording 邏輯，但 label 包含人名）
+        async function startElderRecordingForPerson(personId, personLabel) {
+            try {
+                const startedCaseId = currentElderCaseId;
+                const startedWsId = currentWorkstationId;
+                elderRecordingStream = await requestMicrophoneStream();
+                elderMediaRecorder = new MediaRecorder(elderRecordingStream);
+                elderAudioChunks = []; elderSegmentIndex = 0; elderRecStartTime = Date.now();
+                elderMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) elderAudioChunks.push(e.data); };
+                elderMediaRecorder.onstop = async () => {
+                    if (elderSegmentInterval) { clearInterval(elderSegmentInterval); elderSegmentInterval = null; }
+                    if (elderRecTimerInterval) { clearInterval(elderRecTimerInterval); elderRecTimerInterval = null; }
+                    if (elderAudioChunks.length > 0) {
+                        const blob = new Blob(elderAudioChunks, { type: elderMediaRecorder.mimeType || 'audio/webm' });
+                        const ts = new Date().toLocaleString();
+                        const fileName = `elder_audio_${personId}_${Date.now()}.webm`;
+                        const label = `[${personLabel}] ${ts}${elderSegmentIndex > 0 ? ` 第${elderSegmentIndex+1}段(尾)` : ''}`;
+                        await uploadElderAudio(blob, fileName, label, startedCaseId, startedWsId);
+                    }
+                    if (elderRecordingStream) elderRecordingStream.getTracks().forEach(t => t.stop());
+                    elderRecordingStream = null; elderIsRecording = false;
+                    _updatePersonRecBtn(personId, false);
+                    // 也更新舊版按鈕（若存在）
+                    const oldBtn = document.getElementById('elder-btn-record');
+                    if (oldBtn) { oldBtn.innerHTML = '<i class="fa-solid fa-circle mr-1 text-xs"></i>開始錄音'; oldBtn.classList.remove('bg-red-600','text-white'); oldBtn.classList.add('bg-red-50','text-red-600','border','border-red-200'); }
+                    const oldStatus = document.getElementById('elder-recording-status');
+                    if (oldStatus) oldStatus.classList.add('hidden');
+                    if (elderStopRecordingResolver) { elderStopRecordingResolver(); elderStopRecordingResolver = null; }
+                };
+                elderMediaRecorder.start(1000);
+                elderIsRecording = true;
+                // 計時顯示
+                elderRecTimerInterval = setInterval(() => {
+                    if (!elderRecStartTime) return;
+                    const sec = Math.floor((Date.now() - elderRecStartTime) / 1000);
+                    const mm = String(Math.floor(sec/60)).padStart(2,'0'), ss = String(sec%60).padStart(2,'0');
+                    const statusEl = document.getElementById(`person-rec-status-${personId}`);
+                    if (statusEl) statusEl.textContent = `● 錄音中 ${mm}:${ss}`;
+                }, 1000);
+                // 分段上傳
+                elderSegmentInterval = setInterval(async () => {
+                    if (!elderIsRecording || !elderAudioChunks.length) return;
+                    elderSegmentIndex++;
+                    const segChunks = [...elderAudioChunks]; elderAudioChunks = [];
+                    const segBlob = new Blob(segChunks, { type: elderMediaRecorder.mimeType || 'audio/webm' });
+                    const segFileName = `elder_audio_${personId}_${Date.now()}_part${elderSegmentIndex}.webm`;
+                    showToast(`第${elderSegmentIndex}段上傳中...`);
+                    await uploadElderAudio(segBlob, segFileName, `[${personLabel}] ${new Date().toLocaleString()} 第${elderSegmentIndex}段`, startedCaseId, startedWsId);
+                }, SEGMENT_MINUTES * 60 * 1000);
+            } catch(err) { alert('無法開始錄音：' + formatMicError(err)); currentPersonRecordingId = null; }
+        }
 
         window.setElderPersonAndScrollToPhoto = function(personId) {
             currentElderPersonnelId = personId;
@@ -7958,12 +8197,17 @@ ${rawDraft}
             const savedRecord = getElderRecordForPersonnel(ws, person);
             const notes = (document.getElementById(`record-notes-${personId}`)?.value || '');
             const items = (document.getElementById(`record-items-${personId}`)?.value || '');
+            // 🆕 出席狀況
+            const status = document.getElementById(`record-status-${personId}`)?.value || '';
+            const statusNote = status === '其他' ? (document.getElementById(`record-status-note-${personId}`)?.value || '') : '';
             const record = normalizeElderRecord({
                 ...savedRecord,
                 personnelId: personId,
                 workContent: notes,
                 difficulties: '',
                 expectedItems: items,
+                status,
+                statusNote,
                 updatedAt: formatLocalDateTime()
             }, person);
             const workstations = (c.workstations || []).map(item => {
@@ -7976,8 +8220,16 @@ ${rawDraft}
             });
             try {
                 await updateDoc(doc(db, 'users', currentUser.uid, 'cases', currentElderCaseId), { workstations, updatedAt: serverTimestamp() });
-                showToast('個案紀錄已儲存');
+                const label = status ? `已標記為「${status === '其他' ? statusNote || '其他原因' : status}」` : '個案紀錄已儲存';
+                showToast(label);
                 renderElderWorkstationList(workstations);
+                // 🆕 重新渲染品項區（更新共用名單）與個案卡片
+                const newWs = workstations.find(w => w.id === currentWorkstationId);
+                if (newWs) {
+                    renderElderPersonRecords(c.companyPersonnel || [], newWs);
+                    renderElderItemsSection(c.companyPersonnel || [], newWs);
+                    renderElderItemsSidebar();
+                }
             } catch(e) { alert('儲存失敗：' + e.message); }
         };
 
@@ -7988,19 +8240,28 @@ ${rawDraft}
             const items = ws.requestedItems || [];
             const summaryEl = document.getElementById('elder-items-summary');
             const listEl = document.getElementById('elder-items-list');
-            const selectedPeople = (ws.personnelIds || []).map(pid => getCompanyPersonnelById(companyPersonnel, pid)).filter(Boolean);
+            // 🆕 只顯示出席中的人員（取消/請假者不列入）
+            const selectedPeople = (ws.personnelIds || []).map(pid => getCompanyPersonnelById(companyPersonnel, pid)).filter(Boolean)
+                .filter(p => !isPersonCancelled(getElderRecordForPersonnel(ws, p)));
 
             if (summaryEl) {
                 if (!items.length) {
                     summaryEl.innerHTML = '<span class="italic">尚未填寫品項</span>';
                 } else {
                     summaryEl.innerHTML = items.filter(i => i.text).map(item => {
-                        const who = item.isShared !== false
-                            ? '<span class="text-slate-400">共用</span>'
-                            : (item.personnelIds || []).map(pid => {
+                        let who = '';
+                        if (item.isShared !== false) {
+                            // 共用：只列出席者
+                            const activeNames = selectedPeople.map(p => `${toCleanText(p.seqNo || '')}${p.name}`);
+                            who = activeNames.length ? `<span class="text-slate-400">共用 (${activeNames.join('、')})</span>` : '<span class="text-slate-400">共用</span>';
+                        } else {
+                            const names = (item.personnelIds || []).map(pid => {
                                 const p = getCompanyPersonnelById(companyPersonnel, pid);
-                                return p ? `<span>${toCleanText(p.seqNo || '')}${p.name}</span>` : '';
-                            }).filter(Boolean).join('、');
+                                if (!p || isPersonCancelled(getElderRecordForPersonnel(ws, p))) return '';
+                                return `${toCleanText(p.seqNo || '')}${p.name}`;
+                            }).filter(Boolean);
+                            who = names.length ? `<span>${names.join('、')}</span>` : '';
+                        }
                         return `<span class="mr-3 text-slate-700">${item.text} ${item.qty || ''}${who ? ' (' + who + ')' : ''}</span>`;
                     }).join('');
                 }
@@ -8081,12 +8342,16 @@ ${rawDraft}
                 (ws.requestedItems || []).filter(i => i.text).forEach((item, idx) => {
                     let whoStr = '';
                     if (item.isShared !== false) {
-                        const wsPersonnel = (ws.personnelIds || []).map(pid => getCompanyPersonnelById(personnel, pid)).filter(Boolean);
+                        // 🆕 共用品項：排除取消/請假的人員
+                        const wsPersonnel = (ws.personnelIds || []).map(pid => getCompanyPersonnelById(personnel, pid)).filter(Boolean)
+                            .filter(p => !isPersonCancelled(getElderRecordForPersonnel(ws, p)));
                         whoStr = wsPersonnel.length ? '共用 (' + wsPersonnel.map(p => `${toCleanText(p.seqNo || '')}${p.name}`).join('、') + ')' : '共用';
                     } else {
+                        // 🆕 指定品項：排除取消/請假的人員
                         const names = (item.personnelIds || []).map(pid => {
                             const p = getCompanyPersonnelById(personnel, pid);
-                            return p ? `${toCleanText(p.seqNo || '')}${p.name}` : '';
+                            if (!p || isPersonCancelled(getElderRecordForPersonnel(ws, p))) return '';
+                            return `${toCleanText(p.seqNo || '')}${p.name}`;
                         }).filter(Boolean);
                         whoStr = names.length ? '(' + names.join('、') + ')' : '';
                     }
