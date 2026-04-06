@@ -1247,13 +1247,6 @@
                             <i class="fa-regular fa-copy mr-1"></i>複製講稿
                         </button>
                     </div>
-                    <div class="flex justify-between items-center mb-3">
-                        <h3 class="font-bold text-sm text-slate-700"><i class="fa-solid fa-layer-group text-blue-500 mr-1"></i>工作站列表</h3>
-                        <button id="elder-btn-add-ws-top" class="bg-blue-600 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-blue-700"><i class="fa-solid fa-plus mr-1"></i>新增</button>
-                    </div>
-                    <div id="elder-ws-list-top" class="space-y-2 mb-3">
-                        <p class="text-xs text-slate-400 text-center py-4">尚無工作站</p>
-                    </div>
                     <div class="flex items-start justify-between gap-2">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2">
@@ -5792,12 +5785,10 @@
                 const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
                 const safeName = file.name.replace(/[^a-zA-Z0-9.\u4e00-\u9fff_-]/g, '_');
                 const driveResult = await uploadToGoogleDrive(file, `申請書_${timestamp}_${safeName}`);
-                console.log('[申請書上傳] Drive 回傳：', JSON.stringify(driveResult));
-                // 嘗試各種可能的 URL 欄位名稱
-                const fileUrl = driveResult.webViewLink || driveResult.viewUrl || driveResult.fileUrl || driveResult.url || driveResult.link || '';
+                // 與照片上傳相同：使用 previewUrl / downloadUrl
+                const fileUrl = driveResult.previewUrl || driveResult.downloadUrl || '';
                 if (!fileUrl) {
-                    console.warn('[申請書上傳] 找不到 URL，回傳內容：', driveResult);
-                    throw new Error('雲端回傳資料中無法取得連結（' + Object.keys(driveResult).join(', ') + '）');
+                    throw new Error('雲端上傳失敗，請確認 GAS URL 設定是否正確');
                 }
                 pendingApplicationFileUrl = fileUrl;
                 updateApplicationFileButton(fileUrl);
@@ -5860,7 +5851,7 @@
                         const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
                         const safeName = file.name.replace(/[^a-zA-Z0-9.\u4e00-\u9fff_-]/g, '_');
                         const driveResult = await uploadToGoogleDrive(file, `申請書_${timestamp}_${safeName}`);
-                        const fileUrl = driveResult.webViewLink || driveResult.url || driveResult.fileUrl || '';
+                        const fileUrl = driveResult.previewUrl || driveResult.downloadUrl || '';
                         if (fileUrl) {
                             await updateDoc(doc(collection(db, 'users', currentUser.uid, 'cases'), caseId), { applicationFileUrl: fileUrl, updatedAt: serverTimestamp() });
                             // 更新本地快取
