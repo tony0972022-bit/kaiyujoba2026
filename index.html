@@ -1258,9 +1258,10 @@
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2">
                                 <h2 id="dis-client-name" class="text-lg font-black text-slate-800 leading-snug truncate">個案姓名</h2>
-                                <button type="button" id="dis-btn-app-file" class="hidden shrink-0 text-purple-600 hover:text-purple-800 bg-purple-50 border border-purple-200 rounded-lg p-1 text-sm leading-none" title="預覽申請書">
+                                <button type="button" id="dis-btn-app-file" class="shrink-0 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg p-1 text-sm leading-none hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-colors" title="申請書（點擊上傳或預覽）">
                                     <i class="fa-solid fa-paperclip"></i>
                                 </button>
+                                <input type="file" id="dis-app-file-input" accept="application/pdf,image/*" class="hidden">
                             </div>
                             <p id="dis-client-meta" class="text-xs text-slate-500 mt-0.5">性別 / 年齡</p>
                             <p id="dis-company-name" class="text-sm font-bold text-blue-700 mt-1 truncate">申請單位</p>
@@ -1477,9 +1478,10 @@
                 <div class="p-4 border-b border-slate-100 space-y-1">
                     <div class="flex items-center gap-2">
                         <h2 id="elder-ws-company" class="text-lg font-black text-slate-800 leading-snug truncate">公司名稱</h2>
-                        <button type="button" id="elder-btn-app-file" class="hidden shrink-0 text-purple-600 hover:text-purple-800 bg-purple-50 border border-purple-200 rounded-lg p-1 text-sm leading-none" title="預覽申請書">
+                        <button type="button" id="elder-btn-app-file" class="shrink-0 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg p-1 text-sm leading-none hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-colors" title="申請書（點擊上傳或預覽）">
                             <i class="fa-solid fa-paperclip"></i>
                         </button>
+                        <input type="file" id="elder-app-file-input" accept="application/pdf,image/*" class="hidden">
                     </div>
                     <p id="elder-ws-meta" class="text-xs text-slate-500">初訪日：-</p>
                     <button id="elder-copy-address" type="button" class="w-full mt-2 text-left bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 hover:bg-slate-100 transition-colors">
@@ -3508,16 +3510,7 @@
             document.getElementById('dis-company-name').textContent = c.company || '未命名企業';
             document.getElementById('dis-category-badge').textContent = c.category || '身心障礙者';
             // 申請書迴紋針
-            const disAppBtn = document.getElementById('dis-btn-app-file');
-            if (disAppBtn) {
-                if (c.applicationFileUrl) {
-                    disAppBtn.classList.remove('hidden');
-                    disAppBtn.onclick = () => window.openPreview(c.applicationFileUrl, c.applicationFileUrl, 'application/pdf', '申請書');
-                } else {
-                    disAppBtn.classList.add('hidden');
-                    disAppBtn.onclick = null;
-                }
-            }
+            updateAppFileBtn('dis', id, c.applicationFileUrl || '');
             document.getElementById('dis-disability').textContent = c.disability || '-';
             document.getElementById('dis-cause').textContent = c.disabilityCause || '-';
             document.getElementById('dis-title').textContent = c.clientTitle || c.jobTitle || '-';
@@ -4449,16 +4442,7 @@
             document.getElementById('elder-ws-company').textContent = c.company || '未命名企業';
             document.getElementById('elder-ws-meta').textContent = `初訪日：${c.visitDate || '-'}　主責：${c.owner || ''}`;
             // 申請書迴紋針
-            const elderAppBtn = document.getElementById('elder-btn-app-file');
-            if (elderAppBtn) {
-                if (c.applicationFileUrl) {
-                    elderAppBtn.classList.remove('hidden');
-                    elderAppBtn.onclick = () => window.openPreview(c.applicationFileUrl, c.applicationFileUrl, 'application/pdf', '申請書');
-                } else {
-                    elderAppBtn.classList.add('hidden');
-                    elderAppBtn.onclick = null;
-                }
-            }
+            updateAppFileBtn('elder', caseId, c.applicationFileUrl || '');
             const elderAddressEl = document.getElementById('elder-company-address');
             const elderAddress = String(c.companyAddress || getDistrictByName(c.district || '')?.address || '').trim();
             if (elderAddressEl) elderAddressEl.textContent = elderAddress || '未填寫地址';
@@ -5752,23 +5736,25 @@
             const label = document.getElementById('label-ai-upload');
             const span = label.querySelector('.btn-text');
             const originalText = span.innerHTML;
-            span.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 辨識中...';
+
+            const setStatus = (msg) => { span.innerHTML = msg; };
             label.classList.add('opacity-50', 'pointer-events-none');
-            // 🆕 依模式選擇不同辨識邏輯
+
             const aiMode = document.getElementById('ai-upload-block')?.dataset.aiMode || 'disability';
+
+            // ── 步驟一：AI 辨識 ──
             try {
+                setStatus('<i class="fa-solid fa-spinner fa-spin"></i> AI 辨識中...');
                 if (aiMode === 'workstation') {
-                    // 中高齡/勞工就業通 - 只填單位基本資訊
                     const result = await analyzeDocumentWorkstationMode(file);
                     if (result.company) document.getElementById('form-company').value = result.company;
                     if (result.contactPerson) { const el = document.getElementById('form-contact-person'); if(el) el.value = result.contactPerson; }
                     if (result.contactPhone) { const el = document.getElementById('form-phone'); if(el) el.value = result.contactPhone; }
                     if (result.contactEmail) { const el = document.getElementById('form-contact-email'); if(el) el.value = result.contactEmail; }
                     if (result.companyAddress) { const el = document.getElementById('form-company-address'); if(el) el.value = result.companyAddress; }
-                    showToast("✨ AI 已填寫申請單位基本資料！");
+                    showToast('✨ AI 已填寫申請單位基本資料！');
                     triggerAutoResize();
                 } else {
-                    // 身障 - 原有完整行為不變
                     const result = await analyzeDocumentWithAI(file);
                     if(result.company) document.getElementById('form-company').value = result.company;
                     if(result.name) document.getElementById('form-client-name').value = result.name;
@@ -5778,10 +5764,7 @@
                     if(result.mobile) document.getElementById('form-client-mobile').value = result.mobile;
                     if(result.email) document.getElementById('form-client-email').value = result.email;
                     if(result.education) document.getElementById('form-education').value = result.education;
-                    if(result.hireDate) {
-                        document.getElementById('form-hire-date').value = normalizeHireDateInput(result.hireDate);
-                        updateSeniority();
-                    }
+                    if(result.hireDate) { document.getElementById('form-hire-date').value = normalizeHireDateInput(result.hireDate); updateSeniority(); }
                     if(result.location) document.getElementById('form-work-location').value = result.location;
                     autoAssignDistrictByLocation();
                     if(result.disability) document.getElementById('form-client-disability').value = result.disability;
@@ -5791,36 +5774,52 @@
                     if(result.problems) document.getElementById('form-initial-problems').value = result.problems;
                     const radio = document.querySelector('input[name="form-category"][value="身心障礙者"]');
                     if(radio) { radio.checked = true; radio.dispatchEvent(new Event('change')); }
-                    showToast("✨ AI 已成功為您填寫表單！");
+                    showToast('✨ AI 已成功為您填寫表單！');
                     triggerAutoResize();
                 }
-            // 辨識完成後，上傳檔案到 Google Drive
+            } catch (aiErr) {
+                alert('AI 辨識失敗：' + aiErr.message);
+                label.classList.remove('opacity-50', 'pointer-events-none');
+                span.innerHTML = originalText;
+                e.target.value = '';
+                return; // AI 失敗就停止，不繼續上傳
+            }
+
+            // ── 步驟二：上傳申請書至 Google Drive（AI 成功後才執行）──
             try {
-                showToast('⬆️ 正在上傳申請書至雲端...');
+                setStatus('<i class="fa-solid fa-spinner fa-spin"></i> 上傳申請書中...');
+                if (!settings.gasUrl) throw new Error('尚未設定 GAS URL，請先至設定頁填入');
                 const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
                 const safeName = file.name.replace(/[^a-zA-Z0-9.\u4e00-\u9fff_-]/g, '_');
-                const driveFileName = `申請書_${timestamp}_${safeName}`;
-                const driveResult = await uploadToGoogleDrive(file, driveFileName);
-                const fileUrl = driveResult.webViewLink || driveResult.url || driveResult.fileUrl || '';
-                if (fileUrl) {
-                    pendingApplicationFileUrl = fileUrl;
-                    // 若目前是編輯中的案件，立即更新 Firestore
-                    const caseId = document.getElementById('form-id')?.value || '';
-                    if (caseId && currentUser) {
-                        await updateDoc(doc(collection(db, 'users', currentUser.uid, 'cases'), caseId), { applicationFileUrl: fileUrl, updatedAt: serverTimestamp() });
-                    }
-                    updateApplicationFileButton(fileUrl);
-                    showToast('✅ 申請書已上傳至雲端！');
+                const driveResult = await uploadToGoogleDrive(file, `申請書_${timestamp}_${safeName}`);
+                console.log('[申請書上傳] Drive 回傳：', JSON.stringify(driveResult));
+                // 嘗試各種可能的 URL 欄位名稱
+                const fileUrl = driveResult.webViewLink || driveResult.viewUrl || driveResult.fileUrl || driveResult.url || driveResult.link || '';
+                if (!fileUrl) {
+                    console.warn('[申請書上傳] 找不到 URL，回傳內容：', driveResult);
+                    throw new Error('雲端回傳資料中無法取得連結（' + Object.keys(driveResult).join(', ') + '）');
                 }
+                pendingApplicationFileUrl = fileUrl;
+                updateApplicationFileButton(fileUrl);
+                // 若是編輯中的案件立即寫入 Firestore
+                const caseId = document.getElementById('form-id')?.value || '';
+                if (caseId && currentUser) {
+                    await updateDoc(doc(collection(db, 'users', currentUser.uid, 'cases'), caseId), { applicationFileUrl: fileUrl, updatedAt: serverTimestamp() });
+                    const cached = casesData.find(x => x.id === caseId);
+                    if (cached) cached.applicationFileUrl = fileUrl;
+                }
+                showToast('✅ 申請書已上傳至雲端！點擊迴紋針可預覽');
             } catch (driveErr) {
-                console.warn('申請書雲端上傳失敗：', driveErr.message);
-                showToast('⚠️ AI 辨識完成，但雲端上傳失敗：' + driveErr.message);
+                console.warn('[申請書上傳] 失敗：', driveErr.message);
+                showToast('⚠️ AI 辨識完成，但申請書雲端上傳失敗：' + driveErr.message);
+            } finally {
+                span.innerHTML = originalText;
+                label.classList.remove('opacity-50', 'pointer-events-none');
+                e.target.value = '';
             }
-            } catch (err) { alert(err.message); }
-            finally { span.innerHTML = originalText; label.classList.remove('opacity-50', 'pointer-events-none'); e.target.value = ''; }
         });
 
-        // 更新迴紋針按鈕顯示
+        // 更新表單區迴紋針按鈕顯示
         function updateApplicationFileButton(url) {
             const btn = document.getElementById('btn-application-file-preview');
             if (!btn) return;
@@ -5830,6 +5829,51 @@
             } else {
                 btn.classList.add('hidden');
                 btn.onclick = null;
+            }
+        }
+
+        // 工作區側欄迴紋針：有檔案→紫色可預覽，無檔案→灰色可上傳
+        function updateAppFileBtn(prefix, caseId, url) {
+            const btn = document.getElementById(`${prefix}-btn-app-file`);
+            const input = document.getElementById(`${prefix}-app-file-input`);
+            if (!btn) return;
+
+            if (url) {
+                // 有檔案：紫色，點擊預覽
+                btn.className = 'shrink-0 bg-purple-50 text-purple-600 border border-purple-300 rounded-lg p-1 text-sm leading-none hover:bg-purple-100 hover:text-purple-800 transition-colors';
+                btn.title = '點擊預覽申請書';
+                btn.onclick = () => window.openPreview(url, url, 'application/pdf', '申請書');
+            } else {
+                // 無檔案：灰色，點擊上傳
+                btn.className = 'shrink-0 bg-slate-100 text-slate-400 border border-slate-200 rounded-lg p-1 text-sm leading-none hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-colors';
+                btn.title = '點擊上傳申請書';
+                btn.onclick = () => input && input.click();
+            }
+
+            // file input 上傳處理
+            if (input) {
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file || !caseId || !currentUser) return;
+                    try {
+                        showToast('⬆️ 正在上傳申請書至雲端...');
+                        const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                        const safeName = file.name.replace(/[^a-zA-Z0-9.\u4e00-\u9fff_-]/g, '_');
+                        const driveResult = await uploadToGoogleDrive(file, `申請書_${timestamp}_${safeName}`);
+                        const fileUrl = driveResult.webViewLink || driveResult.url || driveResult.fileUrl || '';
+                        if (fileUrl) {
+                            await updateDoc(doc(collection(db, 'users', currentUser.uid, 'cases'), caseId), { applicationFileUrl: fileUrl, updatedAt: serverTimestamp() });
+                            // 更新本地快取
+                            const cached = casesData.find(x => x.id === caseId);
+                            if (cached) cached.applicationFileUrl = fileUrl;
+                            updateAppFileBtn(prefix, caseId, fileUrl);
+                            showToast('✅ 申請書已上傳！點擊迴紋針即可預覽');
+                        }
+                    } catch (err) {
+                        showToast('⚠️ 上傳失敗：' + err.message);
+                    }
+                    input.value = '';
+                };
             }
         }
 
