@@ -307,10 +307,16 @@
                         <h3 class="font-bold text-lg text-purple-800"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>AI 申請書自動填寫</h3>
                         <p id="ai-upload-hint" class="text-sm text-purple-600 mt-1">支援 PDF 或圖片檔，一鍵擷取基本資料</p>
                     </div>
-                    <label id="label-ai-upload" class="bg-purple-600 text-white px-6 py-3 rounded-lg text-base font-bold shadow hover:bg-purple-700 cursor-pointer transition-colors whitespace-nowrap">
-                        <span class="btn-text"><i class="fa-solid fa-file-arrow-up mr-2"></i>上傳申請書</span>
-                        <input type="file" id="ai-upload" accept="application/pdf,image/*" class="hidden">
-                    </label>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <!-- 迴紋針：有上傳申請書時顯示 -->
+                        <button type="button" id="btn-application-file-preview" class="hidden bg-white border border-purple-300 text-purple-700 px-4 py-3 rounded-lg text-base font-bold shadow hover:bg-purple-50 cursor-pointer transition-colors whitespace-nowrap" title="預覽申請書">
+                            <i class="fa-solid fa-paperclip mr-2"></i>申請書
+                        </button>
+                        <label id="label-ai-upload" class="bg-purple-600 text-white px-6 py-3 rounded-lg text-base font-bold shadow hover:bg-purple-700 cursor-pointer transition-colors whitespace-nowrap">
+                            <span class="btn-text"><i class="fa-solid fa-file-arrow-up mr-2"></i>上傳申請書</span>
+                            <input type="file" id="ai-upload" accept="application/pdf,image/*" class="hidden">
+                        </label>
+                    </div>
                 </div>
 
                 <form id="case-form" class="space-y-5">
@@ -349,7 +355,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-base font-medium text-slate-600 mb-1">主責人 *</label>
+                        <label class="block text-base font-medium text-slate-600 mb-1">轄區承辦 *</label>
                         <select id="form-owner" required class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg bg-white">
                             <option value="凱宇">凱宇</option>
                             <option value="蔡凱宇">蔡凱宇</option>
@@ -366,6 +372,18 @@
                             <option value="林益青">林益青</option>
                             <option value="胡媧祥">胡媧祥</option>
                             <option value="黃致綺">黃致綺</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-base font-medium text-slate-600 mb-1">訪視專員</label>
+                        <select id="form-inspector" class="w-full p-3 md:p-4 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 text-base md:text-lg bg-white">
+                            <option value="">請選擇訪視專員</option>
+                            <option value="蔡凱宇">蔡凱宇</option>
+                            <option value="方姿云">方姿云</option>
+                            <option value="陳秋媚">陳秋媚</option>
+                            <option value="高湘怡">高湘怡</option>
+                            <option value="黃國裕">黃國裕</option>
                         </select>
                     </div>
 
@@ -1889,8 +1907,9 @@
         let currentUser = null;
         let casesData = [];
         let currentEditingCaseId = null;
-        let pendingPhotosQueue = []; 
-        let audioBlobCache = {}; 
+        let pendingPhotosQueue = [];
+        let audioBlobCache = {};
+        let pendingApplicationFileUrl = ''; // 申請書上傳後暫存 Google Drive URL
         const REC_DB_NAME = 'case_audio_cache_v1';
         const REC_STORE = 'recording_chunks';
         const REC_META_KEY = 'active_recording_meta';
@@ -3009,6 +3028,7 @@
                     <div class="flex items-center text-base text-slate-500 gap-4 font-medium">
                         <span class="truncate max-w-[220px]"><i class="fa-solid fa-building text-slate-400 mr-2"></i> ${item.company || '無'}</span>
                         <span><i class="fa-solid fa-calendar text-slate-400 mr-2"></i> ${item.visitDate || item.date || '無'}</span>
+                        ${item.applicationFileUrl ? `<button class="text-purple-600 hover:text-purple-800 bg-purple-50 border border-purple-200 rounded-lg px-2 py-0.5 text-sm font-bold flex items-center gap-1 shrink-0 no-print" title="預覽申請書" onclick="event.stopPropagation(); window.openPreview('${item.applicationFileUrl}','${item.applicationFileUrl}','application/pdf','申請書')"><i class="fa-solid fa-paperclip"></i></button>` : ''}
                     </div>
                     <div class="absolute top-1/2 right-4 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500">
                         <i class="fa-solid fa-chevron-right text-2xl"></i>
@@ -5038,6 +5058,9 @@
             const intakeDateField = document.getElementById('form-intake-date'); if (intakeDateField) intakeDateField.value = c.intakeDate || '';
             document.getElementById('form-visit-date').value = c.visitDate || c.date || '';
             const ownerField = document.getElementById('form-owner'); if (ownerField) ownerField.value = getCaseOwner(c);
+            const inspectorField = document.getElementById('form-inspector'); if (inspectorField) inspectorField.value = c.inspector || '';
+            pendingApplicationFileUrl = c.applicationFileUrl || '';
+            updateApplicationFileButton(pendingApplicationFileUrl);
             renderDistrictOptions(c.district || '');
 
             if (c.category === '中高齡及高齡者') {
@@ -5731,9 +5754,44 @@
                     showToast("✨ AI 已成功為您填寫表單！");
                     triggerAutoResize();
                 }
+            // 辨識完成後，上傳檔案到 Google Drive
+            try {
+                showToast('⬆️ 正在上傳申請書至雲端...');
+                const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                const safeName = file.name.replace(/[^a-zA-Z0-9.\u4e00-\u9fff_-]/g, '_');
+                const driveFileName = `申請書_${timestamp}_${safeName}`;
+                const driveResult = await uploadToGoogleDrive(file, driveFileName);
+                const fileUrl = driveResult.webViewLink || driveResult.url || driveResult.fileUrl || '';
+                if (fileUrl) {
+                    pendingApplicationFileUrl = fileUrl;
+                    // 若目前是編輯中的案件，立即更新 Firestore
+                    const caseId = document.getElementById('form-id')?.value || '';
+                    if (caseId && currentUser) {
+                        await updateDoc(doc(collection(db, 'users', currentUser.uid, 'cases'), caseId), { applicationFileUrl: fileUrl, updatedAt: serverTimestamp() });
+                    }
+                    updateApplicationFileButton(fileUrl);
+                    showToast('✅ 申請書已上傳至雲端！');
+                }
+            } catch (driveErr) {
+                console.warn('申請書雲端上傳失敗：', driveErr.message);
+                showToast('⚠️ AI 辨識完成，但雲端上傳失敗：' + driveErr.message);
+            }
             } catch (err) { alert(err.message); }
             finally { span.innerHTML = originalText; label.classList.remove('opacity-50', 'pointer-events-none'); e.target.value = ''; }
         });
+
+        // 更新迴紋針按鈕顯示
+        function updateApplicationFileButton(url) {
+            const btn = document.getElementById('btn-application-file-preview');
+            if (!btn) return;
+            if (url) {
+                btn.classList.remove('hidden');
+                btn.onclick = () => window.openPreview(url, url, 'application/pdf', '申請書');
+            } else {
+                btn.classList.add('hidden');
+                btn.onclick = null;
+            }
+        }
 
         DOM.btnNewCase.addEventListener('click', () => {
             DOM.form.reset(); document.getElementById('form-id').value = ''; document.getElementById('form-visit-date').valueAsDate = new Date();
@@ -5744,6 +5802,8 @@
             multiClients = []; document.getElementById('group-single-client').classList.remove('hidden'); document.getElementById('group-multi-client').classList.add('hidden');
             // 🆕 新增案件時隱藏 AI 上傳區塊，等選擇對象別後再顯示
             document.getElementById('ai-upload-block')?.classList.add('hidden');
+            pendingApplicationFileUrl = '';
+            updateApplicationFileButton('');
             toggleRecoveryBanner(false);
             renderCommitteeCheckboxes(); showView('form', '新增訪視案件', false); triggerAutoResize();
         });
@@ -5757,10 +5817,12 @@
             let owner = (document.getElementById('form-owner')?.value || PRIMARY_OWNER).trim();
             const districtOwner = getDistrictOwnerByName(district);
             if (districtOwner) owner = districtOwner;
+            const inspector = (document.getElementById('form-inspector')?.value || '').trim();
             const hireDateNormalized = normalizeHireDateInput(document.getElementById('form-hire-date')?.value || '');
             const data = {
                 category,
                 owner,
+                inspector,
                 district,
                 company: document.getElementById('form-company').value,
                 phone: document.getElementById('form-phone').value,
@@ -5777,6 +5839,7 @@
                 visitors: visitors,
                 updatedAt: serverTimestamp()
             };
+            if (pendingApplicationFileUrl) data.applicationFileUrl = pendingApplicationFileUrl;
 
             if(category === '中高齡（工作站）') {
                 data.clientName = '（工作站案件）'; data.clients = []; data.workstations = data.workstations || [];
@@ -5806,6 +5869,8 @@
                 data.outcome = { resolution: "", acceptance: "", benefit: "", closeDate: "" };
                 await addDoc(casesRef, data); showToast("新增案件成功");
             }
+            pendingApplicationFileUrl = '';
+            updateApplicationFileButton('');
             showView('list', '訪視案件管理', true);
         });
 
