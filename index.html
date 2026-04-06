@@ -3023,16 +3023,22 @@
                 const catColor = (item.category === '中高齡（工作站）' || item.category === '中高齡及高齡者') ? 'bg-amber-100 text-amber-700' : (item.category === '身心障礙者') ? 'bg-emerald-100 text-emerald-700' : (item.category === '勞工就業通') ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-700';
 
                 const owner = getCaseOwner(item);
+                const inspector = String(item.inspector || '').trim();
                 const ownerColor = isPrimaryOwner(owner) ? 'bg-blue-50 text-blue-700 border border-blue-100' : 'bg-slate-50 text-slate-600 border border-slate-200';
+                const inspectorColor = isPrimaryOwner(inspector) ? 'bg-cyan-50 text-cyan-700 border border-cyan-100' : 'bg-slate-50 text-slate-600 border border-slate-200';
                 const completedBadge = isReportCompleted(item)
                     ? `<span class="text-xs bg-rose-100 text-rose-700 border border-rose-200 px-3 py-1 rounded-lg font-black whitespace-nowrap">已完成：${item.reportCompletedAt || '-'}</span>`
+                    : '';
+                const inspectorBadge = inspector
+                    ? `<span class="text-xs ${inspectorColor} px-3 py-1 rounded-lg font-black whitespace-nowrap">訪視：${inspector}</span>`
                     : '';
 
                 el.innerHTML = `
                     <div class="flex justify-between items-start mb-3 gap-3">
                         <h3 class="font-bold text-slate-800 text-xl pr-4 flex-1 min-w-0">${item.clientName || '未命名個案'}</h3>
                         <div class="flex flex-col items-end gap-2 shrink-0">
-                            <span class="text-xs ${ownerColor} px-3 py-1 rounded-lg font-black whitespace-nowrap">主責：${owner}</span>
+                            <span class="text-xs ${ownerColor} px-3 py-1 rounded-lg font-black whitespace-nowrap">承辦：${owner}</span>
+                            ${inspectorBadge}
                             ${completedBadge}
                             <span class="text-sm ${catColor} px-3 py-1 rounded-lg font-bold whitespace-nowrap">${item.category || '未分類'}</span>
                         </div>
