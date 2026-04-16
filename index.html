@@ -9742,8 +9742,9 @@ ${rawDraft}
                 const cnt = g.cases.length;
                 // 取地址/備註（以第一筆 case 為主）
                 const repCase = verifyData.cases.find(c => schedKeyForCase(c) === key) || g.cases[0];
-                const addr  = repCase ? (repCase.address || '') : '';
-                const notes = repCase ? (repCase.notes  || '') : '';
+                const addr    = repCase ? (repCase.address  || '') : '';
+                const notes   = repCase ? (repCase.notes    || '') : '';
+                const docFile = repCase ? (repCase.docFile  || null) : null;
                 const catBadge = g.type === '身障'
                     ? '<span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold">身障</span>'
                     : '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">中高勞通</span>';
@@ -9787,6 +9788,29 @@ ${rawDraft}
                                 <textarea class="sched-notes-field flex-1 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400 resize-none"
                                           placeholder="備註..." rows="1" data-key="${safeKey}"
                                           oninput="autoResizeTextarea(this); window.schedDebounceSaveNotes('${safeKey}', this.value)">${escH(notes)}</textarea>
+                            </div>
+                            <!-- 訪視評估表 -->
+                            <div class="flex items-center gap-2 pt-1 border-t border-slate-100 mt-1">
+                                <i class="fa-solid fa-file-word text-blue-400 text-sm shrink-0"></i>
+                                ${docFile
+                                    ? `<button onclick="window.schedPreviewDoc('${safeKey}')"
+                                              class="flex-1 min-w-0 text-left text-sm text-blue-600 font-medium truncate hover:underline active:opacity-70">
+                                            <i class="fa-solid fa-eye mr-1 text-blue-400 text-xs"></i>${escH(docFile.filename)}
+                                        </button>
+                                        <button onclick="window.schedPreviewDoc('${safeKey}')"
+                                                class="shrink-0 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs px-2.5 py-1 rounded-lg font-bold transition-colors active:scale-90">
+                                            預覽
+                                        </button>
+                                        <button onclick="window.schedTriggerDocUpload('${safeKey}')"
+                                                class="shrink-0 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors" title="重新上傳">
+                                            <i class="fa-solid fa-arrow-up-from-bracket text-xs"></i>
+                                        </button>`
+                                    : `<button onclick="window.schedTriggerDocUpload('${safeKey}')"
+                                              class="flex-1 text-left text-sm text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                                            <i class="fa-solid fa-upload text-xs"></i>
+                                            <span>上傳訪視評估表 (.docx)</span>
+                                        </button>`
+                                }
                             </div>
                         </div>
                         <!-- 上移/下移 -->
@@ -9979,6 +10003,113 @@ ${rawDraft}
             window.schedChangeDate(today);
         };
 
+        // ==========================================
+        // 訪視評估表 上傳 & 預覽
+        // ==========================================
+
+        let schedDocUploadKey = '';   // 目前正在上傳的 key
+
+        // 觸發隱藏 file input
+        window.schedTriggerDocUpload = function(key) {
+            schedDocUploadKey = key;
+            const inp = document.getElementById('sched-doc-file-input');
+            if (inp) { inp.value = ''; inp.click(); }
+        };
+
+        // 處理檔案選取後的上傳
+        document.getElementById('sched-doc-file-input')?.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file || !schedDocUploadKey) return;
+            const key = schedDocUploadKey;
+            schedDocUploadKey = '';
+
+            // 找到對應卡片，顯示上傳中狀態
+            const card = [...document.querySelectorAll('#sched-list .sched-card')]
+                .find(c => c.dataset.key === key);
+            const docRow = card?.querySelector('.fa-file-word')?.closest('.flex');
+            if (docRow) {
+                docRow.innerHTML = `<i class="fa-solid fa-file-word text-blue-400 text-sm shrink-0"></i>
+                    <span class="text-sm text-blue-500 flex items-center gap-1.5">
+                        <i class="fa-solid fa-spinner fa-spin text-xs"></i> 上傳中：${file.name}
+                    </span>`;
+            }
+
+            try {
+                const timestamp = Date.now();
+                const safeName = file.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]/g, '_');
+                const uploadName = `評估表_${timestamp}_${safeName}`;
+                const result = await uploadToGoogleDrive(file, uploadName);
+
+                const docFile = {
+                    filename: file.name,
+                    previewUrl: result.previewUrl || result.downloadUrl || '',
+                    downloadUrl: result.downloadUrl || result.previewUrl || '',
+                    uploadedAt: new Date().toISOString()
+                };
+
+                // 儲存到 verifyData.cases（身障：單筆，中高勞通：整個單位）
+                schedGetCasesForKey(key).forEach(c => { c.docFile = docFile; });
+                saveVerifyData();
+                showToast(`✅ 已上傳：${file.name}`);
+                renderScheduleView();
+            } catch(err) {
+                showToast(`❌ 上傳失敗：${err.message}`);
+                renderScheduleView();
+            }
+        });
+
+        // 開啟預覽 Modal
+        window.schedPreviewDoc = function(key) {
+            const repCase = verifyData.cases.find(c => schedKeyForCase(c) === key);
+            const docFile = repCase?.docFile;
+            if (!docFile?.previewUrl) { showToast('找不到檔案連結，請重新上傳'); return; }
+
+            const modal = document.getElementById('sched-doc-modal');
+            const iframe = document.getElementById('sched-doc-iframe');
+            const titleEl = document.getElementById('sched-doc-modal-title');
+            const dlLink = document.getElementById('sched-doc-modal-download');
+            const loading = document.getElementById('sched-doc-loading');
+
+            if (!modal || !iframe) return;
+
+            // 標題與下載連結
+            if (titleEl) titleEl.textContent = docFile.filename || '訪視評估表';
+            if (dlLink) dlLink.href = docFile.downloadUrl || docFile.previewUrl;
+
+            // 重設載入指示
+            if (loading) loading.style.display = 'flex';
+            iframe.src = 'about:blank';
+
+            // Google Docs 嵌入 URL
+            // 若 previewUrl 已是 drive.google.com/file 格式，轉成 /preview 路徑
+            let embedUrl = docFile.previewUrl;
+            if (embedUrl.includes('drive.google.com/file/d/')) {
+                embedUrl = embedUrl.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview');
+            } else if (!embedUrl.includes('/preview') && !embedUrl.includes('docs.google.com/viewer')) {
+                // 使用 Google Docs Viewer 作為備援
+                embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(embedUrl)}&embedded=true`;
+            }
+
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            // 給 iframe 一點時間讓 DOM 渲染完畢再設 src
+            requestAnimationFrame(() => { iframe.src = embedUrl; });
+        };
+
+        // 關閉預覽 Modal
+        window.schedCloseDocPreview = function() {
+            const modal = document.getElementById('sched-doc-modal');
+            const iframe = document.getElementById('sched-doc-iframe');
+            if (modal) modal.classList.add('hidden');
+            if (iframe) iframe.src = 'about:blank';
+            document.body.style.overflow = '';
+        };
+
+        // 點擊背景也可關閉
+        document.getElementById('sched-doc-modal')?.addEventListener('click', function(e) {
+            if (e.target === this) window.schedCloseDocPreview();
+        });
+
         // ---- 子標籤切換 ----
         function vUpdateSubTabsUI(active) {
             document.querySelectorAll('.v-sub-tab-btn').forEach(btn => {
@@ -10031,6 +10162,45 @@ ${rawDraft}
             </label>
         </div>
     </div>
+
+    <!-- 訪視評估表文件預覽 Modal -->
+    <div id="sched-doc-modal" class="hidden fixed inset-0 z-[600] flex flex-col"
+         style="background:rgba(0,0,0,0.65)">
+        <!-- 頂部標題列 -->
+        <div class="bg-slate-800 text-white flex items-center gap-3 px-4 py-3 shrink-0">
+            <i class="fa-solid fa-file-word text-blue-400 text-xl shrink-0"></i>
+            <span id="sched-doc-modal-title" class="flex-1 font-bold text-base truncate">訪視評估表</span>
+            <a id="sched-doc-modal-download" href="#" target="_blank"
+               class="text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors text-sm font-bold flex items-center gap-1.5 shrink-0">
+                <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> 開新頁
+            </a>
+            <button onclick="window.schedCloseDocPreview()"
+                    class="text-slate-300 hover:text-white p-2 rounded-lg hover:bg-slate-700 transition-colors text-xl shrink-0" title="關閉">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <!-- iframe 預覽區 -->
+        <div class="flex-1 relative bg-white">
+            <div id="sched-doc-loading" class="absolute inset-0 flex items-center justify-center bg-white z-10">
+                <div class="text-center text-slate-500">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-400 mb-3"></i>
+                    <p class="text-sm font-bold">載入中，請稍候…</p>
+                    <p class="text-xs text-slate-400 mt-1">首次開啟 Google Docs 預覽需要幾秒鐘</p>
+                </div>
+            </div>
+            <iframe id="sched-doc-iframe" src="about:blank"
+                    class="w-full h-full border-0"
+                    onload="document.getElementById('sched-doc-loading').style.display='none'">
+            </iframe>
+        </div>
+        <!-- 底部提示 -->
+        <div class="bg-slate-800 text-slate-400 text-xs text-center py-2 shrink-0">
+            點擊「開新頁」可在 Google Docs 全螢幕查看 &nbsp;|&nbsp; 點右上角 <i class="fa-solid fa-xmark text-xs"></i> 關閉預覽
+        </div>
+    </div>
+
+    <!-- 行程表文件上傳隱藏輸入 -->
+    <input type="file" id="sched-doc-file-input" accept=".docx,.doc,.pdf" class="hidden">
 
     <!-- LINE QR 浮動按鈕（在身障/中高齡工作區以外也可用） -->
     <button id="btn-show-qr" onclick="document.getElementById('qr-modal').classList.remove('hidden')"
