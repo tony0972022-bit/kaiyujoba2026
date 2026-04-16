@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
     <style>
         html, body { overscroll-behavior-y: none; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -8814,6 +8815,7 @@ Module written, length: 83712
                 verifyData.cases.forEach(c => {
                     if (!c.contactPerson) c.contactPerson = '';
                     if (!c.year) c.year = '';
+                    if (!Array.isArray(c.documents)) c.documents = [];
                     if (Array.isArray(c.items)) {
                         c.items.forEach(item => {
                             if (!Array.isArray(item.improvements)) {
@@ -9488,6 +9490,8 @@ Module written, length: 83712
                         <button onclick="window.vDownloadUnitPhotos('${unitKey}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5"><i class="fa-solid fa-images"></i> 批次下載照片</button>
                     </div>
                 </div>
+                <!-- 訪視報告 -->
+                ${vBuildDocSection(first.id, "window.vUploadUnitDoc('" + unitKey + "')")}
             `;
         };
 
@@ -9642,6 +9646,8 @@ Module written, length: 83712
                         <button onclick="window.vDownloadPhotos('${caseId}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5"><i class="fa-solid fa-images"></i> 批次下載照片</button>
                     </div>
                 </div>
+                <!-- 訪視報告 -->
+                ${vBuildDocSection(caseId, "window.vUploadDoc('" + caseId + "')")}
             `;
         };
 
@@ -9993,6 +9999,142 @@ Module written, length: 83712
             if (btn) { btn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 已結案'; btn.className = 'bg-slate-500 text-white px-3 py-1.5 rounded-xl font-bold text-sm cursor-default'; btn.onclick = null; }
         };
 
+        // ================================================================
+        // 📄 訪視報告 Word 文件功能
+        // ================================================================
+
+        // 文件 blob 暫存（session 內，刷新後消失）
+        const vDocBlobs = new Map();
+
+        function vGetDocMeta(caseId) {
+            const c = verifyData.cases.find(x => x.id === caseId);
+            if (!c) return [];
+            if (!Array.isArray(c.documents)) c.documents = [];
+            return c.documents;
+        }
+
+        function vGenDocId() { return 'vd_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5); }
+
+        // 上傳 Word 文件（身障個案）
+        window.vUploadDoc = function(caseId) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            input.onchange = async function() {
+                const file = input.files[0];
+                if (!file) return;
+                if (file.size > 20 * 1024 * 1024) { showToast('檔案過大（上限 20MB）'); return; }
+                const docId = vGenDocId();
+                const buf = await file.arrayBuffer();
+                vDocBlobs.set(docId, buf);
+                const c = verifyData.cases.find(x => x.id === caseId);
+                if (!c) return;
+                if (!Array.isArray(c.documents)) c.documents = [];
+                c.documents.push({ id: docId, filename: file.name, size: file.size, uploadDate: new Date().toISOString().slice(0,10) });
+                saveVerifyData();
+                showToast('訪視報告已上傳');
+                // 重新渲染（在哪個視圖就重刷哪個）
+                if (currentVerifyUnitKey) window.vOpenUnit(currentVerifyUnitKey);
+                else if (currentVerifyCaseId === caseId) window.vOpenCase(caseId);
+            };
+            input.click();
+        };
+
+        // 上傳 Word 文件（中高勞通單位，掛在 first case 上）
+        window.vUploadUnitDoc = function(unitKey) {
+            const unitCases = verifyData.cases.filter(c =>
+                c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo || c.unit || '') === unitKey
+            );
+            if (unitCases.length === 0) return;
+            window.vUploadDoc(unitCases[0].id);
+        };
+
+        // 刪除文件
+        window.vDeleteDoc = function(caseId, docId) {
+            if (!confirm('確定刪除此訪視報告？')) return;
+            const c = verifyData.cases.find(x => x.id === caseId);
+            if (!c) return;
+            c.documents = (c.documents || []).filter(d => d.id !== docId);
+            vDocBlobs.delete(docId);
+            saveVerifyData();
+            showToast('已刪除');
+            if (currentVerifyUnitKey) window.vOpenUnit(currentVerifyUnitKey);
+            else window.vOpenCase(caseId);
+        };
+
+        // 預覽 Word 文件（mammoth 轉 HTML）
+        window.vPreviewDoc = async function(caseId, docId) {
+            const c = verifyData.cases.find(x => x.id === caseId);
+            if (!c) return;
+            const meta = (c.documents || []).find(d => d.id === docId);
+            if (!meta) return;
+            const modal = document.getElementById('vdoc-modal');
+            const loading = document.getElementById('vdoc-modal-loading');
+            const body = document.getElementById('vdoc-modal-body');
+            const contentEl = document.getElementById('vdoc-modal-content');
+            document.getElementById('vdoc-modal-title').textContent = meta.filename;
+            document.getElementById('vdoc-modal-sub').textContent = `${c.clientName || c.unit || ''} ｜ ${meta.uploadDate || ''}`;
+            modal.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            body.classList.add('hidden');
+            contentEl.innerHTML = '';
+            let buf = vDocBlobs.get(docId);
+            if (!buf) {
+                loading.innerHTML = `<div class="text-center text-slate-400 py-8">
+                    <i class="fa-solid fa-triangle-exclamation text-3xl mb-3 text-amber-400"></i>
+                    <p class="text-sm font-medium">文件未在記憶體中</p>
+                    <p class="text-xs mt-1">請重新上傳後預覽</p>
+                </div>`;
+                loading.classList.remove('hidden');
+                return;
+            }
+            try {
+                const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+                contentEl.innerHTML = result.value;
+                loading.classList.add('hidden');
+                body.classList.remove('hidden');
+            } catch(e) {
+                loading.innerHTML = `<div class="text-center text-red-400 py-8">
+                    <i class="fa-solid fa-circle-xmark text-3xl mb-3"></i>
+                    <p class="text-sm font-medium">文件轉換失敗</p>
+                    <p class="text-xs mt-1">${e.message||''}</p>
+                </div>`;
+            }
+        };
+
+        window.vCloseDocModal = function() {
+            document.getElementById('vdoc-modal').classList.add('hidden');
+            document.getElementById('vdoc-modal-content').innerHTML = '';
+        };
+
+        // 文件區塊 HTML 產生器（共用）
+        function vBuildDocSection(caseId, uploadFn) {
+            const c = verifyData.cases.find(x => x.id === caseId);
+            const docs = (c && c.documents) ? c.documents : [];
+            const docsHtml = docs.map(d => {
+                const inMem = vDocBlobs.has(d.id);
+                return `<div class="flex items-center gap-2 px-3 py-2.5 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors group">
+                    <i class="fa-solid fa-file-word text-blue-600 text-lg shrink-0"></i>
+                    <div class="flex-1 min-w-0 cursor-pointer" onclick="window.vPreviewDoc('${caseId}', '${d.id}')">
+                        <div class="text-sm font-medium text-blue-800 truncate">${d.filename}</div>
+                        <div class="text-xs text-blue-500">${d.uploadDate||''} ｜ ${(d.size/1024).toFixed(0)} KB${inMem ? '' : ' ・<span class=\\"text-amber-500\\">需重新上傳才可預覽</span>'}</div>
+                    </div>
+                    <button onclick="window.vPreviewDoc('${caseId}', '${d.id}')" title="預覽" class="shrink-0 text-blue-600 hover:text-blue-800 px-2 py-1 rounded-lg hover:bg-blue-200 text-sm font-bold transition-colors"><i class="fa-solid fa-eye"></i></button>
+                    <button onclick="window.vDeleteDoc('${caseId}', '${d.id}')" title="刪除" class="shrink-0 text-red-400 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50 text-sm transition-colors opacity-0 group-hover:opacity-100"><i class="fa-solid fa-trash"></i></button>
+                </div>`;
+            }).join('');
+            return `<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2"><i class="fa-solid fa-file-word text-blue-500"></i> 訪視報告</h3>
+                    <button onclick="${uploadFn}" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold transition-colors flex items-center gap-1"><i class="fa-solid fa-upload mr-1"></i>上傳 Word</button>
+                </div>
+                <div class="p-4 space-y-2">
+                    ${docsHtml || '<p class="text-sm text-slate-400 text-center py-4">尚無訪視報告，點右上角上傳</p>'}
+                </div>
+            </div>`;
+        }
+        window.vBuildDocSection = vBuildDocSection;
+
         // ---- 初始化 verify 資料 ----
         loadVerifyData();
 
@@ -10062,6 +10204,49 @@ Module written, length: 83712
             </label>
         </div>
     </div>
+
+    <!-- ===== Word 訪視報告預覽 Modal ===== -->
+    <div id="vdoc-modal" class="hidden fixed inset-0 bg-black/70 z-[500] flex items-start justify-center p-4 pt-8 overflow-y-auto" onclick="if(event.target===this)window.vCloseDocModal()">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl flex flex-col relative animate-fadeIn" style="min-height:60vh;max-height:90vh;">
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-white rounded-t-2xl border-b border-slate-100 px-5 py-3.5 flex items-center gap-3 z-10 shadow-sm">
+                <i class="fa-solid fa-file-word text-blue-600 text-xl shrink-0"></i>
+                <div class="flex-1 min-w-0">
+                    <div id="vdoc-modal-title" class="font-bold text-slate-800 text-sm truncate">訪視報告</div>
+                    <div id="vdoc-modal-sub" class="text-xs text-slate-400 truncate"></div>
+                </div>
+                <button onclick="window.vCloseDocModal()" class="shrink-0 w-8 h-8 rounded-full bg-slate-100 hover:bg-red-100 hover:text-red-600 flex items-center justify-center text-slate-500 text-lg font-bold transition-colors" title="關閉">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <!-- Loading State -->
+            <div id="vdoc-modal-loading" class="flex-1 flex items-center justify-center py-16">
+                <div class="text-center text-slate-400">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl mb-3 text-blue-400"></i>
+                    <p class="text-sm font-medium">正在轉換文件...</p>
+                </div>
+            </div>
+            <!-- Document Content -->
+            <div id="vdoc-modal-body" class="hidden flex-1 overflow-y-auto px-8 py-6">
+                <div id="vdoc-modal-content" class="prose prose-sm max-w-none vdoc-content"></div>
+            </div>
+        </div>
+    </div>
+    <style>
+        /* Word 文件樣式 */
+        .vdoc-content { font-family: 'Times New Roman', Times, serif; font-size: 14px; line-height: 1.8; color: #1a1a1a; }
+        .vdoc-content h1 { font-size: 1.4em; font-weight: bold; margin: 1em 0 0.5em; text-align: center; }
+        .vdoc-content h2 { font-size: 1.2em; font-weight: bold; margin: 0.8em 0 0.4em; }
+        .vdoc-content h3 { font-size: 1.05em; font-weight: bold; margin: 0.7em 0 0.3em; }
+        .vdoc-content p { margin: 0.4em 0; }
+        .vdoc-content table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
+        .vdoc-content table td, .vdoc-content table th { border: 1px solid #aaa; padding: 4px 8px; font-size: 13px; }
+        .vdoc-content table th { background: #f0f0f0; font-weight: bold; }
+        .vdoc-content ul, .vdoc-content ol { padding-left: 1.5em; margin: 0.4em 0; }
+        .vdoc-content img { max-width: 100%; height: auto; margin: 0.5em 0; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+    </style>
 
     <!-- LINE QR 浮動按鈕（在身障/中高齡工作區以外也可用） -->
     <button id="btn-show-qr" onclick="document.getElementById('qr-modal').classList.remove('hidden')"
