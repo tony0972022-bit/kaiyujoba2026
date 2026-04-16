@@ -3143,8 +3143,9 @@
                     loadCases();
                     vCurrentUid = user.uid; // 成效驗收模組同步用
                     vLoadFromFirestore().then(() => { if (currentModule === 'verify') { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); } });
-                    initModuleTabs(); // 顯示功能模組切換列
+                    document.getElementById('module-tabs')?.classList.remove('hidden'); // 顯示功能模組切換列
                 } else {
+                    document.getElementById('module-tabs')?.classList.add('hidden');
                     overlay.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
                     statusEl.innerHTML = '<i class="fa-solid fa-user-xmark"></i> 未登入';
                     statusEl.className = "bg-slate-500 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-white shadow font-bold text-xs md:text-sm flex items-center gap-2";
