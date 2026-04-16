@@ -1359,6 +1359,57 @@
         </div>
     </div><!-- end verify-module -->
 
+    <!-- ===================== 訪視行程表 模組 ===================== -->
+    <div id="itinerary-module" class="hidden flex-1 flex flex-col overflow-hidden bg-slate-50">
+        <div class="max-w-5xl mx-auto p-4 md:p-6 pb-24 space-y-6 w-full">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 md:p-6 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <h2 class="text-lg font-bold text-slate-700 flex items-center">
+                        <i class="fa-solid fa-route text-indigo-500 mr-2 text-2xl"></i>
+                        獨立訪視行程表
+                    </h2>
+                    <div class="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100">
+                        <label class="text-sm font-bold text-indigo-900 whitespace-nowrap">排定日期：</label>
+                        <input type="date" id="iti-date-picker" class="p-2 border border-indigo-200 rounded-lg text-base focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm">
+                    </div>
+                </div>
+                <!-- 行程表模式容器 -->
+                <div id="v-itinerary-list" class="p-4 space-y-3 min-h-[400px] bg-slate-50 relative">
+                    <div class="flex flex-col items-center justify-center py-20 text-slate-400">
+                        <i class="fa-solid fa-route text-5xl mb-4 text-slate-300"></i>
+                        <p class="text-lg font-bold text-slate-500">此頁面為單獨的訪視行程表</p>
+                        <p class="mt-2">請先在上方選擇「排定日期」來查看當天排定的行程。</p>
+                        <p class="text-sm mt-1 text-slate-400">若清單為空，請先至「成效驗收」功能中設定案件的驗收日期。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 行程表備註/取消 Modal -->
+        <div id="v-itinerary-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h3 class="font-bold text-slate-700">更新行程狀態</h3>
+                    <button onclick="document.getElementById('v-itinerary-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <div class="p-5 flex-1 overflow-y-auto">
+                    <label class="block text-sm font-bold text-slate-600 mb-2">更改狀態：</label>
+                    <select id="v-iti-status-select" class="w-full p-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-400 mb-4">
+                        <option value="pending">待訪視</option>
+                        <option value="done">已訪視 (✓)</option>
+                        <option value="cancelled">行程取消 (✗)</option>
+                    </select>
+                    <label class="block text-sm font-bold text-slate-600 mb-2">備註事項/取消原因：</label>
+                    <textarea id="v-iti-note-input" rows="3" class="w-full p-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300" placeholder="填寫聯絡狀況或取消原因..."></textarea>
+                </div>
+                <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-2">
+                    <button onclick="document.getElementById('v-itinerary-modal').classList.add('hidden')" class="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-2.5 rounded-xl hover:bg-slate-50">取消</button>
+                    <button id="v-iti-save-btn" class="flex-1 bg-indigo-600 text-white font-bold py-2.5 rounded-xl hover:bg-indigo-700 shadow-sm">儲存</button>
+                </div>
+            </div>
+        </div>
+    </div><!-- end itinerary-module -->
+
     <!-- ================= 身障案件工作區（全螢幕，獨立於 main 之外） ================= -->
     <div id="view-dis-case" class="hidden fixed inset-0 bg-slate-100 z-50 flex flex-col">
         <!-- Top bar -->
@@ -8919,26 +8970,55 @@ ${rawDraft}
         // ---- 模組切換 ----
         let currentModule = 'visit';
         const verifyModuleEl = document.getElementById('verify-module');
+        const itineraryModuleEl = document.getElementById('itinerary-module');
         const verifyModuleBtn = document.getElementById('btn-module-verify');
         const visitModuleBtn = document.getElementById('btn-module-visit');
+        const itineraryModuleBtn = document.getElementById('btn-module-itinerary');
+
         function switchModule(mod) {
             currentModule = mod;
             localStorage.setItem('activeModule_v1', mod);
-            const isVerify = mod === 'verify';
-            document.getElementById('visit-module').classList.toggle('hidden', isVerify);
-            if (verifyModuleEl) verifyModuleEl.classList.toggle('hidden', !isVerify);
-            if (verifyModuleBtn) { verifyModuleBtn.classList.toggle('bg-purple-700', isVerify); verifyModuleBtn.classList.toggle('text-white', isVerify); verifyModuleBtn.classList.toggle('text-purple-700', !isVerify); }
-            if (visitModuleBtn) { visitModuleBtn.classList.toggle('bg-blue-700', !isVerify); visitModuleBtn.classList.toggle('text-white', !isVerify); visitModuleBtn.classList.toggle('text-blue-700', isVerify); }
-            if (isVerify) { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); }
+            
+            document.getElementById('visit-module').classList.toggle('hidden', mod !== 'visit');
+            if (verifyModuleEl) verifyModuleEl.classList.toggle('hidden', mod !== 'verify');
+            if (itineraryModuleEl) itineraryModuleEl.classList.toggle('hidden', mod !== 'itinerary');
+            
+            // 標籤樣式重置 (預設暗色未選取)
+            [visitModuleBtn, verifyModuleBtn, itineraryModuleBtn].forEach(btn => {
+                if(btn) {
+                    btn.classList.add('text-slate-300', 'hover:bg-slate-600', 'hover:text-white');
+                    btn.classList.remove('bg-blue-700', 'bg-purple-700', 'bg-indigo-700', 'text-white');
+                }
+            });
+
+            // 套用選取樣式
+            if (mod === 'visit' && visitModuleBtn) {
+                visitModuleBtn.classList.remove('text-slate-300', 'hover:bg-slate-600');
+                visitModuleBtn.classList.add('bg-blue-700', 'text-white');
+            } else if (mod === 'verify' && verifyModuleBtn) {
+                verifyModuleBtn.classList.remove('text-slate-300', 'hover:bg-slate-600');
+                verifyModuleBtn.classList.add('bg-purple-700', 'text-white');
+                vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList();
+            } else if (mod === 'itinerary' && itineraryModuleBtn) {
+                itineraryModuleBtn.classList.remove('text-slate-300', 'hover:bg-slate-600');
+                itineraryModuleBtn.classList.add('bg-indigo-700', 'text-white');
+                // 自動套用今天的日期（若未選）
+                if(!document.getElementById('iti-date-picker').value) {
+                     const today = new Date();
+                     const dd = String(today.getDate()).padStart(2, '0');
+                     const mm = String(today.getMonth() + 1).padStart(2, '0');
+                     const yyyy = today.getFullYear();
+                     document.getElementById('iti-date-picker').value = yyyy + '-' + mm + '-' + dd;
+                }
+                vRenderItinerary();
+            }
         }
-        document.getElementById('btn-module-verify').addEventListener('click', () => switchModule('verify'));
-        document.getElementById('btn-module-visit').addEventListener('click', () => switchModule('visit'));
+        document.getElementById('btn-module-visit')?.addEventListener('click', () => switchModule('visit'));
+        document.getElementById('btn-module-verify')?.addEventListener('click', () => switchModule('verify'));
+        document.getElementById('btn-module-itinerary')?.addEventListener('click', () => switchModule('itinerary'));
+
         const savedModule = localStorage.getItem('activeModule_v1') || 'visit';
-        currentModule = savedModule;  // update the let variable
-        if (savedModule === 'verify') {
-            document.getElementById('visit-module').classList.add('hidden');
-            if (verifyModuleEl) verifyModuleEl.classList.remove('hidden');
-        }
+        switchModule(savedModule);
 
         // ---- Excel 匯入：身障 (JA / UH / a) ----
         document.getElementById('v-import-dis').addEventListener('change', function(e) {
@@ -10190,41 +10270,18 @@ ${rawDraft}
         // ================================================================
         // 🆕 行程表模式處理邏輯
         // ================================================================
-        let vItineraryModeActive = false;
         let vCurrentItineraryCaseId = null;
 
-        window.vToggleItineraryMode = function() {
-            vItineraryModeActive = !vItineraryModeActive;
-            const btn = document.getElementById('btn-toggle-itinerary');
-            const mapIcon = '<i class="fa-solid fa-route"></i>';
-            if (vItineraryModeActive) {
-                btn.innerHTML = mapIcon + ' 返回一般模式';
-                btn.classList.replace('bg-indigo-600', 'bg-amber-500');
-                btn.classList.replace('hover:bg-indigo-700', 'hover:bg-amber-600');
-                document.getElementById('v-case-list').classList.add('hidden');
-                document.getElementById('v-itinerary-list').classList.remove('hidden');
-                vRenderItinerary();
-            } else {
-                btn.innerHTML = mapIcon + ' 切換行程表模式';
-                btn.classList.replace('bg-amber-500', 'bg-indigo-600');
-                btn.classList.replace('hover:bg-amber-600', 'hover:bg-indigo-700');
-                document.getElementById('v-case-list').classList.remove('hidden');
-                document.getElementById('v-itinerary-list').classList.add('hidden');
-                vRenderCaseList();
-            }
-        };
-
-        const origDatePickerChange = document.getElementById('v-date-picker')?.onchange;
-        document.getElementById('v-date-picker')?.addEventListener('change', () => {
-            if (vItineraryModeActive) vRenderItinerary();
+        document.getElementById('iti-date-picker')?.addEventListener('change', () => {
+            vRenderItinerary();
         });
 
         function vRenderItinerary() {
             const container = document.getElementById('v-itinerary-list');
             if (!container) return;
-            const dateVal = document.getElementById('v-date-picker').value;
+            const dateVal = document.getElementById('iti-date-picker').value;
             if (!dateVal) {
-                container.innerHTML = '<div class="flex flex-col items-center justify-center py-8 text-slate-400"><i class="fa-regular fa-calendar-xmark text-4xl mb-3 text-slate-300"></i><p>請先在上方選擇「驗收日期」，才能檢視與安排行程表！</p></div>';
+                container.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-slate-400"><i class="fa-solid fa-route text-5xl mb-4 text-slate-300"></i><p class="text-lg font-bold text-slate-500">此頁面為單獨的訪視行程表</p><p class="mt-2">請先在上方選擇「排定日期」來查看當天排定的行程。</p><p class="text-sm mt-1 text-slate-400">若清單為空，請先至「成效驗收」功能中設定案件的驗收日期。</p></div>';
                 return;
             }
 
