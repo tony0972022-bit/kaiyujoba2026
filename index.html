@@ -8963,7 +8963,7 @@ ${rawDraft}
             switchModule(currentModule);
         }
 
-        // ---- Excel 匯入：身障 (JA + UH) ----
+        // ---- Excel 匯入：身障 (JA + UH)  ★ 合併覆蓋，不清除現場已填資料 ----
         document.getElementById('v-import-dis').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -8974,14 +8974,14 @@ ${rawDraft}
             reader.onload = function(ev) {
                 try {
                     const wb = XLSX.read(ev.target.result, { type: 'array' });
-                    if (year) verifyData.cases = verifyData.cases.filter(c => !(c.category === '身障' && c.year === year));
-                    else      verifyData.cases = verifyData.cases.filter(c => c.category !== '身障');
                     let count = 0;
                     ['JA', 'UH', 'a'].forEach(sheetName => {
                         const ws = wb.Sheets[sheetName];
                         if (!ws) return;
                         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
                         if (rows.length < 2) return;
+                        // 品項名稱欄位起始 col（JA/a=31, UH=29）
+                        const itemCol = sheetName === 'UH' ? 29 : 31;
                         for (let r = 1; r < rows.length; r++) {
                             const row = rows[r];
                             if (!row || row.every(c => !c)) continue;
@@ -8990,8 +8990,16 @@ ${rawDraft}
                             const unit          = String(row[14] || '').trim();
                             const contactPerson = String(row[16] || '').trim();
                             const unitPhone     = String(row[17] || '').trim();
-                            const itemName      = String(sheetName === 'UH' ? (row[29]||'') : (row[31]||'')).trim();
+                            const itemName      = String(row[itemCol]    || '').trim();
+                            const itemUnit      = String(row[itemCol+1]  || '').trim();
+                            const unitPrice     = String(row[itemCol+2]  || '').trim();
+                            const quantity      = String(row[itemCol+3]  || '').trim();
+                            const appliedAmount = String(row[itemCol+4]  || '').trim();
+                            const approvedAmount= String(row[itemCol+5]  || '').trim();
+                            const recyclable    = String(row[itemCol+6]  || '').trim();
+                            const subsidyCategory = String(row[itemCol+7]|| '').trim();
                             if (!caseNo && !clientName) continue;
+                            // ★ 找到或新建案件（不刪舊資料）
                             let existing = verifyData.cases.find(c =>
                                 c.category === '身障' && c.year === year && c.caseNo === caseNo && c.clientName === clientName
                             );
@@ -9004,13 +9012,32 @@ ${rawDraft}
                                 };
                                 verifyData.cases.push(existing);
                                 count++;
+                            } else {
+                                // 更新基本欄位（Excel有值才覆蓋）
+                                if (unit)          existing.unit          = unit;
+                                if (contactPerson) existing.contactPerson = contactPerson;
+                                if (unitPhone)     existing.unitPhone     = unitPhone;
                             }
-                            if (itemName && !existing.items.some(i => i.name === itemName))
-                                existing.items.push({ name: itemName, improvements: [], feedback: '', photos: [] });
+                            if (!itemName) continue;
+                            // ★ 找到或新建品項，合併財務欄位
+                            let item = existing.items.find(i => i.name === itemName);
+                            if (!item) {
+                                item = { name: itemName, improvements: [], feedback: '', photos: [],
+                                         workStation: '', sharedUsers: '' };
+                                existing.items.push(item);
+                            }
+                            // 覆蓋財務欄位（Excel有值才更新）
+                            if (itemUnit)       item.itemUnit       = itemUnit;
+                            if (unitPrice)      item.unitPrice      = unitPrice;
+                            if (quantity)       item.quantity       = quantity;
+                            if (appliedAmount)  item.appliedAmount  = appliedAmount;
+                            if (approvedAmount) item.approvedAmount = approvedAmount;
+                            if (recyclable)     item.recyclable     = recyclable;
+                            if (subsidyCategory) item.subsidyCategory = subsidyCategory;
                         }
                     });
                     saveVerifyData();
-                    statusEl.textContent = `已匯入 ${count} 筆身障案件${year ? `（${year}）` : ''}`;
+                    statusEl.textContent = `身障清單已更新${year ? `（${year}）` : ''}，共 ${verifyData.cases.filter(c=>c.category==='身障'&&c.year===year).length} 筆`;
                     if (currentModule === 'verify') { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); }
                     showToast('身障成效清單匯入完成');
                 } catch(err) { statusEl.textContent = '匯入失敗：' + err.message; }
@@ -9019,7 +9046,7 @@ ${rawDraft}
             this.value = '';
         });
 
-        // ---- Excel 匯入：中高勞通 (工作表7) ----
+        // ---- Excel 匯入：中高勞通 (工作表7)  ★ 合併覆蓋，不清除現場已填資料 ----
         document.getElementById('v-import-elder').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -9034,8 +9061,8 @@ ${rawDraft}
                     if (!ws) throw new Error('找不到「工作表7」');
                     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
                     if (rows.length < 2) throw new Error('工作表為空');
-                    if (year) verifyData.cases = verifyData.cases.filter(c => !(c.category === '中高勞通' && c.year === year));
-                    else      verifyData.cases = verifyData.cases.filter(c => c.category !== '中高勞通');
+                    // 品項欄起始 col = 36
+                    const itemCol = 36;
                     let count = 0;
                     for (let r = 1; r < rows.length; r++) {
                         const row = rows[r];
@@ -9045,8 +9072,16 @@ ${rawDraft}
                         const contactPerson = String(row[9]  || '').trim();
                         const unitPhone     = String(row[10] || '').trim();
                         const clientName    = String(row[30] || '').trim();
-                        const itemName      = String(row[36] || '').trim();
+                        const itemName      = String(row[itemCol]    || '').trim();
+                        const itemUnit      = String(row[itemCol+1]  || '').trim();
+                        const unitPrice     = String(row[itemCol+2]  || '').trim();
+                        const quantity      = String(row[itemCol+3]  || '').trim();
+                        const appliedAmount = String(row[itemCol+4]  || '').trim();
+                        const approvedAmount= String(row[itemCol+5]  || '').trim();
+                        const recyclable    = String(row[itemCol+6]  || '').trim();
+                        const subsidyCategory = String(row[itemCol+7]|| '').trim();
                         if (!caseNo && !clientName) continue;
+                        // ★ 中高勞通：以 caseNo + clientName 定位，不刪現有資料
                         let existing = verifyData.cases.find(c =>
                             c.category === '中高勞通' && c.year === year && c.caseNo === caseNo && c.clientName === clientName
                         );
@@ -9059,12 +9094,29 @@ ${rawDraft}
                             };
                             verifyData.cases.push(existing);
                             count++;
+                        } else {
+                            if (unit)          existing.unit          = unit;
+                            if (contactPerson) existing.contactPerson = contactPerson;
+                            if (unitPhone)     existing.unitPhone     = unitPhone;
                         }
-                        if (itemName && !existing.items.some(i => i.name === itemName))
-                            existing.items.push({ name: itemName, improvements: [], feedback: '', photos: [] });
+                        if (!itemName) continue;
+                        // ★ 中高勞通品項為單位共用：同 caseNo 下找到或新建品項
+                        let item = existing.items.find(i => i.name === itemName);
+                        if (!item) {
+                            item = { name: itemName, improvements: [], feedback: '', photos: [],
+                                     workStation: '', sharedUsers: '' };
+                            existing.items.push(item);
+                        }
+                        if (itemUnit)       item.itemUnit       = itemUnit;
+                        if (unitPrice)      item.unitPrice      = unitPrice;
+                        if (quantity)       item.quantity       = quantity;
+                        if (appliedAmount)  item.appliedAmount  = appliedAmount;
+                        if (approvedAmount) item.approvedAmount = approvedAmount;
+                        if (recyclable)     item.recyclable     = recyclable;
+                        if (subsidyCategory) item.subsidyCategory = subsidyCategory;
                     }
                     saveVerifyData();
-                    statusEl.textContent = `已匯入 ${count} 筆中高勞通案件${year ? `（${year}）` : ''}`;
+                    statusEl.textContent = `中高勞通清單已更新${year ? `（${year}）` : ''}，共 ${verifyData.cases.filter(c=>c.category==='中高勞通'&&c.year===year).length} 筆`;
                     if (currentModule === 'verify') { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); }
                     showToast('中高勞通成效清單匯入完成');
                 } catch(err) { statusEl.textContent = '匯入失敗：' + err.message; }
@@ -9319,14 +9371,47 @@ ${rawDraft}
                         const src = vGetPhotoData(p.id) || p.url || '';
                         return src ? `<div class="relative w-20 h-20 shrink-0"><img src="${src}" class="w-full h-full object-cover rounded-lg border border-slate-200"><button onclick="window.vDeletePhoto('${caseId}', ${idx}, '${p.id}')" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 font-bold">×</button></div>` : '';
                     }).join('');
+                    // 判斷是否為中高勞通（需要顯示工作站別/共用人）
+                    const isElder = c.category === '中高勞通';
+                    // 財務資訊標籤（有值才顯示）
+                    const finTags = [
+                        item.itemUnit       ? `<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${item.itemUnit}</span>` : '',
+                        item.quantity       ? `<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">× ${item.quantity}</span>` : '',
+                        item.unitPrice      ? `<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">單價 ${item.unitPrice}</span>` : '',
+                        item.approvedAmount ? `<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">核准 ${item.approvedAmount}</span>` : (item.appliedAmount ? `<span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">申請 ${item.appliedAmount}</span>` : ''),
+                        item.recyclable     ? `<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">回收：${item.recyclable}</span>` : '',
+                        item.subsidyCategory ? `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">${item.subsidyCategory}</span>` : '',
+                    ].filter(Boolean).join('');
                     return `
-                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                        <div class="flex items-center justify-between mb-3">
-                            <h4 class="font-bold text-base text-slate-800 flex items-center gap-2">
-                                <i class="fa-solid fa-box-open text-purple-400"></i> ${item.name || '（未命名品項）'}
-                            </h4>
-                            <span class="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded">品項 ${idx+1}／${c.items.length}</span>
+                    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm">
+                        <!-- 品項標題 -->
+                        <div class="flex items-start justify-between gap-2 mb-3">
+                            <div class="flex-1 min-w-0">
+                                <h4 class="font-bold text-base text-slate-800 flex items-center gap-2 flex-wrap">
+                                    <i class="fa-solid fa-box-open text-purple-400 shrink-0"></i>
+                                    <span>${item.name || '（未命名品項）'}</span>
+                                </h4>
+                                ${finTags ? `<div class="flex flex-wrap gap-1.5 mt-2">${finTags}</div>` : ''}
+                            </div>
+                            <span class="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded shrink-0">品項 ${idx+1}／${c.items.length}</span>
                         </div>
+                        ${isElder ? `
+                        <!-- 工作站別 + 共用人（中高勞通限定） -->
+                        <div class="grid grid-cols-2 gap-3 mb-4 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                            <div>
+                                <label class="block text-xs font-bold text-amber-700 mb-1"><i class="fa-solid fa-location-pin text-amber-400 mr-1"></i>工作站別</label>
+                                <input type="text" class="w-full p-2.5 border border-amber-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
+                                       placeholder="例：作業台A" value="${(item.workStation||'').replace(/"/g,'&quot;')}"
+                                       onchange="window.vSaveWorkStation('${caseId}', ${idx}, this.value)">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-amber-700 mb-1"><i class="fa-solid fa-users text-amber-400 mr-1"></i>共用人數</label>
+                                <input type="text" class="w-full p-2.5 border border-amber-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400"
+                                       placeholder="例：3人" value="${(item.sharedUsers||'').replace(/"/g,'&quot;')}"
+                                       onchange="window.vSaveSharedUsers('${caseId}', ${idx}, this.value)">
+                            </div>
+                        </div>` : ''}
+                        <!-- 改善效益 -->
                         <div class="mb-4">
                             <label class="block text-xs font-bold text-slate-500 mb-2">改善效益（可複選）</label>
                             <div class="space-y-1.5">
@@ -9340,10 +9425,12 @@ ${rawDraft}
                                 }).join('')}
                             </div>
                         </div>
+                        <!-- 使用回饋 -->
                         <div class="mb-4">
                             <label class="block text-xs font-bold text-slate-500 mb-1.5">使用回饋</label>
                             <textarea class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400 resize-y" rows="2" placeholder="記錄使用者的實際回饋..." onchange="window.vSaveItemFeedback('${caseId}', ${idx}, this.value)">${item.feedback || ''}</textarea>
                         </div>
+                        <!-- 使用照片 -->
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-2">使用照片</label>
                             <div class="flex flex-wrap gap-2 items-start">
@@ -9471,6 +9558,16 @@ ${rawDraft}
             if (c && c.items[idx]) { c.items[idx].feedback = value; saveVerifyData(); }
         };
 
+        window.vSaveWorkStation = function(caseId, idx, value) {
+            const c = verifyData.cases.find(x => x.id === caseId);
+            if (c && c.items[idx]) { c.items[idx].workStation = value; saveVerifyData(); }
+        };
+
+        window.vSaveSharedUsers = function(caseId, idx, value) {
+            const c = verifyData.cases.find(x => x.id === caseId);
+            if (c && c.items[idx]) { c.items[idx].sharedUsers = value; saveVerifyData(); }
+        };
+
         // ---- 照片功能 ----
         window.vTakePhoto = function(caseId, itemIdx) {
             const input = document.createElement('input');
@@ -9513,11 +9610,19 @@ ${rawDraft}
             const c = verifyData.cases.find(x => x.id === caseId);
             if (!c) return;
             const wb = XLSX.utils.book_new();
-            const header = ['補助品項', ...IMPROVEMENT_TYPES, '整體改善比例', '使用回饋'];
+            const isElder = c.category === '中高勞通';
+            const header = ['申請補助項目', '單位', '單價', '數量', '申請金額', '核准金額', '是否回收', '補助分類',
+                            ...(isElder ? ['工作站別', '共用人'] : []),
+                            ...IMPROVEMENT_TYPES, '整體改善比例', '使用回饋'];
             const rows = c.items.map(item => {
                 const typeVals = IMPROVEMENT_TYPES.map(t => { const imp = (item.improvements || []).find(i => i.type === t); return imp ? (imp.percentage || '✓') : ''; });
                 const pcts = (item.improvements || []).filter(i => i.percentage).map(i => i.percentage);
-                return [item.name, ...typeVals, pcts.join('/'), item.feedback || ''];
+                return [
+                    item.name, item.itemUnit||'', item.unitPrice||'', item.quantity||'',
+                    item.appliedAmount||'', item.approvedAmount||'', item.recyclable||'', item.subsidyCategory||'',
+                    ...(isElder ? [item.workStation||'', item.sharedUsers||''] : []),
+                    ...typeVals, pcts.join('/'), item.feedback || ''
+                ];
             });
             const aoa = [
                 [`年度：${c.year||''}`], [`類別：${c.category}`], [`案號：${c.caseNo||''}`],
@@ -9527,7 +9632,8 @@ ${rawDraft}
                 [], header, ...rows
             ];
             const ws = XLSX.utils.aoa_to_sheet(aoa);
-            ws['!cols'] = [{ wch: 22 }, ...IMPROVEMENT_TYPES.map(() => ({ wch: 12 })), { wch: 14 }, { wch: 30 }];
+            const baseCols = [22, 8, 10, 8, 12, 12, 10, 14, ...(isElder ? [14, 10] : [])];
+            ws['!cols'] = [...baseCols.map(wch => ({ wch })), ...IMPROVEMENT_TYPES.map(() => ({ wch: 12 })), { wch: 14 }, { wch: 30 }];
             XLSX.utils.book_append_sheet(wb, ws, '成效驗收');
             XLSX.writeFile(wb, `${c.year||''}${c.unit||'單位'}_${c.clientName||'個案'}_${c.verificationDate||'未驗收'}_成效驗收.xlsx`);
             showToast('Excel 已下載');
@@ -9537,13 +9643,21 @@ ${rawDraft}
             const unitCases = verifyData.cases.filter(c => c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo || c.unit || '') === unitKey);
             if (unitCases.length === 0) return;
             const wb = XLSX.utils.book_new();
-            const header = ['姓名', '補助品項', ...IMPROVEMENT_TYPES, '整體改善比例', '使用回饋', '驗收日期'];
+            const header = ['姓名', '申請補助項目', '單位', '單價', '數量', '申請金額', '核准金額',
+                            '是否回收', '補助分類', '工作站別', '共用人',
+                            ...IMPROVEMENT_TYPES, '整體改善比例', '使用回饋', '驗收日期'];
             const rows = [];
             unitCases.forEach(c => {
                 c.items.forEach(item => {
                     const typeVals = IMPROVEMENT_TYPES.map(t => { const imp = (item.improvements || []).find(i => i.type === t); return imp ? (imp.percentage || '✓') : ''; });
                     const pcts = (item.improvements || []).filter(i => i.percentage).map(i => i.percentage);
-                    rows.push([c.clientName, item.name, ...typeVals, pcts.join('/'), item.feedback || '', c.verificationDate || '']);
+                    rows.push([
+                        c.clientName,
+                        item.name, item.itemUnit||'', item.unitPrice||'', item.quantity||'',
+                        item.appliedAmount||'', item.approvedAmount||'', item.recyclable||'', item.subsidyCategory||'',
+                        item.workStation||'', item.sharedUsers||'',
+                        ...typeVals, pcts.join('/'), item.feedback || '', c.verificationDate || ''
+                    ]);
                 });
             });
             const aoa = [
@@ -9552,7 +9666,11 @@ ${rawDraft}
                 [], header, ...rows
             ];
             const ws = XLSX.utils.aoa_to_sheet(aoa);
-            ws['!cols'] = [{ wch: 10 }, { wch: 22 }, ...IMPROVEMENT_TYPES.map(() => ({ wch: 12 })), { wch: 14 }, { wch: 30 }, { wch: 12 }];
+            ws['!cols'] = [
+                { wch: 10 }, { wch: 22 }, { wch: 8 }, { wch: 10 }, { wch: 8 },
+                { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 10 },
+                ...IMPROVEMENT_TYPES.map(() => ({ wch: 12 })), { wch: 14 }, { wch: 30 }, { wch: 12 }
+            ];
             XLSX.utils.book_append_sheet(wb, ws, '單位成效驗收');
             const verDates = [...new Set(unitCases.map(c => c.verificationDate).filter(Boolean))];
             XLSX.writeFile(wb, `${unitCases[0].year||''}${unitCases[0].unit||'單位'}_${verDates[0]||'未驗收'}_成效驗收.xlsx`);
