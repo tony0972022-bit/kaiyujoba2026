@@ -1333,6 +1333,20 @@
             <div id="v-detail-content" class="flex-1 overflow-y-auto p-4 md:p-6 pb-24 space-y-5 max-w-3xl mx-auto w-full"></div>
         </div><!-- end verify-detail -->
 
+        <!-- 批量操作列 -->
+        <div id="v-batch-bar" class="hidden fixed bottom-0 left-0 right-0 z-30 bg-purple-700 text-white px-4 py-3 flex items-center gap-3 flex-wrap shadow-xl">
+            <span id="v-batch-count" class="font-bold text-sm shrink-0">已選 0 筆</span>
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+                <label class="text-xs font-bold whitespace-nowrap">驗收日：</label>
+                <input type="date" id="v-batch-date" class="p-2 border border-purple-400 rounded-lg text-sm bg-purple-800 text-white focus:ring-2 focus:ring-white flex-1 min-w-0">
+                <button onclick="window.vApplyBatchDate()" class="bg-white text-purple-700 px-3 py-2 rounded-xl font-bold text-sm hover:bg-purple-50 transition-colors whitespace-nowrap shrink-0">
+                    <i class="fa-solid fa-calendar-plus mr-1"></i>套用
+                </button>
+            </div>
+            <button onclick="window.vClearSelection()" class="text-purple-200 hover:text-white text-sm font-bold shrink-0">
+                <i class="fa-solid fa-xmark mr-1"></i>取消
+            </button>
+        </div>
     </div><!-- end verify-module -->
 
     <!-- ================= 身障案件工作區（全螢幕，獨立於 main 之外） ================= -->
@@ -8734,17 +8748,25 @@ ${rawDraft}
         };
 
         // ================================================================
-        // 🆕 成效驗收 模組
+        // 🆕 成效驗收 模組 (v3)
         // ================================================================
-        const VERIFY_KEY = 'verify_data_v2';
+        const VERIFY_KEY = 'verify_data_v3';
         let verifyData = { cases: [] };
         let currentVerifyCaseId = null;
+        let vSelectedIds = new Set();
 
         function loadVerifyData() {
             try {
-                const raw = localStorage.getItem(VERIFY_KEY);
+                // Try v3 first, then v2 migration
+                let raw = localStorage.getItem(VERIFY_KEY);
+                if (!raw) raw = localStorage.getItem('verify_data_v2');
                 if (raw) verifyData = JSON.parse(raw);
                 if (!Array.isArray(verifyData.cases)) verifyData.cases = [];
+                // Migrate: ensure all cases have contactPerson & year fields
+                verifyData.cases.forEach(c => {
+                    if (!c.contactPerson) c.contactPerson = '';
+                    if (!c.year) c.year = '';
+                });
             } catch(e) { verifyData = { cases: [] }; }
         }
 
@@ -8756,6 +8778,14 @@ ${rawDraft}
         function genVerifyId() {
             return 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
         }
+
+        function extractYear(filename) {
+            const m = String(filename || '').match(/(\d{2,3})年/);
+            return m ? m[1] + '年' : '';
+        }
+
+        // ---- 改善效益選項 (比例制) ----
+        const IMPROVEMENT_OPTIONS = ['', '81~100%', '61~80%', '41~60%', '21~40%', '1~20%', '未改善'];
 
         // ---- 模組切換 ----
         let currentModule = localStorage.getItem('activeModule_v1') || 'visit';
@@ -8799,59 +8829,51 @@ ${rawDraft}
             if (!file) return;
             const statusEl = document.getElementById('v-import-dis-status');
             statusEl.textContent = '讀取中...';
+            const year = extractYear(file.name);
             const reader = new FileReader();
             reader.onload = function(ev) {
                 try {
                     const wb = XLSX.read(ev.target.result, { type: 'array' });
-                    verifyData.cases = verifyData.cases.filter(c => c.category !== '身障');
+                    if (year) verifyData.cases = verifyData.cases.filter(c => !(c.category === '身障' && c.year === year));
+                    else      verifyData.cases = verifyData.cases.filter(c => c.category !== '身障');
                     let count = 0;
-
                     ['JA', 'UH', 'a'].forEach(sheetName => {
                         const ws = wb.Sheets[sheetName];
                         if (!ws) return;
                         const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
                         if (rows.length < 2) return;
-
                         for (let r = 1; r < rows.length; r++) {
                             const row = rows[r];
                             if (!row || row.every(c => !c)) continue;
-
-                            const caseNo      = String(row[4]  || '').trim();  // col5 編號
-                            const clientName  = String(row[5]  || '').trim();  // col6 姓名
-                            const unit        = String(row[14] || '').trim();  // col15 單位名稱
-                            const unitPhone   = String(row[17] || '').trim();  // col18 連絡電話
-                            // JA: 申請補助項目 col32 (idx31), UH: col30 (idx29)
-                            const itemName    = String(sheetName === 'UH' ? row[29] : row[31] || '').trim();
-
+                            const caseNo        = String(row[4]  || '').trim();
+                            const clientName    = String(row[5]  || '').trim();
+                            const unit          = String(row[14] || '').trim();
+                            const contactPerson = String(row[16] || '').trim();
+                            const unitPhone     = String(row[17] || '').trim();
+                            const itemName      = String(sheetName === 'UH' ? (row[29]||'') : (row[31]||'')).trim();
                             if (!caseNo && !clientName) continue;
-
                             let existing = verifyData.cases.find(c =>
-                                c.category === '身障' && c.caseNo === caseNo && c.clientName === clientName
+                                c.category === '身障' && c.year === year && c.caseNo === caseNo && c.clientName === clientName
                             );
                             if (!existing) {
                                 existing = {
-                                    id: genVerifyId(), category: '身障',
-                                    caseNo, clientName, unit, unitPhone,
+                                    id: genVerifyId(), category: '身障', year,
+                                    caseNo, clientName, unit, contactPerson, unitPhone,
                                     clientPhone: '', address: '',
-                                    verificationDate: '', status: 'pending',
-                                    items: [], notes: ''
+                                    verificationDate: '', status: 'pending', items: [], notes: ''
                                 };
                                 verifyData.cases.push(existing);
                                 count++;
                             }
-                            if (itemName && !existing.items.some(i => i.name === itemName)) {
+                            if (itemName && !existing.items.some(i => i.name === itemName))
                                 existing.items.push({ name: itemName, improvement: '', feedback: '' });
-                            }
                         }
                     });
-
                     saveVerifyData();
-                    statusEl.textContent = `已匯入 ${count} 筆身障案件`;
+                    statusEl.textContent = `已匯入 ${count} 筆身障案件${year ? `（${year}）` : ''}`;
                     if (currentModule === 'verify') { vRenderDashboard(); vRenderCaseList(); }
                     showToast('身障成效清單匯入完成');
-                } catch(err) {
-                    statusEl.textContent = '匯入失敗：' + err.message;
-                }
+                } catch(err) { statusEl.textContent = '匯入失敗：' + err.message; }
             };
             reader.readAsArrayBuffer(file);
             this.value = '';
@@ -8863,56 +8885,49 @@ ${rawDraft}
             if (!file) return;
             const statusEl = document.getElementById('v-import-elder-status');
             statusEl.textContent = '讀取中...';
+            const year = extractYear(file.name);
             const reader = new FileReader();
             reader.onload = function(ev) {
                 try {
                     const wb = XLSX.read(ev.target.result, { type: 'array' });
                     const ws = wb.Sheets['工作表7'];
-                    if (!ws) throw new Error('找不到「工作表7」，請確認檔案');
+                    if (!ws) throw new Error('找不到「工作表7」');
                     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
                     if (rows.length < 2) throw new Error('工作表為空');
-
-                    verifyData.cases = verifyData.cases.filter(c => c.category !== '中高勞通');
+                    if (year) verifyData.cases = verifyData.cases.filter(c => !(c.category === '中高勞通' && c.year === year));
+                    else      verifyData.cases = verifyData.cases.filter(c => c.category !== '中高勞通');
                     let count = 0;
-
                     for (let r = 1; r < rows.length; r++) {
                         const row = rows[r];
                         if (!row || row.every(c => !c)) continue;
-
-                        const caseNo     = String(row[6]  || '').trim();  // col7 編號
-                        const unit       = String(row[7]  || '').trim();  // col8 廠商名稱
-                        const unitPhone  = String(row[10] || '').trim();  // col11 連絡電話
-                        const clientName = String(row[30] || '').trim();  // col31 姓名
-                        const itemName   = String(row[36] || '').trim();  // col37 申請補助項目
-
+                        const caseNo        = String(row[6]  || '').trim();
+                        const unit          = String(row[7]  || '').trim();
+                        const contactPerson = String(row[9]  || '').trim();
+                        const unitPhone     = String(row[10] || '').trim();
+                        const clientName    = String(row[30] || '').trim();
+                        const itemName      = String(row[36] || '').trim();
                         if (!caseNo && !clientName) continue;
-
                         let existing = verifyData.cases.find(c =>
-                            c.category === '中高勞通' && c.caseNo === caseNo && c.clientName === clientName
+                            c.category === '中高勞通' && c.year === year && c.caseNo === caseNo && c.clientName === clientName
                         );
                         if (!existing) {
                             existing = {
-                                id: genVerifyId(), category: '中高勞通',
-                                caseNo, clientName, unit, unitPhone,
+                                id: genVerifyId(), category: '中高勞通', year,
+                                caseNo, clientName, unit, contactPerson, unitPhone,
                                 clientPhone: '', address: '',
-                                verificationDate: '', status: 'pending',
-                                items: [], notes: ''
+                                verificationDate: '', status: 'pending', items: [], notes: ''
                             };
                             verifyData.cases.push(existing);
                             count++;
                         }
-                        if (itemName && !existing.items.some(i => i.name === itemName)) {
+                        if (itemName && !existing.items.some(i => i.name === itemName))
                             existing.items.push({ name: itemName, improvement: '', feedback: '' });
-                        }
                     }
-
                     saveVerifyData();
-                    statusEl.textContent = `已匯入 ${count} 筆中高勞通案件`;
+                    statusEl.textContent = `已匯入 ${count} 筆中高勞通案件${year ? `（${year}）` : ''}`;
                     if (currentModule === 'verify') { vRenderDashboard(); vRenderCaseList(); }
                     showToast('中高勞通成效清單匯入完成');
-                } catch(err) {
-                    statusEl.textContent = '匯入失敗：' + err.message;
-                }
+                } catch(err) { statusEl.textContent = '匯入失敗：' + err.message; }
             };
             reader.readAsArrayBuffer(file);
             this.value = '';
@@ -8928,6 +8943,64 @@ ${rawDraft}
 
         window.vFilterByStatus = function(status) {
             document.getElementById('v-filter-status').value = status;
+            vRenderCaseList();
+        };
+
+        // ---- 批量選取 ----
+        window.vToggleSelect = function(id, checked) {
+            if (checked) vSelectedIds.add(id);
+            else vSelectedIds.delete(id);
+            vUpdateBatchBar();
+        };
+
+        window.vToggleUnitSelect = function(unitKey, checked, ids) {
+            ids.forEach(id => {
+                if (checked) vSelectedIds.add(id);
+                else vSelectedIds.delete(id);
+            });
+            ids.forEach(id => {
+                const cb = document.querySelector(`.v-case-cb[data-id="${id}"]`);
+                if (cb) cb.checked = checked;
+            });
+            vUpdateBatchBar();
+        };
+
+        function vUpdateBatchBar() {
+            const bar = document.getElementById('v-batch-bar');
+            const countEl = document.getElementById('v-batch-count');
+            if (!bar || !countEl) return;
+            const n = vSelectedIds.size;
+            if (n > 0) {
+                bar.classList.remove('hidden');
+                countEl.textContent = `已選 ${n} 筆`;
+            } else {
+                bar.classList.add('hidden');
+            }
+        }
+
+        window.vApplyBatchDate = function() {
+            const dateVal = document.getElementById('v-batch-date').value;
+            if (!dateVal) { showToast('請先選擇驗收日期'); return; }
+            let updated = 0;
+            vSelectedIds.forEach(id => {
+                const c = verifyData.cases.find(x => x.id === id);
+                if (c) {
+                    c.verificationDate = dateVal;
+                    if (c.status === 'pending') c.status = 'inProgress';
+                    updated++;
+                }
+            });
+            saveVerifyData();
+            vSelectedIds.clear();
+            vUpdateBatchBar();
+            vRenderDashboard();
+            vRenderCaseList();
+            showToast(`已更新 ${updated} 筆驗收日期`);
+        };
+
+        window.vClearSelection = function() {
+            vSelectedIds.clear();
+            vUpdateBatchBar();
             vRenderCaseList();
         };
 
@@ -8947,7 +9020,8 @@ ${rawDraft}
             if (searchTerm)   cases = cases.filter(c =>
                 (c.clientName || '').toLowerCase().includes(searchTerm) ||
                 (c.unit || '').toLowerCase().includes(searchTerm) ||
-                (c.caseNo || '').toLowerCase().includes(searchTerm)
+                (c.caseNo || '').toLowerCase().includes(searchTerm) ||
+                (c.contactPerson || '').toLowerCase().includes(searchTerm)
             );
 
             if (verifyData.cases.length === 0) {
@@ -8965,36 +9039,109 @@ ${rawDraft}
                 inProgress: 'bg-blue-100 text-blue-700',
                 closed:     'bg-emerald-100 text-emerald-700'
             };
-            const catColor = {
-                '身障':   'bg-purple-100 text-purple-700',
-                '中高勞通': 'bg-amber-100 text-amber-800'
-            };
 
-            container.innerHTML = cases.map(c => `
-                <div class="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.99]"
-                     onclick="window.vOpenCase('${c.id}')">
-                    <div class="flex items-start justify-between gap-2 mb-2">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-xs font-bold px-2 py-0.5 rounded ${catColor[c.category] || 'bg-slate-100 text-slate-600'}">${c.category}</span>
-                            <span class="text-xs font-bold px-2 py-0.5 rounded ${statusColor[c.status] || 'bg-slate-100 text-slate-600'}">${statusLabel[c.status] || c.status}</span>
-                            ${c.caseNo ? `<span class="text-xs text-slate-400 font-medium">${c.caseNo}</span>` : ''}
+            // ---- 身障：個別顯示 ----
+            const disCases = cases.filter(c => c.category === '身障');
+            // ---- 中高勞通：依單位(年度+編號)分組 ----
+            const elderCases = cases.filter(c => c.category === '中高勞通');
+            const elderGroups = new Map();
+            elderCases.forEach(c => {
+                const key = (c.year || '') + '_' + (c.caseNo || c.unit || '');
+                if (!elderGroups.has(key)) elderGroups.set(key, { year: c.year, caseNo: c.caseNo, unit: c.unit, contactPerson: c.contactPerson, unitPhone: c.unitPhone, cases: [] });
+                elderGroups.get(key).cases.push(c);
+            });
+
+            let html = '';
+
+            // 身障卡片
+            if (disCases.length > 0) {
+                html += `<div class="text-xs font-bold text-purple-600 uppercase tracking-wide mb-2 mt-1 flex items-center gap-1.5"><i class="fa-solid fa-wheelchair"></i> 身障 (${disCases.length})</div>`;
+                html += disCases.map(c => {
+                    const isSelected = vSelectedIds.has(c.id);
+                    return `
+                    <div class="bg-white border ${isSelected ? 'border-purple-400 ring-2 ring-purple-300' : 'border-slate-200'} rounded-xl p-3 hover:shadow-md transition-shadow">
+                        <div class="flex items-start gap-2">
+                            <input type="checkbox" class="v-case-cb mt-1 shrink-0 w-4 h-4 accent-purple-600 cursor-pointer" data-id="${c.id}"
+                                   ${isSelected ? 'checked' : ''}
+                                   onchange="window.vToggleSelect('${c.id}', this.checked)">
+                            <div class="flex-1 min-w-0 cursor-pointer" onclick="window.vOpenCase('${c.id}')">
+                                <div class="flex items-center gap-1.5 flex-wrap mb-1">
+                                    <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">身障</span>
+                                    <span class="text-xs font-bold px-1.5 py-0.5 rounded ${statusColor[c.status] || 'bg-slate-100 text-slate-600'}">${statusLabel[c.status] || c.status}</span>
+                                    ${c.year ? `<span class="text-xs text-slate-400 font-bold">${c.year}</span>` : ''}
+                                    ${c.caseNo ? `<span class="text-xs text-slate-400">${c.caseNo}</span>` : ''}
+                                </div>
+                                <div class="font-bold text-slate-800 text-sm mb-0.5">${c.clientName || '（無姓名）'}</div>
+                                <div class="text-xs text-slate-500 space-y-0.5">
+                                    ${c.unit ? `<div><i class="fa-solid fa-building text-xs mr-1 text-slate-300"></i>${c.unit}</div>` : ''}
+                                    ${c.contactPerson ? `<div><i class="fa-solid fa-user text-xs mr-1 text-slate-300"></i>聯繫：${c.contactPerson}${c.unitPhone ? `&ensp;<i class="fa-solid fa-phone text-xs mr-1 text-slate-300"></i>${c.unitPhone}` : ''}</div>` : (c.unitPhone ? `<div><i class="fa-solid fa-phone text-xs mr-1 text-slate-300"></i>${c.unitPhone}</div>` : '')}
+                                    ${c.verificationDate ? `<div><i class="fa-solid fa-calendar-check text-xs mr-1 text-slate-300"></i>驗收：${c.verificationDate}</div>` : ''}
+                                </div>
+                                ${c.items.length > 0 ? `<div class="mt-1.5 flex flex-wrap gap-1">${c.items.map(it => `<span class="text-xs bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded text-slate-500 max-w-[180px] truncate" title="${it.name}">${it.name}</span>`).join('')}</div>` : ''}
+                            </div>
+                            <i class="fa-solid fa-chevron-right text-slate-300 shrink-0 mt-1 text-xs cursor-pointer" onclick="window.vOpenCase('${c.id}')"></i>
                         </div>
-                        <i class="fa-solid fa-chevron-right text-slate-300 shrink-0 mt-0.5 text-sm"></i>
-                    </div>
-                    <div class="font-bold text-slate-800 text-base mb-1">${c.clientName || '（無姓名）'}</div>
-                    <div class="text-sm text-slate-500 space-y-0.5">
-                        ${c.unit       ? `<div><i class="fa-solid fa-building text-xs mr-1.5 text-slate-300"></i>${c.unit}</div>` : ''}
-                        ${c.unitPhone  ? `<div><i class="fa-solid fa-phone text-xs mr-1.5 text-slate-300"></i>${c.unitPhone}</div>` : ''}
-                        ${c.clientPhone ? `<div><i class="fa-solid fa-mobile text-xs mr-1.5 text-slate-300"></i>個案：${c.clientPhone}</div>` : ''}
-                        ${c.address    ? `<div><i class="fa-solid fa-location-dot text-xs mr-1.5 text-slate-300"></i>${c.address}</div>` : ''}
-                        ${c.verificationDate ? `<div><i class="fa-solid fa-calendar text-xs mr-1.5 text-slate-300"></i>驗收日：${c.verificationDate}</div>` : ''}
-                    </div>
-                    ${c.items.length > 0 ? `
-                    <div class="mt-2 flex flex-wrap gap-1">
-                        ${c.items.map(it => `<span class="text-xs bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-slate-500 max-w-[200px] truncate" title="${it.name}">${it.name}</span>`).join('')}
-                    </div>` : ''}
-                </div>
-            `).join('');
+                    </div>`;
+                }).join('');
+            }
+
+            // 中高勞通分組卡片
+            if (elderGroups.size > 0) {
+                html += `<div class="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 mt-3 flex items-center gap-1.5"><i class="fa-solid fa-person-cane"></i> 中高勞通 (${elderCases.length})</div>`;
+                elderGroups.forEach((group, key) => {
+                    const groupIds = group.cases.map(c => c.id);
+                    const allSelected = groupIds.every(id => vSelectedIds.has(id));
+                    const anySelected = groupIds.some(id => vSelectedIds.has(id));
+                    const groupClosed = group.cases.every(c => c.status === 'closed');
+                    const groupStatus = groupClosed ? 'closed' : group.cases.some(c => c.status === 'inProgress') ? 'inProgress' : 'pending';
+                    const verDates = [...new Set(group.cases.map(c => c.verificationDate).filter(Boolean))];
+                    html += `
+                    <div class="bg-white border ${anySelected ? 'border-amber-400 ring-2 ring-amber-300' : 'border-slate-200'} rounded-xl overflow-hidden hover:shadow-md transition-shadow">
+                        <div class="bg-amber-50 px-3 py-2.5 flex items-start gap-2 border-b border-amber-100">
+                            <input type="checkbox" class="mt-0.5 shrink-0 w-4 h-4 accent-amber-600 cursor-pointer"
+                                   ${allSelected ? 'checked' : ''}
+                                   onchange="window.vToggleUnitSelect('${key}', this.checked, ${JSON.stringify(groupIds)})">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+                                    <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">中高勞通</span>
+                                    <span class="text-xs font-bold px-1.5 py-0.5 rounded ${statusColor[groupStatus] || 'bg-slate-100 text-slate-600'}">${statusLabel[groupStatus] || groupStatus}</span>
+                                    ${group.year ? `<span class="text-xs text-slate-500 font-bold">${group.year}</span>` : ''}
+                                    ${group.caseNo ? `<span class="text-xs text-slate-400">${group.caseNo}</span>` : ''}
+                                </div>
+                                <div class="font-bold text-slate-800 text-sm">${group.unit || '（無單位）'}</div>
+                                <div class="text-xs text-slate-500 mt-0.5 space-y-0.5">
+                                    ${group.contactPerson ? `<div><i class="fa-solid fa-user text-xs mr-1 text-slate-300"></i>聯繫：${group.contactPerson}${group.unitPhone ? `&ensp;<i class="fa-solid fa-phone text-xs mr-1 text-slate-300"></i>${group.unitPhone}` : ''}</div>` : (group.unitPhone ? `<div><i class="fa-solid fa-phone text-xs mr-1 text-slate-300"></i>${group.unitPhone}</div>` : '')}
+                                    ${verDates.length > 0 ? `<div><i class="fa-solid fa-calendar-check text-xs mr-1 text-slate-300"></i>驗收：${verDates.join('、')}</div>` : ''}
+                                </div>
+                            </div>
+                            <span class="text-xs text-slate-400 shrink-0 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-bold">${group.cases.length} 人</span>
+                        </div>
+                        <div class="divide-y divide-slate-100">
+                            ${group.cases.map(c => {
+                                const isSelected = vSelectedIds.has(c.id);
+                                return `
+                                <div class="px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-slate-50 ${isSelected ? 'bg-purple-50' : ''}"
+                                     onclick="window.vOpenCase('${c.id}')">
+                                    <input type="checkbox" class="v-case-cb shrink-0 w-3.5 h-3.5 accent-purple-600 cursor-pointer" data-id="${c.id}"
+                                           ${isSelected ? 'checked' : ''}
+                                           onclick="event.stopPropagation()"
+                                           onchange="window.vToggleSelect('${c.id}', this.checked)">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="font-medium text-slate-700 text-sm">${c.clientName || '（無姓名）'}</span>
+                                            <span class="text-xs px-1.5 py-0.5 rounded ${statusColor[c.status] || 'bg-slate-100 text-slate-600'}">${statusLabel[c.status] || c.status}</span>
+                                        </div>
+                                        ${c.items.length > 0 ? `<div class="flex flex-wrap gap-1 mt-0.5">${c.items.map(it => `<span class="text-xs text-slate-400 bg-slate-50 border border-slate-100 px-1 py-0.5 rounded max-w-[160px] truncate" title="${it.name}">${it.name}</span>`).join('')}</div>` : ''}
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right text-slate-300 text-xs shrink-0"></i>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                    </div>`;
+                });
+            }
+
+            container.innerHTML = html || '<p class="text-center text-slate-400 py-8">無符合條件的案件</p>';
         }
         window.vRenderCaseList = vRenderCaseList;
 
@@ -9003,11 +9150,6 @@ ${rawDraft}
             document.getElementById(id).addEventListener('change', vRenderCaseList);
         });
         document.getElementById('v-search').addEventListener('input', vRenderCaseList);
-
-        // ---- 改善效益選項 ----
-        const IMPROVEMENT_OPTIONS = [
-            '', '提高工作獨立性', '提升工作效率', '增加工作品質', '降低職災風險', '減少身體不適'
-        ];
 
         // ---- 開啟案件詳情 ----
         window.vOpenCase = function(caseId) {
@@ -9041,12 +9183,17 @@ ${rawDraft}
                     <div class="flex items-center gap-2 mb-4 flex-wrap">
                         <span class="text-xs font-bold px-2 py-0.5 rounded ${catColor[c.category] || ''}">${c.category}</span>
                         <span class="text-xs font-bold px-2 py-0.5 rounded ${statusColor[c.status] || ''}">${statusLabel[c.status] || ''}</span>
+                        ${c.year ? `<span class="text-xs text-slate-400 font-bold">${c.year}</span>` : ''}
                         ${c.caseNo ? `<span class="text-xs text-slate-400 font-bold">${c.caseNo}</span>` : ''}
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1">單位名稱</label>
                             <input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unit" value="${(c.unit||'').replace(/"/g,'&quot;')}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">聯繫窗口</label>
+                            <input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="contactPerson" value="${(c.contactPerson||'').replace(/"/g,'&quot;')}">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1">單位電話</label>
@@ -9060,7 +9207,7 @@ ${rawDraft}
                             <label class="block text-xs font-bold text-slate-500 mb-1">個案電話 <span class="text-slate-300 font-normal">(可自行填寫)</span></label>
                             <input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientPhone" placeholder="個案手機或市話" value="${(c.clientPhone||'').replace(/"/g,'&quot;')}">
                         </div>
-                        <div class="md:col-span-2">
+                        <div>
                             <label class="block text-xs font-bold text-slate-500 mb-1">地址 <span class="text-slate-300 font-normal">(可自行填寫)</span></label>
                             <input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="address" placeholder="單位或個案地址" value="${(c.address||'').replace(/"/g,'&quot;')}">
                         </div>
@@ -9096,7 +9243,7 @@ ${rawDraft}
                                     <select class="w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400"
                                             onchange="window.vSaveItemField(${idx}, 'improvement', this.value)">
                                         ${IMPROVEMENT_OPTIONS.map(opt =>
-                                            `<option value="${opt}" ${item.improvement === opt ? 'selected' : ''}>${opt || '（請選擇改善效益）'}</option>`
+                                            `<option value="${opt}" ${item.improvement === opt ? 'selected' : ''}>${opt || '（請選擇改善比例）'}</option>`
                                         ).join('')}
                                     </select>
                                 </div>
