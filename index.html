@@ -116,14 +116,11 @@
 
     <!-- 功能模組切換列 (登入後顯示) -->
     <div id="module-tabs" class="hidden bg-slate-700 flex no-print z-10 shrink-0">
-        <button id="btn-module-visit" class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-white bg-slate-600 border-b-2 border-blue-400 transition-colors" data-module="visit">
+        <button class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-white bg-slate-600 border-b-2 border-blue-400 transition-colors" data-module="visit">
             <i class="fa-solid fa-stethoscope mr-1.5"></i> 訪視案件
         </button>
-        <button id="btn-module-verify" class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-600 transition-colors" data-module="verify">
+        <button class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-600 transition-colors" data-module="verify">
             <i class="fa-solid fa-clipboard-check mr-1.5"></i> 成效驗收
-        </button>
-        <button id="btn-module-itinerary" class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-600 transition-colors" data-module="itinerary">
-            <i class="fa-solid fa-route mr-1.5"></i> 訪視行程表
         </button>
     </div>
 
@@ -1285,22 +1282,14 @@
                     </div>
                 </div>
 
-                <!-- Tab 切換列 -->
-                <div class="flex rounded-2xl overflow-hidden border border-slate-200 shadow-sm bg-white">
-                    <button id="v-tab-btn-verify" onclick="window.vSwitchMainTab('verify')"
-                        class="flex-1 py-3 px-4 font-bold text-sm flex items-center justify-center gap-2 transition-colors bg-purple-600 text-white">
-                        <i class="fa-solid fa-calendar-check"></i> 驗收作業區
-                    </button>
-                    <button id="v-tab-btn-schedule" onclick="window.vSwitchMainTab('schedule')"
-                        class="flex-1 py-3 px-4 font-bold text-sm flex items-center justify-center gap-2 transition-colors text-slate-500 hover:bg-slate-50">
-                        <i class="fa-solid fa-route"></i> 行程表
-                    </button>
-                </div>
-
-                <!-- ===== 驗收作業區 ===== -->
-                <div id="v-panel-verify">
+                <!-- 驗收作業區 -->
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div class="p-5 md:p-6 border-b border-slate-100">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                            <h2 class="text-lg font-bold text-slate-700">
+                                <i class="fa-solid fa-calendar-check text-purple-500 mr-2"></i>驗收作業區
+                            </h2>
+                        </div>
                         <div class="flex flex-wrap gap-3 items-center">
                             <div class="flex items-center gap-2">
                                 <label class="text-sm font-bold text-slate-600 whitespace-nowrap">驗收日期：</label>
@@ -1330,58 +1319,6 @@
                         <p class="text-center text-slate-400 py-8">請匯入成效清單後開始驗收作業</p>
                     </div>
                 </div>
-                </div><!-- end v-panel-verify -->
-
-                <!-- ===== 行程表 ===== -->
-                <div id="v-panel-schedule" class="hidden space-y-4">
-                    <!-- 日期選擇 + 摘要 -->
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-                        <div class="flex flex-wrap items-center gap-3">
-                            <div class="flex items-center gap-2 flex-1 min-w-0">
-                                <i class="fa-solid fa-calendar-days text-blue-500 text-lg shrink-0"></i>
-                                <input type="date" id="sch-date-picker" class="flex-1 p-2.5 border border-slate-200 rounded-xl text-base font-bold text-slate-700 focus:ring-2 focus:ring-blue-400 bg-slate-50">
-                            </div>
-                            <button onclick="window.schSetToday()" class="text-xs px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg font-bold transition-colors">今天</button>
-                            <button onclick="window.schRender()" class="text-xs px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold transition-colors"><i class="fa-solid fa-arrows-rotate"></i></button>
-                        </div>
-                        <div id="sch-summary" class="mt-3 text-xs text-slate-500 flex flex-wrap gap-3 pl-1"></div>
-                    </div>
-
-                    <!-- 主體：左邊待安排 | 右邊行程 -->
-                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 items-start">
-
-                        <!-- 待安排清單 -->
-                        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                                <h3 class="font-bold text-sm text-slate-600 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-inbox text-slate-400"></i> 待安排案件
-                                </h3>
-                                <span id="sch-unscheduled-count" class="text-xs text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded-full font-bold">0</span>
-                            </div>
-                            <div id="sch-unscheduled" class="p-3 space-y-2 max-h-[500px] overflow-y-auto">
-                                <p class="text-center text-slate-400 text-sm py-6">無進行中案件</p>
-                            </div>
-                        </div>
-
-                        <!-- 今日行程 -->
-                        <div class="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between bg-blue-50">
-                                <h3 class="font-bold text-sm text-blue-700 flex items-center gap-1.5">
-                                    <i class="fa-solid fa-route text-blue-500"></i> 今日行程
-                                    <span id="sch-trip-count" class="text-xs bg-blue-200 text-blue-800 px-2 py-0.5 rounded-full font-bold ml-1">0 站</span>
-                                </h3>
-                                <div class="flex gap-2">
-                                    <button onclick="window.schClearDone()" class="text-xs text-slate-500 hover:text-slate-700 font-bold px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors">清除已完成</button>
-                                    <button onclick="window.schExportDay()" class="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1 rounded-lg font-bold transition-colors"><i class="fa-solid fa-file-export mr-1"></i>匯出</button>
-                                </div>
-                            </div>
-                            <div id="sch-itinerary" class="p-3 space-y-2 min-h-[200px]">
-                                <p class="text-center text-slate-400 text-sm py-8">從左側加入案件</p>
-                            </div>
-                        </div>
-
-                    </div>
-                </div><!-- end v-panel-schedule -->
 
             </div>
         </div><!-- end verify-main -->
@@ -1418,57 +1355,6 @@
             </button>
         </div>
     </div><!-- end verify-module -->
-
-    <!-- ===================== 訪視行程表 模組 ===================== -->
-    <div id="itinerary-module" class="hidden flex-1 flex flex-col overflow-hidden bg-slate-50">
-        <div class="max-w-5xl mx-auto p-4 md:p-6 pb-24 space-y-6 w-full">
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-5 md:p-6 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
-                    <h2 class="text-lg font-bold text-slate-700 flex items-center">
-                        <i class="fa-solid fa-route text-indigo-500 mr-2 text-2xl"></i>
-                        獨立訪視行程表
-                    </h2>
-                    <div class="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100">
-                        <label class="text-sm font-bold text-indigo-900 whitespace-nowrap">排定日期：</label>
-                        <input type="date" id="iti-date-picker" class="p-2 border border-indigo-200 rounded-lg text-base focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm">
-                    </div>
-                </div>
-                <!-- 行程表模式容器 -->
-                <div id="v-itinerary-list" class="p-4 space-y-3 min-h-[400px] bg-slate-50 relative">
-                    <div class="flex flex-col items-center justify-center py-20 text-slate-400">
-                        <i class="fa-solid fa-route text-5xl mb-4 text-slate-300"></i>
-                        <p class="text-lg font-bold text-slate-500">此頁面為單獨的訪視行程表</p>
-                        <p class="mt-2">請先在上方選擇「排定日期」來查看當天排定的行程。</p>
-                        <p class="text-sm mt-1 text-slate-400">若清單為空，請先至「成效驗收」功能中設定案件的驗收日期。</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 行程表備註/取消 Modal -->
-        <div id="v-itinerary-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-            <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
-                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 class="font-bold text-slate-700">更新行程狀態</h3>
-                    <button onclick="document.getElementById('v-itinerary-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-                </div>
-                <div class="p-5 flex-1 overflow-y-auto">
-                    <label class="block text-sm font-bold text-slate-600 mb-2">更改狀態：</label>
-                    <select id="v-iti-status-select" class="w-full p-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-400 mb-4">
-                        <option value="pending">待訪視</option>
-                        <option value="done">已訪視 (✓)</option>
-                        <option value="cancelled">行程取消 (✗)</option>
-                    </select>
-                    <label class="block text-sm font-bold text-slate-600 mb-2">備註事項/取消原因：</label>
-                    <textarea id="v-iti-note-input" rows="3" class="w-full p-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300" placeholder="填寫聯絡狀況或取消原因..."></textarea>
-                </div>
-                <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-2">
-                    <button onclick="document.getElementById('v-itinerary-modal').classList.add('hidden')" class="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-2.5 rounded-xl hover:bg-slate-50">取消</button>
-                    <button id="v-iti-save-btn" class="flex-1 bg-indigo-600 text-white font-bold py-2.5 rounded-xl hover:bg-indigo-700 shadow-sm">儲存</button>
-                </div>
-            </div>
-        </div>
-    </div><!-- end itinerary-module -->
 
     <!-- ================= 身障案件工作區（全螢幕，獨立於 main 之外） ================= -->
     <div id="view-dis-case" class="hidden fixed inset-0 bg-slate-100 z-50 flex flex-col">
@@ -3203,9 +3089,8 @@
                     loadCases();
                     vCurrentUid = user.uid; // 成效驗收模組同步用
                     vLoadFromFirestore().then(() => { if (currentModule === 'verify') { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); } });
-                    document.getElementById('module-tabs')?.classList.remove('hidden'); // 顯示功能模組切換列
+                    initModuleTabs(); // 顯示功能模組切換列
                 } else {
-                    document.getElementById('module-tabs')?.classList.add('hidden');
                     overlay.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
                     statusEl.innerHTML = '<i class="fa-solid fa-user-xmark"></i> 未登入';
                     statusEl.className = "bg-slate-500 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-white shadow font-bold text-xs md:text-sm flex items-center gap-2";
@@ -8872,6 +8757,7 @@ ${rawDraft}
             showToast('人員清單範本已下載');
         };
 
+Module written, length: 83712
         // ================================================================
         // 🆕 成效驗收 模組 (v5) - 重構版
         // ================================================================
@@ -9031,55 +8917,26 @@ ${rawDraft}
         // ---- 模組切換 ----
         let currentModule = 'visit';
         const verifyModuleEl = document.getElementById('verify-module');
-        const itineraryModuleEl = document.getElementById('itinerary-module');
         const verifyModuleBtn = document.getElementById('btn-module-verify');
         const visitModuleBtn = document.getElementById('btn-module-visit');
-        const itineraryModuleBtn = document.getElementById('btn-module-itinerary');
-
         function switchModule(mod) {
             currentModule = mod;
             localStorage.setItem('activeModule_v1', mod);
-            
-            document.getElementById('visit-module').classList.toggle('hidden', mod !== 'visit');
-            if (verifyModuleEl) verifyModuleEl.classList.toggle('hidden', mod !== 'verify');
-            if (itineraryModuleEl) itineraryModuleEl.classList.toggle('hidden', mod !== 'itinerary');
-            
-            // 標籤樣式重置 (預設暗色未選取)
-            [visitModuleBtn, verifyModuleBtn, itineraryModuleBtn].forEach(btn => {
-                if(btn) {
-                    btn.classList.add('text-slate-300', 'hover:bg-slate-600', 'hover:text-white');
-                    btn.classList.remove('bg-blue-700', 'bg-purple-700', 'bg-indigo-700', 'text-white');
-                }
-            });
-
-            // 套用選取樣式
-            if (mod === 'visit' && visitModuleBtn) {
-                visitModuleBtn.classList.remove('text-slate-300', 'hover:bg-slate-600');
-                visitModuleBtn.classList.add('bg-blue-700', 'text-white');
-            } else if (mod === 'verify' && verifyModuleBtn) {
-                verifyModuleBtn.classList.remove('text-slate-300', 'hover:bg-slate-600');
-                verifyModuleBtn.classList.add('bg-purple-700', 'text-white');
-                vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList();
-            } else if (mod === 'itinerary' && itineraryModuleBtn) {
-                itineraryModuleBtn.classList.remove('text-slate-300', 'hover:bg-slate-600');
-                itineraryModuleBtn.classList.add('bg-indigo-700', 'text-white');
-                // 自動套用今天的日期（若未選）
-                if(!document.getElementById('iti-date-picker').value) {
-                     const today = new Date();
-                     const dd = String(today.getDate()).padStart(2, '0');
-                     const mm = String(today.getMonth() + 1).padStart(2, '0');
-                     const yyyy = today.getFullYear();
-                     document.getElementById('iti-date-picker').value = yyyy + '-' + mm + '-' + dd;
-                }
-                vRenderItinerary();
-            }
+            const isVerify = mod === 'verify';
+            document.getElementById('visit-module').classList.toggle('hidden', isVerify);
+            if (verifyModuleEl) verifyModuleEl.classList.toggle('hidden', !isVerify);
+            if (verifyModuleBtn) { verifyModuleBtn.classList.toggle('bg-purple-700', isVerify); verifyModuleBtn.classList.toggle('text-white', isVerify); verifyModuleBtn.classList.toggle('text-purple-700', !isVerify); }
+            if (visitModuleBtn) { visitModuleBtn.classList.toggle('bg-blue-700', !isVerify); visitModuleBtn.classList.toggle('text-white', !isVerify); visitModuleBtn.classList.toggle('text-blue-700', isVerify); }
+            if (isVerify) { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); }
         }
-        document.getElementById('btn-module-visit')?.addEventListener('click', () => switchModule('visit'));
-        document.getElementById('btn-module-verify')?.addEventListener('click', () => switchModule('verify'));
-        document.getElementById('btn-module-itinerary')?.addEventListener('click', () => switchModule('itinerary'));
-
+        document.getElementById('btn-module-verify').addEventListener('click', () => switchModule('verify'));
+        document.getElementById('btn-module-visit').addEventListener('click', () => switchModule('visit'));
         const savedModule = localStorage.getItem('activeModule_v1') || 'visit';
-        switchModule(savedModule);
+        currentModule = savedModule;  // update the let variable
+        if (savedModule === 'verify') {
+            document.getElementById('visit-module').classList.add('hidden');
+            if (verifyModuleEl) verifyModuleEl.classList.remove('hidden');
+        }
 
         // ---- Excel 匯入：身障 (JA / UH / a) ----
         document.getElementById('v-import-dis').addEventListener('change', function(e) {
@@ -9631,7 +9488,6 @@ ${rawDraft}
                     <div class="flex flex-wrap gap-2">
                         <button onclick="window.vExportUnitExcel('${unitKey}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5"><i class="fa-solid fa-file-excel"></i> 下載 Excel</button>
                         <button onclick="window.vDownloadUnitPhotos('${unitKey}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5"><i class="fa-solid fa-images"></i> 批次下載照片</button>
-                        ${!allClosed ? `<button onclick="window.schAddFromUnit('${unitKey}')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5"><i class="fa-solid fa-route"></i> 加入行程</button>` : ''}
                     </div>
                 </div>
                 <!-- 訪視報告 -->
@@ -9788,7 +9644,6 @@ ${rawDraft}
                     <div class="flex flex-wrap gap-2">
                         <button onclick="window.vExportCaseExcel('${caseId}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5"><i class="fa-solid fa-file-excel"></i> 下載 Excel</button>
                         <button onclick="window.vDownloadPhotos('${caseId}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5"><i class="fa-solid fa-images"></i> 批次下載照片</button>
-                        ${c.status !== 'closed' ? `<button onclick="window.schAddFromCase('${caseId}')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5"><i class="fa-solid fa-route"></i> 加入行程</button>` : ''}
                     </div>
                 </div>
                 <!-- 訪視報告 -->
@@ -10284,447 +10139,6 @@ ${rawDraft}
         loadVerifyData();
 
 
-        // ================================================================
-        // 🗓️ 行程表模組 (Schedule Module)
-        // ================================================================
-        const SCHEDULE_KEY = 'schedule_data_v1';
-        let scheduleData = { trips: [] };
-
-        function loadScheduleData() {
-            try {
-                const raw = localStorage.getItem(SCHEDULE_KEY);
-                if (raw) scheduleData = JSON.parse(raw);
-                if (!Array.isArray(scheduleData.trips)) scheduleData.trips = [];
-            } catch(e) { scheduleData = { trips: [] }; }
-        }
-        function saveScheduleData() {
-            localStorage.setItem(SCHEDULE_KEY, JSON.stringify(scheduleData));
-        }
-        loadScheduleData();
-
-        // Tab 切換
-        window.vSwitchMainTab = function(tab) {
-            const panelVerify = document.getElementById('v-panel-verify');
-            const panelSched  = document.getElementById('v-panel-schedule');
-            const btnVerify   = document.getElementById('v-tab-btn-verify');
-            const btnSched    = document.getElementById('v-tab-btn-schedule');
-            if (!panelVerify || !panelSched) return;
-            if (tab === 'schedule') {
-                panelVerify.classList.add('hidden');
-                panelSched.classList.remove('hidden');
-                btnVerify.className = btnVerify.className.replace(/bg-purple-600 text-white/g, 'text-slate-500 hover:bg-slate-50');
-                btnSched.className  = btnSched.className.replace(/text-slate-500 hover:bg-slate-50/g, 'bg-indigo-600 text-white');
-                window.schRender();
-            } else {
-                panelSched.classList.add('hidden');
-                panelVerify.classList.remove('hidden');
-                btnSched.className  = btnSched.className.replace(/bg-indigo-600 text-white/g, 'text-slate-500 hover:bg-slate-50');
-                btnVerify.className = btnVerify.className.replace(/text-slate-500 hover:bg-slate-50/g, 'bg-purple-600 text-white');
-            }
-        };
-
-        // 取得今天日期 YYYY-MM-DD
-        function schToday() {
-            const d = new Date();
-            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        }
-
-        window.schSetToday = function() {
-            const picker = document.getElementById('sch-date-picker');
-            if (picker) { picker.value = schToday(); window.schRender(); }
-        };
-
-        window.schRender = function() {
-            const picker = document.getElementById('sch-date-picker');
-            if (!picker) return;
-            if (!picker.value) picker.value = schToday();
-            const date = picker.value;
-            schRenderUnscheduled(date);
-            schRenderItinerary(date);
-            schUpdateSummary(date);
-        };
-
-        // 取得案件顯示名稱與地址
-        function schGetCaseInfo(caseId) {
-            const c = verifyData.cases.find(x => x.id === caseId);
-            if (!c) return { label: caseId, address: '', phone: '', caseNo: '', category: '' };
-            return {
-                label: `${c.caseNo||''} ${c.clientName||''}${c.unit ? ' ｜ '+c.unit : ''}`.trim(),
-                address: c.address || '',
-                phone: c.unitPhone || c.clientPhone || '',
-                caseNo: c.caseNo || '',
-                category: c.category || '',
-                clientName: c.clientName || '',
-                unit: c.unit || '',
-                status: c.status || 'pending'
-            };
-        }
-
-        function schGetUnitInfo(unitKey) {
-            const cases = verifyData.cases.filter(c =>
-                c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo||c.unit||'') === unitKey
-            );
-            if (cases.length === 0) return { label: unitKey, address: '', phone: '', caseNo: '' };
-            const first = cases[0];
-            return {
-                label: `${first.caseNo||''} ${first.unit||''}`.trim(),
-                address: first.address || '',
-                phone: first.unitPhone || '',
-                caseNo: first.caseNo || '',
-                category: '中高勞通',
-                unit: first.unit || '',
-                status: cases.every(c => c.status === 'closed') ? 'closed' : cases.some(c => c.status === 'inProgress') ? 'inProgress' : 'pending'
-            };
-        }
-
-        function schGetInfo(trip) {
-            if (trip.unitKey) return schGetUnitInfo(trip.unitKey);
-            return schGetCaseInfo(trip.caseId);
-        }
-
-        // 取得當天有行程的案件 id set
-        function schScheduledIds(date) {
-            const ids = new Set();
-            scheduleData.trips.filter(t => t.date === date).forEach(t => {
-                if (t.unitKey) ids.add('unit:' + t.unitKey);
-                else ids.add(t.caseId);
-            });
-            return ids;
-        }
-
-        // 左側：待安排清單（進行中且尚未加入今日行程）
-        function schRenderUnscheduled(date) {
-            const el = document.getElementById('sch-unscheduled');
-            const countEl = document.getElementById('sch-unscheduled-count');
-            if (!el) return;
-
-            const scheduledIds = schScheduledIds(date);
-
-            // 身障：每個 inProgress case
-            const disabilityCases = verifyData.cases.filter(c =>
-                c.category !== '中高勞通' && c.status === 'inProgress' && !scheduledIds.has(c.id)
-            );
-
-            // 中高勞通：以 unitKey 為單位，未全部結案 且 未加入行程
-            const unitMap = new Map();
-            verifyData.cases.filter(c => c.category === '中高勞通').forEach(c => {
-                const key = (c.year||'') + '_' + (c.caseNo||c.unit||'');
-                if (!unitMap.has(key)) unitMap.set(key, []);
-                unitMap.get(key).push(c);
-            });
-            const elderUnits = [];
-            unitMap.forEach((cases, key) => {
-                if (!cases.every(c => c.status === 'closed') && !scheduledIds.has('unit:'+key)) {
-                    elderUnits.push(key);
-                }
-            });
-
-            const total = disabilityCases.length + elderUnits.length;
-            if (countEl) countEl.textContent = total;
-
-            if (total === 0) {
-                el.innerHTML = '<p class="text-center text-slate-400 text-sm py-6">所有進行中案件已安排</p>';
-                return;
-            }
-
-            let html = '';
-
-            // 身障個案
-            disabilityCases.forEach(c => {
-                const cat = c.category === '聽力' ? 'text-blue-700 bg-blue-100' : 'text-purple-700 bg-purple-100';
-                html += `<div class="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-3 hover:border-indigo-300 transition-colors">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-xs font-bold px-1.5 py-0.5 rounded ${cat}">${c.category}</span>
-                            <span class="text-sm font-bold text-slate-700 truncate">${c.caseNo||''} ${c.clientName||''}</span>
-                        </div>
-                        ${c.unit ? `<div class="text-xs text-slate-400 truncate mt-0.5">${c.unit}</div>` : ''}
-                        ${c.address ? `<div class="text-xs text-slate-400 truncate mt-0.5"><i class="fa-solid fa-location-dot text-slate-300 mr-1"></i>${c.address}</div>` : ''}
-                    </div>
-                    <button onclick="window.schAddCaseToDate('${c.id}', '${date}')" class="shrink-0 bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold transition-colors"><i class="fa-solid fa-plus mr-1"></i>加入</button>
-                </div>`;
-            });
-
-            // 中高勞通單位
-            elderUnits.forEach(unitKey => {
-                const info = schGetUnitInfo(unitKey);
-                const escapedKey = unitKey.replace(/'/g, "\'");
-                html += `<div class="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 hover:border-indigo-300 transition-colors">
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-xs font-bold px-1.5 py-0.5 rounded text-amber-800 bg-amber-100">中高勞通</span>
-                            <span class="text-sm font-bold text-slate-700 truncate">${info.label}</span>
-                        </div>
-                        ${info.address ? `<div class="text-xs text-slate-400 truncate mt-0.5"><i class="fa-solid fa-location-dot text-slate-300 mr-1"></i>${info.address}</div>` : ''}
-                    </div>
-                    <button onclick="window.schAddUnitToDate('${escapedKey}', '${date}')" class="shrink-0 bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold transition-colors"><i class="fa-solid fa-plus mr-1"></i>加入</button>
-                </div>`;
-            });
-
-            el.innerHTML = html;
-        }
-
-        // 右側：今日行程卡片
-        function schRenderItinerary(date) {
-            const el = document.getElementById('sch-itinerary');
-            const countEl = document.getElementById('sch-trip-count');
-            if (!el) return;
-
-            const trips = scheduleData.trips
-                .filter(t => t.date === date)
-                .sort((a,b) => (a.order||0) - (b.order||0));
-
-            if (countEl) countEl.textContent = trips.length + ' 站';
-
-            if (trips.length === 0) {
-                el.innerHTML = '<p class="text-center text-slate-400 text-sm py-8">從左側加入案件</p>';
-                return;
-            }
-
-            const statusOpts = [
-                { val: 'pending',   label: '待訪', cls: 'bg-slate-100 text-slate-600' },
-                { val: 'done',      label: '已完成', cls: 'bg-emerald-100 text-emerald-700' },
-                { val: 'cancelled', label: '取消', cls: 'bg-red-100 text-red-600' }
-            ];
-
-            let html = '';
-            trips.forEach((trip, idx) => {
-                const info = schGetInfo(trip);
-                const address = trip.customAddress || info.address || '';
-                const statusCls = { pending: 'border-slate-200 bg-white', done: 'border-emerald-200 bg-emerald-50', cancelled: 'border-red-200 bg-red-50 opacity-60' }[trip.status] || 'border-slate-200 bg-white';
-                const stepNum = idx + 1;
-                const isFirst = idx === 0;
-                const isLast  = idx === trips.length - 1;
-
-                html += `<div class="rounded-xl border ${statusCls} p-3.5 shadow-sm" data-trip-id="${trip.id}">
-                    <!-- Header Row -->
-                    <div class="flex items-start gap-2">
-                        <div class="shrink-0 w-7 h-7 rounded-full bg-indigo-500 text-white text-xs font-bold flex items-center justify-center mt-0.5">${stepNum}</div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="text-xs font-bold px-1.5 py-0.5 rounded ${info.category==='中高勞通'?'text-amber-800 bg-amber-100':info.category==='聽力'?'text-blue-700 bg-blue-100':'text-purple-700 bg-purple-100'}">${info.category||'案件'}</span>
-                                <span class="text-sm font-bold text-slate-800">${info.label}</span>
-                            </div>
-                            ${address ? `<div class="text-xs text-slate-500 mt-1 flex items-center gap-1 cursor-pointer hover:text-indigo-600 group" onclick="window.schCopyAddress('${address.replace(/'/g,"\'")}')">
-                                <i class="fa-solid fa-location-dot text-slate-400 group-hover:text-indigo-400 shrink-0"></i>
-                                <span class="truncate">${address}</span>
-                                <button onclick="event.stopPropagation();window.schOpenMaps('${address.replace(/'/g,"\'")}'); return false;" class="ml-1 text-slate-400 hover:text-blue-500 shrink-0" title="Google 地圖"><i class="fa-solid fa-map-location-dot"></i></button>
-                            </div>` : ''}
-                        </div>
-                        <!-- Move buttons -->
-                        <div class="flex flex-col gap-0.5 shrink-0">
-                            ${!isFirst ? `<button onclick="window.schMoveUp('${trip.id}')" class="w-6 h-6 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded text-xs flex items-center justify-center" title="上移"><i class="fa-solid fa-chevron-up"></i></button>` : '<div class="w-6 h-6"></div>'}
-                            ${!isLast  ? `<button onclick="window.schMoveDown('${trip.id}')" class="w-6 h-6 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded text-xs flex items-center justify-center" title="下移"><i class="fa-solid fa-chevron-down"></i></button>` : '<div class="w-6 h-6"></div>'}
-                        </div>
-                        <button onclick="window.schRemoveTrip('${trip.id}')" class="shrink-0 w-6 h-6 text-slate-300 hover:text-red-500 rounded text-sm flex items-center justify-center hover:bg-red-50 transition-colors" title="移除"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                    <!-- Controls Row -->
-                    <div class="mt-2.5 flex flex-wrap gap-2 items-center pl-9">
-                        <!-- 時間 -->
-                        <input type="time" value="${trip.time||''}" onchange="window.schSetTime('${trip.id}', this.value)" class="text-xs border border-slate-200 rounded-lg px-2 py-1 text-slate-600 bg-slate-50 focus:ring-1 focus:ring-indigo-400 w-28">
-                        <!-- 狀態 -->
-                        <select onchange="window.schSetStatus('${trip.id}', this.value)" class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-600 focus:ring-1 focus:ring-indigo-400">
-                            ${statusOpts.map(o => `<option value="${o.val}" ${trip.status===o.val?'selected':''}>${o.label}</option>`).join('')}
-                        </select>
-                        <!-- 地址覆蓋 -->
-                        <button onclick="window.schPromptAddress('${trip.id}', '${address.replace(/'/g,"\'")}') " class="text-xs text-slate-400 hover:text-indigo-500 flex items-center gap-1"><i class="fa-solid fa-pen-to-square"></i>地址</button>
-                    </div>
-                    <!-- 備註 -->
-                    <div class="mt-2 pl-9">
-                        <input type="text" value="${(trip.notes||'').replace(/"/g,'&quot;')}" onchange="window.schSetNotes('${trip.id}', this.value)" placeholder="備註（取消原因、注意事項…）" class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-600 bg-slate-50 placeholder-slate-300 focus:ring-1 focus:ring-indigo-400">
-                    </div>
-                </div>`;
-            });
-
-            el.innerHTML = html;
-        }
-
-        function schUpdateSummary(date) {
-            const el = document.getElementById('sch-summary');
-            if (!el) return;
-            const trips = scheduleData.trips.filter(t => t.date === date);
-            const done = trips.filter(t => t.status === 'done').length;
-            const cancelled = trips.filter(t => t.status === 'cancelled').length;
-            const total = trips.length;
-            el.innerHTML = total === 0 ? '<span>今日無行程</span>' :
-                `<span><i class="fa-solid fa-route text-indigo-400 mr-1"></i>${total} 站</span>
-                 <span class="text-emerald-600"><i class="fa-solid fa-circle-check mr-1"></i>${done} 完成</span>
-                 ${cancelled > 0 ? `<span class="text-red-500"><i class="fa-solid fa-ban mr-1"></i>${cancelled} 取消</span>` : ''}
-                 <span class="text-slate-400">${total-done-cancelled} 待訪</span>`;
-        }
-
-        // 加入行程（從案件詳情頁按鈕）
-        window.schAddFromCase = function(caseId) {
-            const date = schToday();
-            window.schAddCaseToDate(caseId, date);
-            window.vSwitchMainTab('schedule');
-            document.getElementById('verify-detail').classList.add('hidden');
-            document.getElementById('verify-main').classList.remove('hidden');
-        };
-        window.schAddFromUnit = function(unitKey) {
-            const date = schToday();
-            window.schAddUnitToDate(unitKey, date);
-            window.vSwitchMainTab('schedule');
-            document.getElementById('verify-detail').classList.add('hidden');
-            document.getElementById('verify-main').classList.remove('hidden');
-        };
-
-        window.schAddCaseToDate = function(caseId, date) {
-            // 避免重複
-            if (scheduleData.trips.find(t => t.caseId === caseId && t.date === date)) {
-                window.schRender();
-                return;
-            }
-            const maxOrder = scheduleData.trips.filter(t => t.date === date).reduce((m,t) => Math.max(m, t.order||0), 0);
-            scheduleData.trips.push({
-                id: 'trip_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
-                caseId, unitKey: null, date,
-                order: maxOrder + 1,
-                time: '', status: 'pending', notes: '', customAddress: ''
-            });
-            saveScheduleData();
-            window.schRender();
-        };
-
-        window.schAddUnitToDate = function(unitKey, date) {
-            if (scheduleData.trips.find(t => t.unitKey === unitKey && t.date === date)) {
-                window.schRender();
-                return;
-            }
-            const maxOrder = scheduleData.trips.filter(t => t.date === date).reduce((m,t) => Math.max(m, t.order||0), 0);
-            scheduleData.trips.push({
-                id: 'trip_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
-                caseId: null, unitKey, date,
-                order: maxOrder + 1,
-                time: '', status: 'pending', notes: '', customAddress: ''
-            });
-            saveScheduleData();
-            window.schRender();
-        };
-
-        window.schRemoveTrip = function(tripId) {
-            scheduleData.trips = scheduleData.trips.filter(t => t.id !== tripId);
-            saveScheduleData();
-            window.schRender();
-        };
-
-        window.schMoveUp = function(tripId) {
-            const date = (scheduleData.trips.find(t => t.id === tripId)||{}).date;
-            if (!date) return;
-            const dayTrips = scheduleData.trips.filter(t => t.date === date).sort((a,b) => (a.order||0)-(b.order||0));
-            const idx = dayTrips.findIndex(t => t.id === tripId);
-            if (idx <= 0) return;
-            const prev = dayTrips[idx-1];
-            const curr = dayTrips[idx];
-            [prev.order, curr.order] = [curr.order, prev.order];
-            saveScheduleData();
-            window.schRender();
-        };
-
-        window.schMoveDown = function(tripId) {
-            const date = (scheduleData.trips.find(t => t.id === tripId)||{}).date;
-            if (!date) return;
-            const dayTrips = scheduleData.trips.filter(t => t.date === date).sort((a,b) => (a.order||0)-(b.order||0));
-            const idx = dayTrips.findIndex(t => t.id === tripId);
-            if (idx < 0 || idx >= dayTrips.length-1) return;
-            const next = dayTrips[idx+1];
-            const curr = dayTrips[idx];
-            [curr.order, next.order] = [next.order, curr.order];
-            saveScheduleData();
-            window.schRender();
-        };
-
-        window.schSetTime = function(tripId, time) {
-            const t = scheduleData.trips.find(t => t.id === tripId);
-            if (t) { t.time = time; saveScheduleData(); schUpdateSummary((document.getElementById('sch-date-picker')||{}).value); }
-        };
-
-        window.schSetStatus = function(tripId, status) {
-            const t = scheduleData.trips.find(t => t.id === tripId);
-            if (t) { t.status = status; saveScheduleData(); window.schRender(); }
-        };
-
-        window.schSetNotes = function(tripId, notes) {
-            const t = scheduleData.trips.find(t => t.id === tripId);
-            if (t) { t.notes = notes; saveScheduleData(); }
-        };
-
-        window.schPromptAddress = function(tripId, currentAddr) {
-            const newAddr = prompt('修改地址：', currentAddr || '');
-            if (newAddr === null) return; // cancelled
-            window.schSetAddress(tripId, newAddr);
-        };
-
-        window.schSetAddress = function(tripId, addr) {
-            const t = scheduleData.trips.find(t => t.id === tripId);
-            if (t) { t.customAddress = addr; saveScheduleData(); window.schRender(); }
-        };
-
-        window.schCopyAddress = function(address) {
-            if (!address) return;
-            navigator.clipboard.writeText(address).then(() => {
-                // Toast
-                const toast = document.createElement('div');
-                toast.textContent = '已複製地址';
-                toast.className = 'fixed bottom-24 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-sm px-4 py-2 rounded-xl shadow-lg z-[999] transition-opacity';
-                document.body.appendChild(toast);
-                setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 1800);
-            }).catch(() => {
-                // fallback
-                const ta = document.createElement('textarea');
-                ta.value = address; ta.style.position = 'fixed'; ta.style.opacity = '0';
-                document.body.appendChild(ta); ta.select(); document.execCommand('copy');
-                document.body.removeChild(ta);
-            });
-        };
-
-        window.schOpenMaps = function(address) {
-            if (!address) return;
-            window.open('https://www.google.com/maps/search/' + encodeURIComponent(address), '_blank');
-        };
-
-        window.schClearDone = function() {
-            const picker = document.getElementById('sch-date-picker');
-            if (!picker || !picker.value) return;
-            const date = picker.value;
-            if (!confirm(`確定要清除 ${date} 所有已完成的行程嗎？`)) return;
-            scheduleData.trips = scheduleData.trips.filter(t => !(t.date === date && t.status === 'done'));
-            saveScheduleData();
-            window.schRender();
-        };
-
-        window.schExportDay = function() {
-            const picker = document.getElementById('sch-date-picker');
-            if (!picker || !picker.value) return;
-            const date = picker.value;
-            const trips = scheduleData.trips.filter(t => t.date === date).sort((a,b) => (a.order||0)-(b.order||0));
-            if (trips.length === 0) { alert('今日無行程可匯出'); return; }
-            const statusLabel = { pending: '待訪', done: '已完成', cancelled: '取消' };
-            let txt = `成效驗收行程表　${date}\n`;
-            txt += '='.repeat(40) + '\n';
-            trips.forEach((trip, idx) => {
-                const info = schGetInfo(trip);
-                const address = trip.customAddress || info.address || '（無地址）';
-                txt += `\n第 ${idx+1} 站　${trip.time ? trip.time + '　' : ''}${statusLabel[trip.status]||''}\n`;
-                txt += `案件：${info.label}\n`;
-                txt += `地址：${address}\n`;
-                if (trip.notes) txt += `備註：${trip.notes}\n`;
-            });
-            const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `行程表_${date}.txt`;
-            a.style.display = 'none';
-            document.body.appendChild(a); a.click();
-            setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
-        };
-
-        // 初始化行程表日期為今天
-        const _schPicker = document.getElementById('sch-date-picker');
-        if (_schPicker && !_schPicker.value) _schPicker.value = schToday();
-
-
-
         window.downloadWorkstationTemplate = function() {
             const lines = [
                 '職務再設計 工作站訪視紀錄範本',
@@ -10771,213 +10185,7 @@ ${rawDraft}
             URL.revokeObjectURL(url);
             showToast('工作站範本已下載');
         };
-        // ================================================================
-        // 🆕 行程表模式處理邏輯
-        // ================================================================
-        let vCurrentItineraryCaseId = null;
 
-        document.getElementById('iti-date-picker')?.addEventListener('change', () => {
-            vRenderItinerary();
-        });
-
-        function vRenderItinerary() {
-            const container = document.getElementById('v-itinerary-list');
-            if (!container) return;
-            const dateVal = document.getElementById('iti-date-picker').value;
-            if (!dateVal) {
-                container.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-slate-400"><i class="fa-solid fa-route text-5xl mb-4 text-slate-300"></i><p class="text-lg font-bold text-slate-500">此頁面為單獨的訪視行程表</p><p class="mt-2">請先在上方選擇「排定日期」來查看當天排定的行程。</p><p class="text-sm mt-1 text-slate-400">若清單為空，請先至「成效驗收」功能中設定案件的驗收日期。</p></div>';
-                return;
-            }
-
-            let itineraryCases = verifyData.cases.filter(c => c.verificationDate === dateVal);
-            if (itineraryCases.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center py-8 text-slate-400"><i class="fa-solid fa-mug-hot text-4xl mb-3 text-slate-300"></i><p>${dateVal} 目前沒有排定任何驗收行程喔～</p></div>`;
-                return;
-            }
-
-            // Init sorting properties
-            itineraryCases.forEach(c => {
-                if (c.visitOrder === undefined || c.visitOrder === null) c.visitOrder = 999;
-                if (!c.visitState) c.visitState = 'pending';
-            });
-            itineraryCases.sort((a, b) => a.visitOrder - b.visitOrder);
-
-            let html = '';
-            itineraryCases.forEach((c, idx) => {
-                // Ensure order is normalized after sort
-                c.visitOrder = idx + 1;
-                
-                const timeStr = c.visitTime || '--:--';
-                const statusInfo = {
-                    pending: { label: '待訪視', color: 'bg-slate-100 text-slate-500 border-slate-200' },
-                    done: { label: '已完成', color: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
-                    cancelled: { label: '已取消', color: 'bg-red-100 text-red-700 border-red-300' }
-                }[c.visitState] || { label: '待訪視', color: 'bg-slate-100 text-slate-500 border-slate-200' };
-
-                html += `
-                <div class="v-iti-card flex flex-col md:flex-row bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition-all sm:cursor-move overflow-hidden" draggable="true" data-id="${c.id}">
-                    <!-- Time & Drag Handle -->
-                    <div class="bg-indigo-50 border-b md:border-b-0 md:border-r border-indigo-100 p-3 flex md:flex-col items-center justify-between md:justify-center md:shrink-0 md:w-28">
-                        <div class="flex items-center md:flex-col md:w-full">
-                            <i class="fa-solid fa-grip-lines text-indigo-300 mr-3 md:mr-0 md:mb-2 text-lg"></i>
-                            <input type="time" class="w-28 md:w-full text-sm font-bold text-center bg-white border border-indigo-200 rounded-lg p-1.5 focus:ring-2 focus:ring-indigo-400" value="${c.visitTime || ''}" onchange="window.vUpdateItiTime('${c.id}', this.value)">
-                        </div>
-                        <span class="text-xs text-indigo-500 font-bold bg-indigo-100 px-2 py-1 rounded-full md:mt-2">序 ${idx + 1}</span>
-                    </div>
-                    <!-- Content -->
-                    <div class="p-4 md:p-5 flex-1 min-w-0">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="text-xs font-bold px-2.5 py-1 rounded-full border ${statusInfo.color}">${statusInfo.label}</span>
-                            <span class="text-xs font-bold text-purple-600 bg-purple-50 border border-purple-100 px-2.5 py-1 rounded-lg">${c.category}</span>
-                        </div>
-                        <h3 class="font-black text-slate-800 text-lg md:text-xl truncate mb-1">${c.unit || c.clientName}</h3>
-                        ${c.unit && c.clientName ? `<p class="text-sm font-bold text-slate-500 truncate mb-3"><i class="fa-solid fa-user text-slate-300 mr-1.5"></i>${c.clientName}</p>` : ''}
-                        
-                        <div class="space-y-2 mt-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                            <div class="flex items-center text-sm md:text-base font-bold text-slate-600 group">
-                                <i class="fa-solid fa-phone mr-2.5 text-indigo-400 w-5 text-center"></i>
-                                <span class="truncate">${c.contactPerson || '無聯絡人'} ${c.unitPhone ? `(${c.unitPhone})` : ''}</span>
-                                ${c.unitPhone ? `<a href="tel:${c.unitPhone}" class="ml-auto text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1.5 rounded-lg transition-colors shadow-sm"><i class="fa-solid fa-phone-volume mr-1.5 text-xs"></i>撥打</a>` : ''}
-                            </div>
-                            <div class="flex items-start text-sm md:text-base font-bold text-slate-600 pt-1">
-                                <i class="fa-solid fa-location-dot mt-1.5 mr-2.5 text-red-500 w-5 text-center"></i>
-                                <div class="flex-1 min-w-0 flex items-center flex-wrap gap-2 group relative">
-                                    <input type="text" class="flex-1 min-w-0 w-full bg-transparent border-b-2 border-slate-200 focus:border-indigo-400 focus:outline-none focus:bg-white focus:rounded focus:px-1 transition-all pb-1 h-9" value="${c.address || ''}" placeholder="點此輸入地址..." onchange="window.vUpdateItiAddress('${c.id}', this.value)">
-                                    <div class="flex gap-1.5 absolute right-0 top-0.5 bg-slate-50 px-1">
-                                        ${c.address ? `<button onclick="window.vCopyAddress('${c.address}')" class="text-slate-500 bg-slate-200 hover:bg-indigo-100 hover:text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center transition-colors" title="複製地址"><i class="fa-solid fa-copy"></i></button>` : ''}
-                                        ${c.address ? `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.address)}" target="_blank" class="text-slate-500 bg-slate-200 hover:bg-red-100 hover:text-red-500 w-8 h-8 rounded-full flex items-center justify-center transition-colors" title="Google Map"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center text-sm font-bold text-slate-600 mt-3 px-1">
-                            <i class="fa-regular fa-comment-dots mr-2 text-amber-500 w-5 text-center"></i>
-                            <span class="truncate italic flex-1 ${c.visitNote ? 'text-slate-700' : 'text-slate-400'}">${c.visitNote || '尚無備註 (點擊右側按鈕新增)'}</span>
-                        </div>
-                    </div>
-                    <!-- Actions -->
-                    <div class="flex md:flex-col border-t md:border-t-0 md:border-l border-slate-100 shrink-0 h-16 md:h-auto md:w-20">
-                        <button onclick="window.vSetItiState('${c.id}', 'done')" class="flex-1 bg-slate-50 hover:bg-emerald-50 text-slate-400 hover:text-emerald-500 md:border-b border-r md:border-r-0 border-slate-100 flex flex-col items-center justify-center gap-1 transition-colors ${c.visitState === 'done' ? '!bg-emerald-500 !text-white' : ''}" title="標記完成">
-                            <i class="fa-solid fa-check text-2xl mb-0.5"></i>
-                            <span class="text-[10px] font-bold ${c.visitState === 'done' ? 'text-white' : 'text-slate-400'}">完成</span>
-                        </button>
-                        <button onclick="window.vOpenItiModal('${c.id}')" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex flex-col items-center justify-center gap-1 transition-colors" title="備註/取消">
-                            <i class="fa-solid fa-pen-to-square text-xl mb-0.5"></i>
-                            <span class="text-[10px] font-bold text-slate-400">狀態與備註</span>
-                        </button>
-                    </div>
-                </div>`;
-            });
-
-            container.innerHTML = `
-                <div class="font-bold text-slate-700 mb-4 pb-2 border-b border-slate-200 flex items-center justify-between">
-                    <span class="text-lg"><i class="fa-solid fa-calendar-day text-indigo-500 mr-2"></i>當日行程列表</span>
-                    <span class="text-sm bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full">${itineraryCases.length} 個行程</span>
-                </div>
-                <div class="space-y-4" id="v-iti-drag-container">${html}</div>`;
-            window.saveVerifyData(); // Save normalized orders
-
-            // Drag and Drop Logic
-            const draggables = container.querySelectorAll('.v-iti-card');
-            const dragContainer = document.getElementById('v-iti-drag-container');
-            
-            draggables.forEach(draggable => {
-                draggable.addEventListener('dragstart', () => { draggable.classList.add('opacity-50', 'ring-2', 'ring-indigo-500', 'scale-[0.98]'); });
-                draggable.addEventListener('dragend', () => { 
-                    draggable.classList.remove('opacity-50', 'ring-2', 'ring-indigo-500', 'scale-[0.98]'); 
-                    vSaveItineraryOrder();
-                });
-            });
-
-            if (dragContainer) {
-                // Use touch events for mobile sorting
-                dragContainer.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    const afterElement = getItiDragAfterElement(dragContainer, e.clientY);
-                    const draggable = document.querySelector('.v-iti-card.opacity-50');
-                    if (!draggable) return;
-                    if (afterElement == null) dragContainer.appendChild(draggable);
-                    else dragContainer.insertBefore(draggable, afterElement);
-                });
-            }
-        }
-
-        function getItiDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.v-iti-card:not(.opacity-50)')];
-            return draggableElements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - box.top - box.height / 2;
-                if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
-                else return closest;
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
-        }
-
-        function vSaveItineraryOrder() {
-            const container = document.getElementById('v-iti-drag-container');
-            if (!container) return;
-            const cards = container.querySelectorAll('.v-iti-card');
-            cards.forEach((card, index) => {
-                const id = card.getAttribute('data-id');
-                const c = verifyData.cases.find(x => x.id === id);
-                if (c) c.visitOrder = index + 1;
-            });
-            window.saveVerifyData();
-            vRenderItinerary(); // Re-render to update the visual order numbers
-        }
-
-        window.vUpdateItiTime = function(id, time) {
-            const c = verifyData.cases.find(x => x.id === id);
-            if (c) { c.visitTime = time; window.saveVerifyData(); showToast('時間已儲存'); }
-        };
-
-        window.vUpdateItiAddress = function(id, address) {
-            const c = verifyData.cases.find(x => x.id === id);
-            if (c) { c.address = address; window.saveVerifyData(); vRenderItinerary(); showToast('地址已儲存'); } 
-        };
-
-        window.vCopyAddress = function(address) {
-            if (!address) return;
-            if (navigator.clipboard) {
-                navigator.clipboard.writeText(address).then(() => {
-                    showToast('已複製地址！');
-                }).catch(() => showToast('網頁不支援自動複製，請手動複製'));
-            } else {
-                showToast('瀏覽器不支援複製功能');
-            }
-        };
-
-        window.vSetItiState = function(id, state) {
-            const c = verifyData.cases.find(x => x.id === id);
-            if (c) {
-                if (c.visitState === state && state === 'done') c.visitState = 'pending';
-                else c.visitState = state;
-                window.saveVerifyData();
-                vRenderItinerary();
-                if (c.visitState === 'done') showToast('已標記為完成！');
-            }
-        };
-
-        window.vOpenItiModal = function(id) {
-            const c = verifyData.cases.find(x => x.id === id);
-            if (!c) return;
-            vCurrentItineraryCaseId = id;
-            document.getElementById('v-iti-status-select').value = c.visitState || 'pending';
-            document.getElementById('v-iti-note-input').value = c.visitNote || '';
-            document.getElementById('v-itinerary-modal').classList.remove('hidden');
-        };
-
-        document.getElementById('v-iti-save-btn')?.addEventListener('click', () => {
-            if (!vCurrentItineraryCaseId) return;
-            const c = verifyData.cases.find(x => x.id === vCurrentItineraryCaseId);
-            if (c) {
-                c.visitState = document.getElementById('v-iti-status-select').value;
-                c.visitNote = document.getElementById('v-iti-note-input').value;
-                window.saveVerifyData();
-                vRenderItinerary();
-                document.getElementById('v-itinerary-modal').classList.add('hidden');
-                showToast('行程狀態已更新');
-            }
-        });
     </script>
 
     <!-- LINE QR 名片 Modal -->
