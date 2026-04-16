@@ -8756,16 +8756,13 @@ ${rawDraft}
             showToast('人員清單範本已下載');
         };
 
-Module written, length: 83712
         // ================================================================
-        // 🆕 成效驗收 模組 (v5) - 重構版
+        // 🆕 成效驗收 模組 (v4)
         // ================================================================
         const VERIFY_KEY = 'verify_data_v3';
         let verifyData = { cases: [] };
         let currentVerifyCaseId = null;
-        let currentVerifyUnitKey = null;
         let vSelectedIds = new Set();
-        window._vAllIds = [];
 
         // ---- 改善效益類型（質性）與比例 ----
         const IMPROVEMENT_TYPES = ['提高工作獨立性', '提升工作效率', '增加工作品質', '降低職災風險', '減少身體不適'];
@@ -8792,18 +8789,6 @@ Module written, length: 83712
             });
         }
 
-        // ---- 建立新品項 ----
-        function vNewItem(name, applyQty, approveQty, applyAmt, approveAmt) {
-            return {
-                name: name || '',
-                applyQty: applyQty || 1,
-                approveQty: approveQty || 1,
-                applyAmt: applyAmt || 0,
-                approveAmt: approveAmt || 0,
-                improvements: [], feedback: '', photos: [], participated: true
-            };
-        }
-
         // ---- 資料載入/儲存 ----
         function loadVerifyData() {
             try {
@@ -8816,6 +8801,7 @@ Module written, length: 83712
                     if (!c.year) c.year = '';
                     if (Array.isArray(c.items)) {
                         c.items.forEach(item => {
+                            // 從舊的單一 improvement 字串遷移
                             if (!Array.isArray(item.improvements)) {
                                 if (item.improvement && IMPROVEMENT_TYPES.includes(item.improvement))
                                     item.improvements = [{ type: item.improvement, percentage: '' }];
@@ -8823,13 +8809,8 @@ Module written, length: 83712
                                 delete item.improvement;
                             }
                             if (!Array.isArray(item.photos)) item.photos = [];
-                            if (item.applyQty === undefined) item.applyQty = 1;
-                            if (item.approveQty === undefined) item.approveQty = 1;
-                            if (item.applyAmt === undefined) item.applyAmt = 0;
-                            if (item.approveAmt === undefined) item.approveAmt = 0;
-                            if (item.participated === undefined) item.participated = true;
                         });
-                    } else { c.items = []; }
+                    }
                 });
             } catch(e) { verifyData = { cases: [] }; }
         }
@@ -8846,6 +8827,7 @@ Module written, length: 83712
                 try {
                     const docRef = doc(db, 'users', vCurrentUid, 'verifyCases', c.id);
                     const cData = JSON.parse(JSON.stringify(c));
+                    // 移除照片 blob，只保留 metadata
                     if (Array.isArray(cData.items)) {
                         cData.items.forEach(item => {
                             item.photos = (item.photos || []).map(p => ({ id: p.id, filename: p.filename, url: p.url || '' }));
@@ -8885,13 +8867,8 @@ Module written, length: 83712
                         data.items.forEach(item => {
                             if (!Array.isArray(item.improvements)) item.improvements = [];
                             if (!Array.isArray(item.photos)) item.photos = [];
-                            if (item.applyQty === undefined) item.applyQty = 1;
-                            if (item.approveQty === undefined) item.approveQty = 1;
-                            if (item.applyAmt === undefined) item.applyAmt = 0;
-                            if (item.approveAmt === undefined) item.approveAmt = 0;
-                            if (item.participated === undefined) item.participated = true;
                         });
-                    } else { data.items = []; }
+                    }
                     const idx = verifyData.cases.findIndex(c => c.id === data.id);
                     if (idx >= 0) verifyData.cases[idx] = data;
                     else verifyData.cases.push(data);
@@ -8913,30 +8890,36 @@ Module written, length: 83712
         function extractYear(filename) { const m = String(filename || '').match(/(\d{2,3})年/); return m ? m[1] + '年' : ''; }
 
         // ---- 模組切換 ----
-        let currentModule = 'visit';
-        const verifyModuleEl = document.getElementById('verify-module');
-        const verifyModuleBtn = document.getElementById('btn-module-verify');
-        const visitModuleBtn = document.getElementById('btn-module-visit');
+        let currentModule = localStorage.getItem('activeModule_v1') || 'visit';
+
         function switchModule(mod) {
             currentModule = mod;
             localStorage.setItem('activeModule_v1', mod);
             const isVerify = mod === 'verify';
-            document.getElementById('visit-module').classList.toggle('hidden', isVerify);
-            if (verifyModuleEl) verifyModuleEl.classList.toggle('hidden', !isVerify);
-            if (verifyModuleBtn) { verifyModuleBtn.classList.toggle('bg-purple-700', isVerify); verifyModuleBtn.classList.toggle('text-white', isVerify); verifyModuleBtn.classList.toggle('text-purple-700', !isVerify); }
-            if (visitModuleBtn) { visitModuleBtn.classList.toggle('bg-blue-700', !isVerify); visitModuleBtn.classList.toggle('text-white', !isVerify); visitModuleBtn.classList.toggle('text-blue-700', isVerify); }
+            document.getElementById('main-tabs').classList.toggle('hidden', isVerify);
+            document.getElementById('main-content').classList.toggle('hidden', isVerify);
+            document.getElementById('verify-module').classList.toggle('hidden', !isVerify);
+            document.querySelectorAll('.module-tab-btn').forEach(btn => {
+                const active = btn.dataset.module === mod;
+                btn.classList.toggle('bg-slate-600', active);
+                btn.classList.toggle('border-b-2', active);
+                btn.classList.toggle('border-blue-400', active);
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('text-slate-300', !active);
+            });
             if (isVerify) { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); }
         }
-        document.getElementById('btn-module-verify').addEventListener('click', () => switchModule('verify'));
-        document.getElementById('btn-module-visit').addEventListener('click', () => switchModule('visit'));
-        const savedModule = localStorage.getItem('activeModule_v1') || 'visit';
-        currentModule = savedModule;  // update the let variable
-        if (savedModule === 'verify') {
-            document.getElementById('visit-module').classList.add('hidden');
-            if (verifyModuleEl) verifyModuleEl.classList.remove('hidden');
+
+        document.querySelectorAll('.module-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchModule(btn.dataset.module));
+        });
+
+        function initModuleTabs() {
+            document.getElementById('module-tabs').classList.remove('hidden');
+            switchModule(currentModule);
         }
 
-        // ---- Excel 匯入：身障 (JA / UH / a) ----
+        // ---- Excel 匯入：身障 (JA + UH) ----
         document.getElementById('v-import-dis').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -8964,10 +8947,6 @@ Module written, length: 83712
                             const contactPerson = String(row[16] || '').trim();
                             const unitPhone     = String(row[17] || '').trim();
                             const itemName      = String(sheetName === 'UH' ? (row[29]||'') : (row[31]||'')).trim();
-                            const unitStr       = String(sheetName === 'UH' ? (row[30]||'') : (row[32]||'')).trim();
-                            const applyQty      = parseFloat(row[sheetName === 'UH' ? 32 : 34] || 0) || 0;
-                            const applyAmt      = parseFloat(row[sheetName === 'UH' ? 33 : 35] || 0) || 0;
-                            const approveAmt    = parseFloat(row[sheetName === 'UH' ? 34 : 36] || 0) || 0;
                             if (!caseNo && !clientName) continue;
                             let existing = verifyData.cases.find(c =>
                                 c.category === '身障' && c.year === year && c.caseNo === caseNo && c.clientName === clientName
@@ -8983,7 +8962,7 @@ Module written, length: 83712
                                 count++;
                             }
                             if (itemName && !existing.items.some(i => i.name === itemName))
-                                existing.items.push(vNewItem(itemName, applyQty, applyQty, applyAmt, approveAmt));
+                                existing.items.push({ name: itemName, improvements: [], feedback: '', photos: [] });
                         }
                     });
                     saveVerifyData();
@@ -9023,9 +9002,6 @@ Module written, length: 83712
                         const unitPhone     = String(row[10] || '').trim();
                         const clientName    = String(row[30] || '').trim();
                         const itemName      = String(row[36] || '').trim();
-                        const applyQty      = parseFloat(row[39] || 0) || 0;
-                        const applyAmt      = parseFloat(row[40] || 0) || 0;
-                        const approveAmt    = parseFloat(row[41] || 0) || 0;
                         if (!caseNo && !clientName) continue;
                         let existing = verifyData.cases.find(c =>
                             c.category === '中高勞通' && c.year === year && c.caseNo === caseNo && c.clientName === clientName
@@ -9041,7 +9017,7 @@ Module written, length: 83712
                             count++;
                         }
                         if (itemName && !existing.items.some(i => i.name === itemName))
-                            existing.items.push(vNewItem(itemName, applyQty, applyQty, applyAmt, approveAmt));
+                            existing.items.push({ name: itemName, improvements: [], feedback: '', photos: [] });
                     }
                     saveVerifyData();
                     statusEl.textContent = `已匯入 ${count} 筆中高勞通案件${year ? `（${year}）` : ''}`;
@@ -9059,21 +9035,15 @@ Module written, length: 83712
             if (!sel) return;
             const years = [...new Set(verifyData.cases.map(c => c.year).filter(Boolean))].sort();
             const cur = sel.value;
-            sel.innerHTML = '<option value="">全部年度</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
-            if (years.includes(cur)) sel.value = cur;
+            sel.innerHTML = '<option value="">全部年度</option>' + years.map(y => `<option value="${y}" ${cur===y?'selected':''}>${y}</option>`).join('');
         }
 
-        // ---- 儀表板統計 ----
+        // ---- 儀表板 ----
         function vRenderDashboard() {
-            const total   = verifyData.cases.length;
-            const pending = verifyData.cases.filter(c => c.status === 'pending').length;
-            const inProg  = verifyData.cases.filter(c => c.status === 'inProgress').length;
-            const closed  = verifyData.cases.filter(c => c.status === 'closed').length;
-            const setEl = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
-            setEl('v-count-total', total);
-            setEl('v-count-pending', pending);
-            setEl('v-count-inprogress', inProg);
-            setEl('v-count-closed', closed);
+            const cases = verifyData.cases;
+            document.getElementById('v-count-pending').textContent    = cases.filter(c => c.status === 'pending').length;
+            document.getElementById('v-count-inprogress').textContent = cases.filter(c => c.status === 'inProgress').length;
+            document.getElementById('v-count-closed').textContent     = cases.filter(c => c.status === 'closed').length;
         }
 
         window.vFilterByStatus = function(status) {
@@ -9119,43 +9089,15 @@ Module written, length: 83712
             vSelectedIds.clear(); vUpdateBatchBar(); vRenderCaseList();
         };
 
-        // 全選（使用全域 _vAllIds 避免 HTML attribute 字元問題）
-        window.vSelectAll = function(checked) {
-            const ids = window._vAllIds || [];
-            ids.forEach(id => { if (checked) vSelectedIds.add(id); else vSelectedIds.delete(id); });
-            document.querySelectorAll('.v-case-cb').forEach(cb => { cb.checked = checked; });
-            // 更新單位 header 勾選框
-            document.querySelectorAll('.v-unit-cb').forEach(cb => { cb.checked = checked; });
-            vUpdateBatchBar();
-        };
-
-        window.vBatchDownloadAll = function() {
-            if (vSelectedIds.size === 0) { showToast('請先勾選案件'); return; }
-            // 中高勞通按單位下載，身障按個案下載
-            const elderUnitKeys = new Set();
-            vSelectedIds.forEach(id => {
-                const c = verifyData.cases.find(x => x.id === id);
-                if (!c) return;
-                if (c.category === '中高勞通') {
-                    const key = (c.year || '') + '_' + (c.caseNo || c.unit || '');
-                    elderUnitKeys.add(key);
-                } else {
-                    window.vExportCaseExcel(id);
-                }
-            });
-            elderUnitKeys.forEach(key => window.vExportUnitExcel(key));
-        };
-
         window.vBatchDelete = function() {
-            if (vSelectedIds.size === 0) { showToast('請先勾選案件'); return; }
-            const n = vSelectedIds.size;
-            if (!window.confirm(`確定刪除選取的 ${n} 筆案件？此動作無法復原。`)) return;
+            if (vSelectedIds.size === 0) return;
+            if (!confirm(`確定刪除選取的 ${vSelectedIds.size} 筆案件？此動作無法復原。`)) return;
             const ids = [...vSelectedIds];
             ids.forEach(id => vDeleteCaseFromDB(id));
             verifyData.cases = verifyData.cases.filter(c => !ids.includes(c.id));
             saveVerifyData();
             vSelectedIds.clear(); vUpdateBatchBar(); vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList();
-            showToast(`已刪除 ${n} 筆案件`);
+            showToast(`已刪除 ${ids.length} 筆案件`);
         };
 
         // ---- 案件列表 ----
@@ -9182,6 +9124,10 @@ Module written, length: 83712
 
             if (verifyData.cases.length === 0) {
                 container.innerHTML = '<p class="text-center text-slate-400 py-8">請匯入成效清單後開始驗收作業</p>';
+                return;
+            }
+            if (cases.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-8">無符合條件的案件</p>';
                 return;
             }
 
@@ -9219,7 +9165,7 @@ Module written, length: 83712
                                 <div class="font-bold text-slate-800 text-sm mb-0.5">${c.clientName || '（無姓名）'}</div>
                                 <div class="text-xs text-slate-500 space-y-0.5">
                                     ${c.unit ? `<div><i class="fa-solid fa-building text-xs mr-1 text-slate-300"></i>${c.unit}</div>` : ''}
-                                    ${c.contactPerson ? `<div><i class="fa-solid fa-user text-xs mr-1 text-slate-300"></i>聯繫：${c.contactPerson}${c.unitPhone ? `&ensp;<i class="fa-solid fa-phone text-xs mr-1 text-slate-300"></i>${c.unitPhone}` : ''}</div>` : ''}
+                                    ${c.contactPerson ? `<div><i class="fa-solid fa-user text-xs mr-1 text-slate-300"></i>聯繫：${c.contactPerson}${c.unitPhone ? `&ensp;<i class="fa-solid fa-phone text-xs mr-1 text-slate-300"></i>${c.unitPhone}` : ''}</div>` : (c.unitPhone ? `<div><i class="fa-solid fa-phone text-xs mr-1 text-slate-300"></i>${c.unitPhone}</div>` : '')}
                                     ${c.verificationDate ? `<div><i class="fa-solid fa-calendar-check text-xs mr-1 text-slate-300"></i>驗收：${c.verificationDate}</div>` : ''}
                                 </div>
                                 ${impChips.length > 0 ? `<div class="mt-1.5 flex flex-wrap gap-1">${impChips.slice(0,4).map(ch => `<span class="text-xs bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded text-purple-700">${ch}</span>`).join('')}</div>` : ''}
@@ -9230,22 +9176,21 @@ Module written, length: 83712
                 }).join('');
             }
 
-            // 中高勞通分組卡片（點單位 header → 開啟單位編輯）
+            // 中高勞通分組卡片
             if (elderGroups.size > 0) {
                 html += `<div class="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 mt-3 flex items-center gap-1.5"><i class="fa-solid fa-person-cane"></i> 中高勞通 (${elderCases.length})</div>`;
                 elderGroups.forEach((group, key) => {
                     const groupIds = group.cases.map(c => c.id);
-                    const allSelected = groupIds.length > 0 && groupIds.every(id => vSelectedIds.has(id));
+                    const allSelected = groupIds.every(id => vSelectedIds.has(id));
                     const anySelected = groupIds.some(id => vSelectedIds.has(id));
                     const groupClosed = group.cases.every(c => c.status === 'closed');
                     const groupStatus = groupClosed ? 'closed' : group.cases.some(c => c.status === 'inProgress') ? 'inProgress' : 'pending';
                     const verDates = [...new Set(group.cases.map(c => c.verificationDate).filter(Boolean))];
-                    const escapedKey = key.replace(/'/g, "\\'");
                     html += `
                     <div class="bg-white border ${anySelected ? 'border-amber-400 ring-2 ring-amber-300' : 'border-slate-200'} rounded-xl overflow-hidden hover:shadow-md transition-shadow">
                         <div class="bg-amber-50 px-3 py-2.5 flex items-start gap-2 border-b border-amber-100">
-                            <input type="checkbox" class="v-unit-cb mt-0.5 shrink-0 w-4 h-4 accent-amber-600 cursor-pointer" ${allSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.vToggleUnitSelectArr(this.checked, ${JSON.stringify(groupIds)})">
-                            <div class="flex-1 min-w-0 cursor-pointer" onclick="window.vOpenUnit('${escapedKey}')">
+                            <input type="checkbox" class="mt-0.5 shrink-0 w-4 h-4 accent-amber-600 cursor-pointer" ${allSelected ? 'checked' : ''} onchange="window.vToggleUnitSelect('${key}', this.checked, ${JSON.stringify(groupIds)})">
+                            <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
                                     <span class="text-xs font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">中高勞通</span>
                                     <span class="text-xs font-bold px-1.5 py-0.5 rounded ${statusColor[groupStatus] || ''}">${statusLabel[groupStatus] || groupStatus}</span>
@@ -9254,28 +9199,29 @@ Module written, length: 83712
                                 </div>
                                 <div class="font-bold text-slate-800 text-sm">${group.unit || '（無單位）'}</div>
                                 <div class="text-xs text-slate-500 mt-0.5 space-y-0.5">
-                                    ${group.contactPerson ? `<div><i class="fa-solid fa-user text-xs mr-1 text-slate-300"></i>聯繫：${group.contactPerson}${group.unitPhone ? `&ensp;<i class="fa-solid fa-phone text-xs mr-1 text-slate-300"></i>${group.unitPhone}` : ''}</div>` : ''}
+                                    ${group.contactPerson ? `<div><i class="fa-solid fa-user text-xs mr-1 text-slate-300"></i>聯繫：${group.contactPerson}${group.unitPhone ? `&ensp;<i class="fa-solid fa-phone text-xs mr-1 text-slate-300"></i>${group.unitPhone}` : ''}</div>` : (group.unitPhone ? `<div><i class="fa-solid fa-phone text-xs mr-1 text-slate-300"></i>${group.unitPhone}</div>` : '')}
                                     ${verDates.length > 0 ? `<div><i class="fa-solid fa-calendar-check text-xs mr-1 text-slate-300"></i>驗收：${verDates.join('、')}</div>` : ''}
                                 </div>
                             </div>
                             <div class="flex flex-col items-end gap-1 shrink-0">
                                 <span class="text-xs text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-bold">${group.cases.length} 人</span>
-                                <button onclick="event.stopPropagation(); window.vExportUnitExcel('${escapedKey}')" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-bold transition-colors"><i class="fa-solid fa-file-excel mr-0.5"></i>匯出</button>
+                                <button onclick="event.stopPropagation(); window.vExportUnitExcel('${key}')" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-bold transition-colors"><i class="fa-solid fa-file-excel mr-0.5"></i>匯出</button>
                             </div>
                         </div>
                         <div class="divide-y divide-slate-100">
                             ${group.cases.map(c => {
                                 const isSelected = vSelectedIds.has(c.id);
-                                const participatingItems = c.items.filter(it => it.participated !== false);
+                                const impChips = c.items.flatMap(it => (it.improvements || []).map(imp => imp.type + (imp.percentage ? ' ' + imp.percentage : '')));
                                 return `
-                                <div class="px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-slate-50 ${isSelected ? 'bg-amber-50' : ''}" onclick="window.vOpenCase('${c.id}')">
-                                    <input type="checkbox" class="v-case-cb shrink-0 w-3.5 h-3.5 accent-amber-600 cursor-pointer" data-id="${c.id}" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.vToggleSelect('${c.id}', this.checked)">
+                                <div class="px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-slate-50 ${isSelected ? 'bg-purple-50' : ''}" onclick="window.vOpenCase('${c.id}')">
+                                    <input type="checkbox" class="v-case-cb shrink-0 w-3.5 h-3.5 accent-purple-600 cursor-pointer" data-id="${c.id}" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation()" onchange="window.vToggleSelect('${c.id}', this.checked)">
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-1.5 flex-wrap">
                                             <span class="font-medium text-slate-700 text-sm">${c.clientName || '（無姓名）'}</span>
                                             <span class="text-xs px-1.5 py-0.5 rounded ${statusColor[c.status] || ''}">${statusLabel[c.status] || c.status}</span>
+                                            ${c.verificationDate ? `<span class="text-xs text-slate-400">${c.verificationDate}</span>` : ''}
                                         </div>
-                                        ${participatingItems.length > 0 ? `<div class="text-xs text-slate-400 mt-0.5">${participatingItems.map(it => it.name).join('、')}</div>` : ''}
+                                        ${impChips.length > 0 ? `<div class="flex flex-wrap gap-1 mt-0.5">${impChips.slice(0,3).map(ch => `<span class="text-xs bg-amber-50 border border-amber-200 px-1 py-0.5 rounded text-amber-700">${ch}</span>`).join('')}</div>` : ''}
                                     </div>
                                     <i class="fa-solid fa-chevron-right text-slate-300 text-xs shrink-0"></i>
                                 </div>`;
@@ -9285,31 +9231,9 @@ Module written, length: 83712
                 });
             }
 
-            // 全選列（使用全域 _vAllIds 避免 HTML quote 問題）
-            const allIds = [...disCases.map(c=>c.id), ...[...elderGroups.values()].flatMap(g=>g.cases.map(c=>c.id))];
-            window._vAllIds = allIds;
-            const allSelected = allIds.length > 0 && allIds.every(id => vSelectedIds.has(id));
-            const selectAllRow = `<div class="flex items-center justify-between px-1 pb-2 border-b border-slate-200 mb-2">
-                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
-                    <input type="checkbox" id="v-cb-select-all" class="w-4 h-4 accent-purple-600" ${allSelected?'checked':''} onchange="window.vSelectAll(this.checked)">
-                    <span class="font-medium">全選</span>
-                </label>
-                <div class="flex items-center gap-2">
-                    <button onclick="window.vBatchDownloadAll()" class="text-xs text-blue-600 hover:text-blue-700 font-bold px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 transition-colors"><i class="fa-solid fa-download mr-0.5"></i>下載選取</button>
-                    <button onclick="window.vBatchDelete()" class="text-xs text-red-600 hover:text-red-700 font-bold px-2 py-1 rounded border border-red-200 hover:bg-red-50 transition-colors"><i class="fa-solid fa-trash mr-0.5"></i>刪除選取</button>
-                    <span class="text-xs text-slate-400">${allIds.length} 筆</span>
-                </div>
-            </div>`;
-            container.innerHTML = html ? selectAllRow + html : '<p class="text-center text-slate-400 py-8">無符合條件的案件</p>';
+            container.innerHTML = html || '<p class="text-center text-slate-400 py-8">無符合條件的案件</p>';
         }
         window.vRenderCaseList = vRenderCaseList;
-
-        // 新版單位勾選（傳陣列而非 JSON）
-        window.vToggleUnitSelectArr = function(checked, ids) {
-            ids.forEach(id => { if (checked) vSelectedIds.add(id); else vSelectedIds.delete(id); });
-            ids.forEach(id => { const cb = document.querySelector(`.v-case-cb[data-id="${id}"]`); if (cb) cb.checked = checked; });
-            vUpdateBatchBar();
-        };
 
         ['v-date-picker','v-filter-status','v-filter-cat','v-filter-year'].forEach(id => {
             const el = document.getElementById(id);
@@ -9317,195 +9241,15 @@ Module written, length: 83712
         });
         document.getElementById('v-search').addEventListener('input', vRenderCaseList);
 
-        // ================================================================
-        // 開啟 中高勞通 單位詳情（核心新功能）
-        // ================================================================
-        window.vOpenUnit = function(unitKey) {
-            currentVerifyUnitKey = unitKey;
-            currentVerifyCaseId = null;
-            const unitCases = verifyData.cases.filter(c =>
-                c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo || c.unit || '') === unitKey
-            );
-            if (unitCases.length === 0) return;
-            const first = unitCases[0];
-            const allClosed = unitCases.every(c => c.status === 'closed');
-
-            document.getElementById('verify-main').classList.add('hidden');
-            document.getElementById('verify-detail').classList.remove('hidden');
-            document.getElementById('v-detail-title').textContent = `${first.caseNo||''} ${first.unit||'單位'}`;
-
-            const btn = document.getElementById('v-btn-close-case');
-            if (allClosed) {
-                btn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 已結案';
-                btn.className = 'bg-slate-500 text-white px-3 py-1.5 rounded-xl font-bold text-sm cursor-default';
-                btn.onclick = null;
-            } else {
-                btn.innerHTML = '<i class="fa-solid fa-check-circle mr-1"></i> 全部結案';
-                btn.className = 'bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-xl font-bold text-sm transition-colors active:scale-95';
-                btn.onclick = () => window.vCloseUnit(unitKey);
-            }
-
-            // 使用第一個人員的 items 作為單位品項範本
-            const unitItems = first.items;
-
-            // 成員參與表：rows=items, cols=members
-            const memberGrid = unitItems.length > 0 && unitCases.length > 0 ? (() => {
-                const colHeaders = unitCases.map(c => `<th class="px-2 py-1.5 text-center text-xs font-bold text-slate-600 whitespace-nowrap min-w-[60px]">${c.clientName||'?'}</th>`).join('');
-                const rows = unitItems.map((item, iIdx) => {
-                    const cells = unitCases.map(c => {
-                        const personItem = c.items[iIdx];
-                        const participated = personItem ? personItem.participated !== false : false;
-                        return `<td class="px-2 py-1.5 text-center">
-                            <input type="checkbox" class="w-4 h-4 accent-amber-600" ${participated ? 'checked' : ''} onchange="window.vSetParticipated('${c.id}', ${iIdx}, this.checked)">
-                        </td>`;
-                    }).join('');
-                    return `<tr class="border-t border-slate-100 hover:bg-slate-50">
-                        <td class="px-2 py-1.5 text-sm text-slate-700 font-medium">${item.name||'品項'+(iIdx+1)}</td>
-                        ${cells}
-                    </tr>`;
-                }).join('');
-                return `<div class="overflow-x-auto">
-                    <table class="w-full text-xs">
-                        <thead><tr class="bg-slate-50">
-                            <th class="px-2 py-1.5 text-left text-xs font-bold text-slate-500">品項＼人員</th>
-                            ${colHeaders}
-                        </tr></thead>
-                        <tbody>${rows}</tbody>
-                    </table>
-                </div>`;
-            })() : '<p class="text-xs text-slate-400 py-3 text-center">尚無品項</p>';
-
-            // 品項編輯區
-            const itemsHtml = unitItems.map((item, idx) => {
-                const photoHtml = (item.photos || []).map(p => {
-                    const src = vGetPhotoData(p.id) || p.url || '';
-                    return src ? `<div class="relative w-20 h-20 shrink-0"><img src="${src}" class="w-full h-full object-cover rounded-lg border border-slate-200"><button onclick="window.vDeleteUnitPhoto('${first.id}', ${idx}, '${p.id}')" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 font-bold">×</button></div>` : '';
-                }).join('');
-                return `
-                <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm">
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="font-bold text-slate-800 flex items-center gap-2"><i class="fa-solid fa-box-open text-amber-400"></i> ${item.name||'品項'+(idx+1)}</span>
-                        <span class="text-xs text-slate-400">品項 ${idx+1}/${unitItems.length}</span>
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-                        <div><label class="block text-xs font-bold text-slate-400 mb-1">申請數量</label>
-                            <input type="number" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50" value="${item.applyQty||0}" onchange="window.vSaveUnitItemField('${first.id}', ${idx}, 'applyQty', this.value)"></div>
-                        <div><label class="block text-xs font-bold text-slate-400 mb-1">申請金額</label>
-                            <input type="number" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50" value="${item.applyAmt||0}" onchange="window.vSaveUnitItemField('${first.id}', ${idx}, 'applyAmt', this.value)"></div>
-                        <div><label class="block text-xs font-bold text-slate-400 mb-1">核定數量</label>
-                            <input type="number" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50" value="${item.approveQty||0}" onchange="window.vSaveUnitItemField('${first.id}', ${idx}, 'approveQty', this.value)"></div>
-                        <div><label class="block text-xs font-bold text-slate-400 mb-1">核定金額</label>
-                            <input type="number" class="w-full p-2 border border-slate-200 rounded-lg text-sm bg-slate-50" value="${item.approveAmt||0}" onchange="window.vSaveUnitItemField('${first.id}', ${idx}, 'approveAmt', this.value)"></div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="block text-xs font-bold text-slate-500 mb-2">改善效益（可複選）</label>
-                        <div class="space-y-1.5">
-                            ${IMPROVEMENT_TYPES.map(type => {
-                                const imp = (item.improvements || []).find(i => i.type === type);
-                                return `<div class="flex items-center gap-2 px-3 py-2 rounded-lg border ${imp ? 'bg-amber-50 border-amber-200' : 'bg-slate-50 border-slate-200'}">
-                                    <input type="checkbox" class="w-4 h-4 accent-amber-600 shrink-0" ${imp ? 'checked' : ''} onchange="window.vToggleUnitImpType('${first.id}', ${idx}, '${type}', this.checked)">
-                                    <span class="text-sm text-slate-700 flex-1">${type}</span>
-                                    ${imp ? `<select class="text-xs border border-amber-300 rounded-lg p-1.5 bg-white" onchange="window.vSetUnitImpPct('${first.id}', ${idx}, '${type}', this.value)">${IMPROVEMENT_PERCENTAGES.map(p => `<option value="${p}" ${imp.percentage===p?'selected':''}>${p}</option>`).join('')}</select>` : `<span class="text-xs text-slate-300">未勾選</span>`}
-                                </div>`;
-                            }).join('')}
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="block text-xs font-bold text-slate-500 mb-1">使用回饋</label>
-                        <textarea class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white resize-y" rows="2" onchange="window.vSaveUnitItemField('${first.id}', ${idx}, 'feedback', this.value)">${item.feedback||''}</textarea>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-2">使用照片</label>
-                        <div class="flex flex-wrap gap-2 items-start">
-                            ${photoHtml}
-                            <button onclick="window.vTakePhoto('${first.id}', ${idx})" class="w-20 h-20 bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-500 transition-colors cursor-pointer shrink-0">
-                                <i class="fa-solid fa-camera text-xl"></i><span class="text-xs mt-1">拍照</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>`;
-            }).join('');
-
-            document.getElementById('v-detail-content').innerHTML = `
-                <!-- 單位基本資料 -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="px-5 py-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors" onclick="const b=this.nextElementSibling;b.classList.toggle('hidden');this.querySelector('.v-toggle-icon').classList.toggle('rotate-180')">
-                        <div class="flex items-center gap-2">
-                            <i class="fa-solid fa-building text-amber-500"></i>
-                            <span class="font-bold text-slate-700">單位基本資料</span>
-                            <span class="text-xs text-slate-400">(點擊展開)</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-down text-slate-400 text-sm v-toggle-icon transition-transform duration-200"></i>
-                    </div>
-                    <div class="hidden border-t border-slate-100 px-5 pb-5 pt-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1">單位名稱</label><input id="vu-unit" type="text" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50" value="${(first.unit||'').replace(/"/g,'&quot;')}"></div>
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1">案號</label><input id="vu-caseNo" type="text" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50" value="${(first.caseNo||'').replace(/"/g,'&quot;')}"></div>
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1">聯繫窗口</label><input id="vu-contact" type="text" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50" value="${(first.contactPerson||'').replace(/"/g,'&quot;')}"></div>
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1">單位電話</label><input id="vu-phone" type="text" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50" value="${(first.unitPhone||'').replace(/"/g,'&quot;')}"></div>
-                            <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">驗收日期（套用全部成員）</label><input id="vu-date" type="date" class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50" value="${first.verificationDate||''}"></div>
-                        </div>
-                        <button onclick="window.vSyncUnitInfo('${unitKey}')" class="mt-4 w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-xl font-bold text-base transition-colors active:scale-[0.98]"><i class="fa-solid fa-arrows-rotate mr-2"></i>套用到全部成員</button>
-                    </div>
-                </div>
-
-                <!-- 品項管理 -->
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h3 class="font-bold text-slate-700 flex items-center gap-2"><i class="fa-solid fa-boxes-stacked text-amber-500"></i> 品項管理（單位共用）</h3>
-                        <div class="flex gap-2">
-                            <button onclick="window.vSyncUnitItems('${unitKey}')" class="text-xs bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-1.5 rounded-lg font-bold transition-colors"><i class="fa-solid fa-arrows-rotate mr-1"></i>套用品項到全部成員</button>
-                            <button onclick="window.vAddUnitItem('${first.id}')" class="text-xs bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg font-bold transition-colors"><i class="fa-solid fa-plus mr-1"></i>新增品項</button>
-                        </div>
-                    </div>
-                    ${unitItems.length > 0 ? itemsHtml : '<div class="bg-slate-50 rounded-xl p-6 text-center text-slate-400 border border-slate-200">尚無品項，請點右上角「新增品項」</div>'}
-                </div>
-
-                <!-- 人員參與記錄 -->
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="px-5 py-3.5 border-b border-slate-100">
-                        <h3 class="font-bold text-slate-700 flex items-center gap-2"><i class="fa-solid fa-users text-amber-500"></i> 人員參與記錄</h3>
-                        <p class="text-xs text-slate-400 mt-1">勾選每位人員實際使用的品項；點名字可編輯個人改善效益</p>
-                    </div>
-                    <div class="p-4">
-                        ${memberGrid}
-                        <div class="mt-3 space-y-1">
-                            ${unitCases.map(c => `
-                            <div class="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-50 rounded-lg">
-                                <span class="text-sm font-medium text-slate-700 flex-1 cursor-pointer hover:text-amber-600" onclick="window.vOpenCase('${c.id}')">${c.clientName||'?'}</span>
-                                <span class="text-xs px-1.5 py-0.5 rounded ${{pending:'bg-slate-100 text-slate-500',inProgress:'bg-blue-100 text-blue-700',closed:'bg-emerald-100 text-emerald-700'}[c.status]||''}">${{pending:'未驗收',inProgress:'進行中',closed:'結案'}[c.status]||''}</span>
-                                <button onclick="window.vOpenCase('${c.id}')" class="text-xs text-amber-600 hover:text-amber-700 font-bold"><i class="fa-solid fa-pen-to-square"></i></button>
-                            </div>`).join('')}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 匯出 -->
-                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                    <h3 class="font-bold text-slate-700 text-sm mb-3"><i class="fa-solid fa-download text-slate-400 mr-1.5"></i>匯出與下載</h3>
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="window.vExportUnitExcel('${unitKey}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5"><i class="fa-solid fa-file-excel"></i> 下載 Excel</button>
-                        <button onclick="window.vDownloadUnitPhotos('${unitKey}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5"><i class="fa-solid fa-images"></i> 批次下載照片</button>
-                    </div>
-                </div>
-            `;
-        };
-
-        // ================================================================
-        // 開啟個案詳情（身障 或 中高勞通 個別成員）
-        // ================================================================
+        // ---- 開啟案件詳情 ----
         window.vOpenCase = function(caseId) {
             currentVerifyCaseId = caseId;
-            currentVerifyUnitKey = null;
             const c = verifyData.cases.find(x => x.id === caseId);
             if (!c) return;
 
             document.getElementById('verify-main').classList.add('hidden');
             document.getElementById('verify-detail').classList.remove('hidden');
-
-            const isElder = c.category === '中高勞通';
-            const backLabel = isElder ? `← ${c.unit||'單位'}` : '';
-            document.getElementById('v-detail-title').textContent = `${c.clientName||'無姓名'}${c.unit ? ' ｜ ' + c.unit : ''}`;
+            document.getElementById('v-detail-title').textContent = `${c.clientName || '無姓名'} ｜ ${c.unit || ''}`;
 
             const btn = document.getElementById('v-btn-close-case');
             if (c.status === 'closed') {
@@ -9529,39 +9273,13 @@ Module written, length: 83712
                         const src = vGetPhotoData(p.id) || p.url || '';
                         return src ? `<div class="relative w-20 h-20 shrink-0"><img src="${src}" class="w-full h-full object-cover rounded-lg border border-slate-200"><button onclick="window.vDeletePhoto('${caseId}', ${idx}, '${p.id}')" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 font-bold">×</button></div>` : '';
                     }).join('');
-                    const notParticipated = isElder && item.participated === false;
                     return `
-                    <div class="bg-white rounded-2xl p-5 border ${notParticipated ? 'border-slate-100 opacity-50' : 'border-slate-200'} shadow-sm">
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="font-bold text-base text-slate-800 flex items-center gap-2">
-                                <i class="fa-solid fa-box-open ${isElder ? 'text-amber-400' : 'text-purple-400'}"></i> ${item.name || '（未命名品項）'}
+                                <i class="fa-solid fa-box-open text-purple-400"></i> ${item.name || '（未命名品項）'}
                             </h4>
-                            <div class="flex items-center gap-2">
-                                ${isElder ? `<label class="flex items-center gap-1 text-xs font-bold text-slate-500 cursor-pointer">
-                                    <input type="checkbox" class="w-4 h-4 accent-amber-600" ${notParticipated ? '' : 'checked'} onchange="window.vSetParticipated('${caseId}', ${idx}, this.checked)">
-                                    參與
-                                </label>` : ''}
-                                <span class="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded">品項 ${idx+1}／${c.items.length}</span>
-                            </div>
-                        </div>
-                        <!-- 申請/核定 數量金額 -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-                            <div class="bg-slate-50 rounded-lg p-2 text-center">
-                                <div class="text-xs text-slate-400 mb-1">申請數量</div>
-                                <input type="number" class="w-full text-center font-bold text-slate-700 bg-transparent text-sm border-0 focus:outline-none" value="${item.applyQty||0}" onchange="window.vSaveItemAmounts('${caseId}', ${idx}, 'applyQty', this.value)">
-                            </div>
-                            <div class="bg-slate-50 rounded-lg p-2 text-center">
-                                <div class="text-xs text-slate-400 mb-1">申請金額</div>
-                                <input type="number" class="w-full text-center font-bold text-slate-700 bg-transparent text-sm border-0 focus:outline-none" value="${item.applyAmt||0}" onchange="window.vSaveItemAmounts('${caseId}', ${idx}, 'applyAmt', this.value)">
-                            </div>
-                            <div class="bg-emerald-50 rounded-lg p-2 text-center">
-                                <div class="text-xs text-emerald-600 mb-1">核定數量</div>
-                                <input type="number" class="w-full text-center font-bold text-emerald-700 bg-transparent text-sm border-0 focus:outline-none" value="${item.approveQty||0}" onchange="window.vSaveItemAmounts('${caseId}', ${idx}, 'approveQty', this.value)">
-                            </div>
-                            <div class="bg-emerald-50 rounded-lg p-2 text-center">
-                                <div class="text-xs text-emerald-600 mb-1">核定金額</div>
-                                <input type="number" class="w-full text-center font-bold text-emerald-700 bg-transparent text-sm border-0 focus:outline-none" value="${item.approveAmt||0}" onchange="window.vSaveItemAmounts('${caseId}', ${idx}, 'approveAmt', this.value)">
-                            </div>
+                            <span class="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded">品項 ${idx+1}／${c.items.length}</span>
                         </div>
                         <div class="mb-4">
                             <label class="block text-xs font-bold text-slate-500 mb-2">改善效益（可複選）</label>
@@ -9592,37 +9310,24 @@ Module written, length: 83712
                     </div>`;
                 }).join('');
 
-            // 中高勞通個人頁：上方有「返回單位」按鈕
-            const elderBackBtn = isElder ? `
-            <div class="flex items-center gap-2 mb-2">
-                <button onclick="window.vBackToUnit()" class="text-sm text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1"><i class="fa-solid fa-arrow-left text-xs"></i> 返回單位</button>
-            </div>` : '';
-
             document.getElementById('v-detail-content').innerHTML = `
-                ${elderBackBtn}
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div class="px-5 py-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors" onclick="const b=this.nextElementSibling;b.classList.toggle('hidden');this.querySelector('.v-toggle-icon').classList.toggle('rotate-180')">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-xs font-bold px-2 py-0.5 rounded ${catColor[c.category] || ''}">${c.category}</span>
-                            <span class="text-xs font-bold px-2 py-0.5 rounded ${statusColor[c.status] || ''}">${statusLabel[c.status] || ''}</span>
-                            ${c.year ? `<span class="text-xs text-slate-400 font-bold">${c.year}</span>` : ''}
-                            ${c.caseNo ? `<span class="text-xs text-slate-400">${c.caseNo}</span>` : ''}
-                            <span class="text-sm font-bold text-slate-700">${c.clientName || ''}${c.unit ? ` ｜ ${c.unit}` : ''}</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-down text-slate-400 text-sm v-toggle-icon transition-transform duration-200 shrink-0 ml-2"></i>
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4 flex-wrap">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded ${catColor[c.category] || ''}">${c.category}</span>
+                        <span class="text-xs font-bold px-2 py-0.5 rounded ${statusColor[c.status] || ''}">${statusLabel[c.status] || ''}</span>
+                        ${c.year ? `<span class="text-xs text-slate-400 font-bold">${c.year}</span>` : ''}
+                        ${c.caseNo ? `<span class="text-xs text-slate-400">${c.caseNo}</span>` : ''}
                     </div>
-                    <div class="hidden border-t border-slate-100 px-5 pb-5 pt-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1">單位名稱</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unit" value="${(c.unit||'').replace(/"/g,'&quot;')}"></div>
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1">聯繫窗口</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="contactPerson" value="${(c.contactPerson||'').replace(/"/g,'&quot;')}"></div>
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1">單位電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unitPhone" value="${(c.unitPhone||'').replace(/"/g,'&quot;')}"></div>
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1">個案姓名</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientName" value="${(c.clientName||'').replace(/"/g,'&quot;')}"></div>
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1">個案電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientPhone" value="${(c.clientPhone||'').replace(/"/g,'&quot;')}"></div>
-                            <div><label class="block text-xs font-bold text-slate-500 mb-1">地址</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="address" value="${(c.address||'').replace(/"/g,'&quot;')}"></div>
-                            <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">成效驗收日</label><input type="date" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="verificationDate" value="${c.verificationDate||''}"></div>
-                        </div>
-                        <button onclick="window.vSaveBasicInfo()" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold text-base transition-colors active:scale-[0.98]"><i class="fa-solid fa-floppy-disk mr-2"></i>儲存基本資料</button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">單位名稱</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unit" value="${(c.unit||'').replace(/"/g,'&quot;')}"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">聯繫窗口</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="contactPerson" value="${(c.contactPerson||'').replace(/"/g,'&quot;')}"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">單位電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unitPhone" value="${(c.unitPhone||'').replace(/"/g,'&quot;')}"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">個案姓名</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientName" value="${(c.clientName||'').replace(/"/g,'&quot;')}"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">個案電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientPhone" placeholder="個案手機或市話" value="${(c.clientPhone||'').replace(/"/g,'&quot;')}"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 mb-1">地址</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="address" placeholder="單位或個案地址" value="${(c.address||'').replace(/"/g,'&quot;')}"></div>
+                        <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">成效驗收日 <span class="text-purple-500">=</span> 結案日</label><input type="date" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="verificationDate" value="${c.verificationDate||''}"></div>
                     </div>
+                    <button onclick="window.vSaveBasicInfo()" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold text-base transition-colors active:scale-[0.98]"><i class="fa-solid fa-floppy-disk mr-2"></i>儲存基本資料</button>
                 </div>
 
                 <div class="space-y-4">
@@ -9645,154 +9350,32 @@ Module written, length: 83712
             `;
         };
 
-        // 返回單位視圖
-        window.vBackToUnit = function() {
-            if (currentVerifyUnitKey) { window.vOpenUnit(currentVerifyUnitKey); return; }
-            // 如果沒記住 unitKey，從當前 case 推算
-            const c = verifyData.cases.find(x => x.id === currentVerifyCaseId);
-            if (c && c.category === '中高勞通') {
-                const key = (c.year||'') + '_' + (c.caseNo || c.unit || '');
-                window.vOpenUnit(key);
-            } else {
-                window.vBackToList();
-            }
-        };
-
-        // ---- 改善效益互動（個案） ----
+        // ---- 改善效益互動 ----
         window.vToggleImpType = function(caseId, idx, type, checked) {
             const c = verifyData.cases.find(x => x.id === caseId);
             if (!c || !c.items[idx]) return;
             const item = c.items[idx];
             if (!Array.isArray(item.improvements)) item.improvements = [];
-            if (checked) { if (!item.improvements.find(i => i.type === type)) item.improvements.push({ type, percentage: IMPROVEMENT_PERCENTAGES[0] }); }
-            else { item.improvements = item.improvements.filter(i => i.type !== type); }
+            if (checked) {
+                if (!item.improvements.find(i => i.type === type))
+                    item.improvements.push({ type, percentage: IMPROVEMENT_PERCENTAGES[0] });
+            } else {
+                item.improvements = item.improvements.filter(i => i.type !== type);
+            }
             saveVerifyData();
             window.vOpenCase(caseId);
         };
+
         window.vSetImpPct = function(caseId, idx, type, pct) {
             const c = verifyData.cases.find(x => x.id === caseId);
             if (!c || !c.items[idx]) return;
             const imp = (c.items[idx].improvements || []).find(i => i.type === type);
             if (imp) { imp.percentage = pct; saveVerifyData(); }
         };
+
         window.vSaveItemFeedback = function(caseId, idx, value) {
             const c = verifyData.cases.find(x => x.id === caseId);
             if (c && c.items[idx]) { c.items[idx].feedback = value; saveVerifyData(); }
-        };
-        window.vSaveItemAmounts = function(caseId, idx, field, value) {
-            const c = verifyData.cases.find(x => x.id === caseId);
-            if (c && c.items[idx]) { c.items[idx][field] = parseFloat(value) || 0; saveVerifyData(); }
-        };
-        window.vSetParticipated = function(caseId, idx, participated) {
-            const c = verifyData.cases.find(x => x.id === caseId);
-            if (c && c.items[idx] !== undefined) { c.items[idx].participated = participated; saveVerifyData(); }
-            // 如果是在單位視圖中操作，重新渲染
-            if (currentVerifyUnitKey) { window.vOpenUnit(currentVerifyUnitKey); }
-        };
-
-        // ---- 改善效益互動（單位主品項） ----
-        window.vToggleUnitImpType = function(caseId, idx, type, checked) {
-            const c = verifyData.cases.find(x => x.id === caseId);
-            if (!c || !c.items[idx]) return;
-            const item = c.items[idx];
-            if (!Array.isArray(item.improvements)) item.improvements = [];
-            if (checked) { if (!item.improvements.find(i => i.type === type)) item.improvements.push({ type, percentage: IMPROVEMENT_PERCENTAGES[0] }); }
-            else { item.improvements = item.improvements.filter(i => i.type !== type); }
-            saveVerifyData();
-            window.vOpenUnit(currentVerifyUnitKey);
-        };
-        window.vSetUnitImpPct = function(caseId, idx, type, pct) {
-            const c = verifyData.cases.find(x => x.id === caseId);
-            if (!c || !c.items[idx]) return;
-            const imp = (c.items[idx].improvements || []).find(i => i.type === type);
-            if (imp) { imp.percentage = pct; saveVerifyData(); }
-        };
-        window.vSaveUnitItemField = function(caseId, idx, field, value) {
-            const c = verifyData.cases.find(x => x.id === caseId);
-            if (!c || !c.items[idx]) return;
-            c.items[idx][field] = (field === 'feedback') ? value : (parseFloat(value) || 0);
-            saveVerifyData();
-        };
-        window.vAddUnitItem = function(caseId) {
-            const name = window.prompt('請輸入品項名稱：');
-            if (!name) return;
-            const c = verifyData.cases.find(x => x.id === caseId);
-            if (!c) return;
-            c.items.push(vNewItem(name));
-            saveVerifyData();
-            window.vOpenUnit(currentVerifyUnitKey);
-        };
-        window.vDeleteUnitPhoto = function(caseId, itemIdx, photoId) {
-            const c = verifyData.cases.find(x => x.id === caseId);
-            if (!c || !c.items[itemIdx]) return;
-            c.items[itemIdx].photos = c.items[itemIdx].photos.filter(p => p.id !== photoId);
-            vDeletePhotoData(photoId);
-            saveVerifyData();
-            if (vCurrentUid && db) deleteDoc(doc(db, 'users', vCurrentUid, 'verifyCases', caseId, 'photos', photoId)).catch(() => {});
-            window.vOpenUnit(currentVerifyUnitKey);
-            showToast('照片已刪除');
-        };
-
-        // ---- 套用到全部成員 ----
-        window.vSyncUnitInfo = function(unitKey) {
-            const unit     = document.getElementById('vu-unit')?.value || '';
-            const caseNo   = document.getElementById('vu-caseNo')?.value || '';
-            const contact  = document.getElementById('vu-contact')?.value || '';
-            const phone    = document.getElementById('vu-phone')?.value || '';
-            const date     = document.getElementById('vu-date')?.value || '';
-            const unitCases = verifyData.cases.filter(c =>
-                c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo || c.unit || '') === unitKey
-            );
-            unitCases.forEach(c => {
-                if (unit) c.unit = unit;
-                if (caseNo) c.caseNo = caseNo;
-                if (contact) c.contactPerson = contact;
-                if (phone) c.unitPhone = phone;
-                if (date) { c.verificationDate = date; if (c.status === 'pending') c.status = 'inProgress'; }
-            });
-            saveVerifyData();
-            showToast(`已套用到全部 ${unitCases.length} 位成員`);
-            window.vOpenUnit(unitKey);
-        };
-
-        window.vSyncUnitItems = function(unitKey) {
-            const unitCases = verifyData.cases.filter(c =>
-                c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo || c.unit || '') === unitKey
-            );
-            if (unitCases.length < 2) { showToast('只有一位成員，無需套用'); return; }
-            const master = unitCases[0];
-            unitCases.slice(1).forEach(c => {
-                // 保留 participated 狀態，更新其他欄位
-                const existing = c.items;
-                c.items = master.items.map((mItem, mIdx) => {
-                    const eItem = existing[mIdx];
-                    return {
-                        name: mItem.name,
-                        applyQty: mItem.applyQty, applyAmt: mItem.applyAmt,
-                        approveQty: mItem.approveQty, approveAmt: mItem.approveAmt,
-                        improvements: JSON.parse(JSON.stringify(mItem.improvements || [])),
-                        feedback: mItem.feedback || '',
-                        photos: JSON.parse(JSON.stringify(mItem.photos || [])),
-                        participated: eItem ? (eItem.participated !== false) : true
-                    };
-                });
-            });
-            saveVerifyData();
-            showToast(`品項已套用到全部 ${unitCases.length} 位成員`);
-            window.vOpenUnit(unitKey);
-        };
-
-        window.vCloseUnit = function(unitKey) {
-            const unitCases = verifyData.cases.filter(c =>
-                c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo || c.unit || '') === unitKey
-            );
-            unitCases.forEach(c => {
-                if (!c.verificationDate) c.verificationDate = new Date().toISOString().slice(0, 10);
-                c.status = 'closed';
-            });
-            saveVerifyData();
-            showToast(`已結案 ${unitCases.length} 位成員`);
-            window.vOpenUnit(unitKey);
         };
 
         // ---- 照片功能 ----
@@ -9813,9 +9396,7 @@ Module written, length: 83712
                     vSavePhotoData(photoId, compressed);
                     saveVerifyData();
                     vSyncCasePhotos(caseId);
-                    // 根據目前在哪個視圖重新渲染
-                    if (currentVerifyUnitKey) window.vOpenUnit(currentVerifyUnitKey);
-                    else window.vOpenCase(caseId);
+                    window.vOpenCase(caseId);
                     showToast('照片已儲存');
                 };
                 reader.readAsDataURL(file);
@@ -9834,16 +9415,16 @@ Module written, length: 83712
             showToast('照片已刪除');
         };
 
-        // ---- Excel 匯出：身障（個案） ----
+        // ---- Excel 匯出 ----
         window.vExportCaseExcel = function(caseId) {
             const c = verifyData.cases.find(x => x.id === caseId);
             if (!c) return;
             const wb = XLSX.utils.book_new();
-            const header = ['補助品項', '申請數量', '申請金額', '核定數量', '核定金額', ...IMPROVEMENT_TYPES, '整體改善比例', '使用回饋'];
+            const header = ['補助品項', ...IMPROVEMENT_TYPES, '整體改善比例', '使用回饋'];
             const rows = c.items.map(item => {
                 const typeVals = IMPROVEMENT_TYPES.map(t => { const imp = (item.improvements || []).find(i => i.type === t); return imp ? (imp.percentage || '✓') : ''; });
                 const pcts = (item.improvements || []).filter(i => i.percentage).map(i => i.percentage);
-                return [item.name, item.applyQty||0, item.applyAmt||0, item.approveQty||0, item.approveAmt||0, ...typeVals, pcts.join('/'), item.feedback || ''];
+                return [item.name, ...typeVals, pcts.join('/'), item.feedback || ''];
             });
             const aoa = [
                 [`年度：${c.year||''}`], [`類別：${c.category}`], [`案號：${c.caseNo||''}`],
@@ -9853,116 +9434,67 @@ Module written, length: 83712
                 [], header, ...rows
             ];
             const ws = XLSX.utils.aoa_to_sheet(aoa);
-            ws['!cols'] = [{ wch: 22 }, { wch: 8 }, { wch: 10 }, { wch: 8 }, { wch: 10 }, ...IMPROVEMENT_TYPES.map(() => ({ wch: 12 })), { wch: 14 }, { wch: 30 }];
+            ws['!cols'] = [{ wch: 22 }, ...IMPROVEMENT_TYPES.map(() => ({ wch: 12 })), { wch: 14 }, { wch: 30 }];
             XLSX.utils.book_append_sheet(wb, ws, '成效驗收');
             XLSX.writeFile(wb, `${c.year||''}${c.unit||'單位'}_${c.clientName||'個案'}_${c.verificationDate||'未驗收'}_成效驗收.xlsx`);
             showToast('Excel 已下載');
         };
 
-        // ---- Excel 匯出：中高勞通（單位）----
         window.vExportUnitExcel = function(unitKey) {
-            const unitCases = verifyData.cases.filter(c =>
-                c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo || c.unit || '') === unitKey
-            );
+            const unitCases = verifyData.cases.filter(c => c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo || c.unit || '') === unitKey);
             if (unitCases.length === 0) return;
-            const first = unitCases[0];
             const wb = XLSX.utils.book_new();
-            const unitItems = first.items;
-
-            // Sheet 1: 單位成效驗收
-            const aoa = [
-                [`年度：${first.year||''}`], [`案號：${first.caseNo||''}`],
-                [`單位：${first.unit||''}`], [`聯繫窗口：${first.contactPerson||''}`],
-                [`單位電話：${first.unitPhone||''}`],
-                [`驗收日期：${[...new Set(unitCases.map(c=>c.verificationDate).filter(Boolean))].join('、')}`],
-                [],
-                ['== 品項總表 =='],
-                ['品項名稱', '申請數量', '申請金額', '核定數量', '核定金額', ...IMPROVEMENT_TYPES, '整體改善比例', '使用回饋'],
-            ];
-            unitItems.forEach(item => {
-                const typeVals = IMPROVEMENT_TYPES.map(t => { const imp = (item.improvements||[]).find(i=>i.type===t); return imp ? (imp.percentage||'✓') : ''; });
-                const pcts = (item.improvements||[]).filter(i=>i.percentage).map(i=>i.percentage);
-                aoa.push([item.name, item.applyQty||0, item.applyAmt||0, item.approveQty||0, item.approveAmt||0, ...typeVals, pcts.join('/'), item.feedback||'']);
-            });
-            aoa.push([]);
-            aoa.push(['== 人員參與記錄 ==']);
-            // 參與格 header
-            const partHeader = ['姓名', '驗收日期', ...unitItems.map(it => it.name || '品項')];
-            aoa.push(partHeader);
+            const header = ['姓名', '補助品項', ...IMPROVEMENT_TYPES, '整體改善比例', '使用回饋', '驗收日期'];
+            const rows = [];
             unitCases.forEach(c => {
-                const partRow = [
-                    c.clientName||'',
-                    c.verificationDate||'',
-                    ...unitItems.map((_, iIdx) => {
-                        const item = c.items[iIdx];
-                        return item && item.participated !== false ? '✓' : '';
-                    })
-                ];
-                aoa.push(partRow);
+                c.items.forEach(item => {
+                    const typeVals = IMPROVEMENT_TYPES.map(t => { const imp = (item.improvements || []).find(i => i.type === t); return imp ? (imp.percentage || '✓') : ''; });
+                    const pcts = (item.improvements || []).filter(i => i.percentage).map(i => i.percentage);
+                    rows.push([c.clientName, item.name, ...typeVals, pcts.join('/'), item.feedback || '', c.verificationDate || '']);
+                });
             });
-
+            const aoa = [
+                [`年度：${unitCases[0].year||''}`], [`單位：${unitCases[0].unit||''}`],
+                [`聯繫窗口：${unitCases[0].contactPerson||''}`], [`單位電話：${unitCases[0].unitPhone||''}`],
+                [], header, ...rows
+            ];
             const ws = XLSX.utils.aoa_to_sheet(aoa);
-            ws['!cols'] = [{ wch: 22 }, { wch: 8 }, { wch: 10 }, { wch: 8 }, { wch: 10 }, ...IMPROVEMENT_TYPES.map(() => ({ wch: 12 })), { wch: 14 }, { wch: 30 }];
+            ws['!cols'] = [{ wch: 10 }, { wch: 22 }, ...IMPROVEMENT_TYPES.map(() => ({ wch: 12 })), { wch: 14 }, { wch: 30 }, { wch: 12 }];
             XLSX.utils.book_append_sheet(wb, ws, '單位成效驗收');
             const verDates = [...new Set(unitCases.map(c => c.verificationDate).filter(Boolean))];
-            XLSX.writeFile(wb, `${first.year||''}${first.unit||'單位'}_${verDates[0]||'未驗收'}_成效驗收.xlsx`);
+            XLSX.writeFile(wb, `${unitCases[0].year||''}${unitCases[0].unit||'單位'}_${verDates[0]||'未驗收'}_成效驗收.xlsx`);
             showToast('Excel 已下載');
         };
 
-        // ---- 批次下載照片（改善版）----
+        // ---- 批次下載照片 ----
         window.vDownloadPhotos = async function(caseId) {
             const c = verifyData.cases.find(x => x.id === caseId);
             if (!c) return;
-            showToast('準備下載照片...');
             let count = 0;
             for (let idx = 0; idx < c.items.length; idx++) {
                 for (const photo of (c.items[idx].photos || [])) {
                     const src = vGetPhotoData(photo.id) || photo.url;
                     if (!src) continue;
-                    try {
-                        // 用 fetch 轉 blob 觸發下載（更可靠）
-                        let blob;
-                        if (src.startsWith('data:')) {
-                            const arr = src.split(','); const mime = arr[0].match(/:(.*?);/)[1];
-                            const bstr = atob(arr[1]); let n = bstr.length;
-                            const u8arr = new Uint8Array(n); while(n--) u8arr[n] = bstr.charCodeAt(n);
-                            blob = new Blob([u8arr], { type: mime });
-                        } else {
-                            const resp = await fetch(src); blob = await resp.blob();
-                        }
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = photo.filename || `${c.unit}_${c.clientName}_品項${idx+1}_${count+1}.jpg`;
-                        a.style.display = 'none';
-                        document.body.appendChild(a);
-                        a.click();
-                        setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
-                        count++;
-                        await new Promise(r => setTimeout(r, 500));
-                    } catch(e) { console.warn('download photo error', e); }
+                    const a = document.createElement('a');
+                    a.href = src;
+                    a.download = photo.filename || `${c.unit}_${c.clientName}_${c.verificationDate||'unknown'}_成效驗收_${idx+1}_${count+1}.jpg`;
+                    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                    count++;
+                    await new Promise(r => setTimeout(r, 200));
                 }
             }
             showToast(count === 0 ? '此案件無照片' : `已下載 ${count} 張照片`);
         };
 
-        window.vDownloadUnitPhotos = async function(unitKey) {
-            const unitCases = verifyData.cases.filter(c =>
-                c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo || c.unit || '') === unitKey
-            );
-            for (const c of unitCases) await window.vDownloadPhotos(c.id);
-        };
-
         // ---- 返回列表 ----
         window.vBackToList = function() {
             currentVerifyCaseId = null;
-            currentVerifyUnitKey = null;
             document.getElementById('verify-main').classList.remove('hidden');
             document.getElementById('verify-detail').classList.add('hidden');
             vRenderDashboard(); vRenderCaseList();
         };
 
-        // ---- 儲存基本資料（個案） ----
+        // ---- 儲存基本資料 ----
         window.vSaveBasicInfo = function() {
             if (!currentVerifyCaseId) return;
             const c = verifyData.cases.find(x => x.id === currentVerifyCaseId);
