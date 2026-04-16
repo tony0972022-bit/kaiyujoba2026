@@ -9089,6 +9089,21 @@ ${rawDraft}
             vSelectedIds.clear(); vUpdateBatchBar(); vRenderCaseList();
         };
 
+        window.vSelectAll = function(checked, allIds) {
+            allIds.forEach(id => { if (checked) vSelectedIds.add(id); else vSelectedIds.delete(id); });
+            document.querySelectorAll('.v-case-cb').forEach(cb => { cb.checked = checked; });
+            vUpdateBatchBar();
+        };
+
+        window.vBatchDownloadAll = function() {
+            if (vSelectedIds.size === 0) { showToast('請先勾選案件'); return; }
+            const ids = [...vSelectedIds];
+            ids.forEach(id => {
+                const c = verifyData.cases.find(x => x.id === id);
+                if (c) { window.vExportCaseExcel(id); }
+            });
+        };
+
         window.vBatchDelete = function() {
             if (vSelectedIds.size === 0) return;
             if (!confirm(`確定刪除選取的 ${vSelectedIds.size} 筆案件？此動作無法復原。`)) return;
@@ -9231,7 +9246,20 @@ ${rawDraft}
                 });
             }
 
-            container.innerHTML = html || '<p class="text-center text-slate-400 py-8">無符合條件的案件</p>';
+            const allIds = [...disCases.map(c=>c.id), ...[...elderGroups.values()].flatMap(g=>g.cases.map(c=>c.id))];
+            const allSelected = allIds.length > 0 && allIds.every(id => vSelectedIds.has(id));
+            const selectAllRow = `<div class="flex items-center justify-between px-1 pb-2 border-b border-slate-200 mb-2">
+                <label class="flex items-center gap-2 cursor-pointer text-sm text-slate-600">
+                    <input type="checkbox" id="v-cb-select-all" class="w-4 h-4 accent-purple-600" ${allSelected?'checked':''} onchange="window.vSelectAll(this.checked, ${JSON.stringify(allIds)})">
+                    <span class="font-medium">全選</span>
+                </label>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.vBatchDownloadAll()" class="text-xs text-blue-600 hover:text-blue-700 font-bold px-2 py-1 rounded border border-blue-200 hover:bg-blue-50 transition-colors"><i class="fa-solid fa-download mr-0.5"></i>下載選取</button>
+                    <button onclick="window.vBatchDelete()" class="text-xs text-red-600 hover:text-red-700 font-bold px-2 py-1 rounded border border-red-200 hover:bg-red-50 transition-colors"><i class="fa-solid fa-trash mr-0.5"></i>刪除選取</button>
+                    <span class="text-xs text-slate-400">${allIds.length} 筆</span>
+                </div>
+            </div>`;
+            container.innerHTML = (html ? selectAllRow + html : '<p class="text-center text-slate-400 py-8">無符合條件的案件</p>');
         }
         window.vRenderCaseList = vRenderCaseList;
 
@@ -9311,23 +9339,31 @@ ${rawDraft}
                 }).join('');
 
             document.getElementById('v-detail-content').innerHTML = `
-                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                    <div class="flex items-center gap-2 mb-4 flex-wrap">
-                        <span class="text-xs font-bold px-2 py-0.5 rounded ${catColor[c.category] || ''}">${c.category}</span>
-                        <span class="text-xs font-bold px-2 py-0.5 rounded ${statusColor[c.status] || ''}">${statusLabel[c.status] || ''}</span>
-                        ${c.year ? `<span class="text-xs text-slate-400 font-bold">${c.year}</span>` : ''}
-                        ${c.caseNo ? `<span class="text-xs text-slate-400">${c.caseNo}</span>` : ''}
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <!-- 收合標頭 (永遠顯示) -->
+                    <div class="px-5 py-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors" onclick="const b=this.nextElementSibling;b.classList.toggle('hidden');this.querySelector('.v-toggle-icon').classList.toggle('rotate-180')">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded ${catColor[c.category] || ''}">${c.category}</span>
+                            <span class="text-xs font-bold px-2 py-0.5 rounded ${statusColor[c.status] || ''}">${statusLabel[c.status] || ''}</span>
+                            ${c.year ? `<span class="text-xs text-slate-400 font-bold">${c.year}</span>` : ''}
+                            ${c.caseNo ? `<span class="text-xs text-slate-400">${c.caseNo}</span>` : ''}
+                            <span class="text-sm font-bold text-slate-700">${c.clientName || ''}${c.unit ? ` ｜ ${c.unit}` : ''}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-slate-400 text-sm v-toggle-icon transition-transform duration-200 shrink-0 ml-2"></i>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">單位名稱</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unit" value="${(c.unit||'').replace(/"/g,'&quot;')}"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">聯繫窗口</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="contactPerson" value="${(c.contactPerson||'').replace(/"/g,'&quot;')}"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">單位電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unitPhone" value="${(c.unitPhone||'').replace(/"/g,'&quot;')}"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">個案姓名</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientName" value="${(c.clientName||'').replace(/"/g,'&quot;')}"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">個案電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientPhone" placeholder="個案手機或市話" value="${(c.clientPhone||'').replace(/"/g,'&quot;')}"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">地址</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="address" placeholder="單位或個案地址" value="${(c.address||'').replace(/"/g,'&quot;')}"></div>
-                        <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">成效驗收日 <span class="text-purple-500">=</span> 結案日</label><input type="date" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="verificationDate" value="${c.verificationDate||''}"></div>
+                    <!-- 可展開的表單區（預設隱藏） -->
+                    <div class="hidden border-t border-slate-100 px-5 pb-5 pt-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">單位名稱</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unit" value="${(c.unit||'').replace(/"/g,'&quot;')}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">聯繫窗口</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="contactPerson" value="${(c.contactPerson||'').replace(/"/g,'&quot;')}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">單位電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unitPhone" value="${(c.unitPhone||'').replace(/"/g,'&quot;')}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">個案姓名</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientName" value="${(c.clientName||'').replace(/"/g,'&quot;')}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">個案電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientPhone" placeholder="個案手機或市話" value="${(c.clientPhone||'').replace(/"/g,'&quot;')}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">地址</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="address" placeholder="單位或個案地址" value="${(c.address||'').replace(/"/g,'&quot;')}"></div>
+                            <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">成效驗收日 <span class="text-purple-500">=</span> 結案日</label><input type="date" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="verificationDate" value="${c.verificationDate||''}"></div>
+                        </div>
+                        <button onclick="window.vSaveBasicInfo()" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold text-base transition-colors active:scale-[0.98]"><i class="fa-solid fa-floppy-disk mr-2"></i>儲存基本資料</button>
                     </div>
-                    <button onclick="window.vSaveBasicInfo()" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold text-base transition-colors active:scale-[0.98]"><i class="fa-solid fa-floppy-disk mr-2"></i>儲存基本資料</button>
                 </div>
 
                 <div class="space-y-4">
