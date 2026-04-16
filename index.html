@@ -9782,24 +9782,30 @@ ${rawDraft}
                     const ws = wb.Sheets[wb.SheetNames[0]];
                     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-                    // 自動找標題列（前 5 行內含「申請單位」或「申請補助項目」）
+                    // 自動找標題列（前 5 行內含「申請補助項目」或「申請單位」或「單位」）
                     let headerIdx = -1;
                     for (let i = 0; i < Math.min(5, rows.length); i++) {
-                        if (rows[i].some(c => String(c).includes('申請單位') || String(c).includes('申請補助項目'))) {
+                        if (rows[i].some(c => String(c).includes('申請補助項目') || String(c).includes('申請單位') || String(c).includes('單位'))) {
                             headerIdx = i; break;
                         }
                     }
                     if (headerIdx < 0) {
-                        statusEl.textContent = '❌ 找不到標題列（需含「申請單位」或「申請補助項目」欄）'; return;
+                        statusEl.textContent = '❌ 找不到標題列（需含「單位」或「申請補助項目」欄）'; return;
                     }
 
                     const headers = rows[headerIdx].map(h => String(h).trim());
                     const col = name => headers.findIndex(h => h.includes(name));
 
-                    const cNo     = col('編號');
-                    const cUnit   = col('申請單位');
-                    const cName   = col('申請補助項目');
-                    const cIUnit  = col('單位');
+                    const cNo    = col('編號');
+                    const cName  = col('申請補助項目');
+                    // 申請單位：優先找「申請單位」欄，否則找「品項名稱」欄之前的「單位」欄
+                    const cUnit  = col('申請單位') >= 0
+                        ? col('申請單位')
+                        : (cName > 0 ? headers.slice(0, cName).findIndex(h => h.includes('單位')) : -1);
+                    // 品項單位（台/個/張）：找「品項名稱」欄之後的「單位」欄，避免抓到公司名欄
+                    const cIUnit = cName >= 0
+                        ? headers.findIndex((h, i) => i > cName && h.includes('單位'))
+                        : col('單位');
                     const cPrice  = col('單價');
                     const cQty    = col('數量');
                     const cApply  = col('申請金額');
@@ -9807,60 +9813,72 @@ ${rawDraft}
                     const cRecyc  = col('是否回收');
                     const cSubCat = col('補助分類');
 
-                    if (cUnit < 0 && cName < 0) {
-                        statusEl.textContent = '❌ 缺少「申請單位」及「申請補助項目」欄'; return;
+                    if (cName < 0) {
+                        statusEl.textContent = '❌ 缺少「申請補助項目」欄'; return;
                     }
 
                     let updatedKeys = new Set();
                     let matchCount = 0, skipCount = 0;
 
+                    // 第一步：將 Excel 資料依「申請單位」分組
+                    const unitItemsMap = new Map(); // unitName → [{name, itemNo, itemUnit, ...}]
                     for (let i = headerIdx + 1; i < rows.length; i++) {
                         const row = rows[i];
-                        const unitName = cUnit >= 0 ? String(row[cUnit] || '').trim() : '';
-                        const itemName = cName >= 0 ? String(row[cName] || '').trim() : '';
-                        if (!itemName) { skipCount++; continue; }
+                        const uName = cUnit >= 0 ? String(row[cUnit] || '').trim() : '';
+                        const iName = cName >= 0 ? String(row[cName] || '').trim() : '';
+                        if (!iName) { skipCount++; continue; }
+                        if (!unitItemsMap.has(uName)) unitItemsMap.set(uName, []);
+                        const item = { name: iName };
+                        const addIfVal = (field, colIdx) => {
+                            if (colIdx >= 0 && String(row[colIdx] || '').trim()) item[field] = String(row[colIdx]).trim();
+                        };
+                        if (cNo >= 0 && String(row[cNo] || '').trim()) item.itemNo = String(row[cNo]).trim();
+                        addIfVal('itemUnit',        cIUnit);
+                        addIfVal('unitPrice',       cPrice);
+                        addIfVal('quantity',        cQty);
+                        addIfVal('appliedAmount',   cApply);
+                        addIfVal('approvedAmount',  cApprv);
+                        addIfVal('recyclable',      cRecyc);
+                        addIfVal('subsidyCategory', cSubCat);
+                        unitItemsMap.get(uName).push(item);
+                    }
 
-                        // 比對申請單位找 unitKey
-                        const matchedCases = unitName
-                            ? verifyData.cases.filter(c => c.category === '中高勞通' && (c.unit || '').trim() === unitName)
+                    // 第二步：依單位名稱找對應 unitKey，以 Excel 為準重建品項清單
+                    // （保留已手動填入的工作站/效益/回饋/照片，清除不在 Excel 裡的舊品項）
+                    unitItemsMap.forEach((excelItems, uName) => {
+                        const matchedCases = uName
+                            ? verifyData.cases.filter(c => c.category === '中高勞通' && (c.unit || '').trim() === uName)
                             : verifyData.cases.filter(c => c.category === '中高勞通');
-
                         const keys = [...new Set(matchedCases.map(c => getUnitKey(c)))];
-                        if (keys.length === 0) { skipCount++; continue; }
+                        if (keys.length === 0) { skipCount += excelItems.length; return; }
 
                         keys.forEach(uk => {
                             if (!verifyData.unitItems[uk]) verifyData.unitItems[uk] = { items: [] };
-                            const items = verifyData.unitItems[uk].items;
-                            // 依品項名稱找現有品項，不存在則新增
-                            let existing = items.find(it => (it.name || '').trim() === itemName);
-                            if (!existing) {
-                                existing = { name: itemName, improvements: [], photos: [], assignedCaseIds: [] };
-                                items.push(existing);
-                            }
-                            // 合併欄位（Excel 有值才覆蓋）
-                            const setIfVal = (field, colIdx) => {
-                                if (colIdx >= 0 && String(row[colIdx] || '').trim())
-                                    existing[field] = String(row[colIdx]).trim();
-                            };
-                            if (cNo >= 0 && String(row[cNo] || '').trim()) existing.itemNo = String(row[cNo]).trim();
-                            setIfVal('itemUnit',        cIUnit);
-                            setIfVal('unitPrice',       cPrice);
-                            setIfVal('quantity',        cQty);
-                            setIfVal('appliedAmount',   cApply);
-                            setIfVal('approvedAmount',  cApprv);
-                            setIfVal('recyclable',      cRecyc);
-                            setIfVal('subsidyCategory', cSubCat);
+                            const existingItems = verifyData.unitItems[uk].items;
+                            // 依 Excel 重建（名稱對應的保留手動資料，其餘 Excel 項目全新建）
+                            verifyData.unitItems[uk].items = excelItems.map(ei => {
+                                const old = existingItems.find(it => (it.name || '').trim() === ei.name);
+                                return {
+                                    improvements:    old?.improvements    || [],
+                                    photos:          old?.photos          || [],
+                                    assignedCaseIds: old?.assignedCaseIds || [],
+                                    workStation:     old?.workStation     || '',
+                                    sharedUsers:     old?.sharedUsers     || '',
+                                    feedback:        old?.feedback        || '',
+                                    ...ei  // Excel 欄位覆蓋舊財務資料
+                                };
+                            });
                             updatedKeys.add(uk);
-                            matchCount++;
+                            matchCount += excelItems.length;
                         });
-                    }
+                    });
 
                     if (updatedKeys.size > 0) {
                         saveVerifyData();
                         updatedKeys.forEach(uk => saveUnitItems(uk));
                         vRenderCaseList();
                     }
-                    statusEl.textContent = `✅ 已更新 ${matchCount} 筆品項${skipCount > 0 ? `，跳過 ${skipCount} 筆` : ''}`;
+                    statusEl.textContent = `✅ 已更新 ${updatedKeys.size} 個單位，共 ${matchCount} 筆品項${skipCount > 0 ? `，跳過 ${skipCount} 筆` : ''}`;
                     e.target.value = '';
                 } catch(err) {
                     console.error(err);
