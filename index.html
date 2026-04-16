@@ -1270,6 +1270,20 @@
                     </div>
                 </div>
 
+                <!-- 品項匯入區 -->
+                <div class="bg-white rounded-2xl p-5 border border-indigo-200 shadow-sm">
+                    <h3 class="font-bold text-base text-slate-700 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-boxes-stacked text-indigo-500 text-lg"></i> 匯入補助品項清單
+                        <span class="text-xs font-normal text-slate-400 ml-1">（中高勞通專用）</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mb-3">欄位：<strong>編號、申請單位、申請補助項目、單位、單價、數量、申請金額、核定金額、是否回收、補助分類</strong>，系統自動比對申請單位後合併</p>
+                    <label class="flex items-center justify-center gap-2 w-full bg-indigo-500 hover:bg-indigo-600 text-white py-3 px-4 rounded-xl font-bold cursor-pointer text-center transition-colors active:scale-95">
+                        <i class="fa-solid fa-upload"></i> 選擇品項清單
+                        <input type="file" id="v-import-items" accept=".xlsx" class="hidden">
+                    </label>
+                    <p id="v-import-items-status" class="text-xs text-slate-400 mt-2 text-center">尚未匯入</p>
+                </div>
+
                 <!-- 儀表板 -->
                 <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
                     <h2 class="text-lg font-bold text-slate-700 mb-5 border-b pb-3">
@@ -9240,6 +9254,8 @@ ${rawDraft}
         };
 
         // ---- 案件列表 ----
+        window._vListCollapsed = window._vListCollapsed || { dis: false, elder: false };
+
         function vRenderCaseList() {
             const container = document.getElementById('v-case-list');
             if (!container) return;
@@ -9286,8 +9302,12 @@ ${rawDraft}
 
             // 身障個別卡片
             if (disCases.length > 0) {
-                html += `<div class="text-xs font-bold text-purple-600 uppercase tracking-wide mb-2 mt-1 flex items-center gap-1.5"><i class="fa-solid fa-wheelchair"></i> 身障 (${disCases.length})</div>`;
-                html += disCases.map(c => {
+                const disCollapsed = !!window._vListCollapsed.dis;
+                html += `<div class="text-xs font-bold text-purple-600 uppercase tracking-wide mb-2 mt-1 flex items-center gap-1.5 cursor-pointer select-none" onclick="window._vListCollapsed.dis=!window._vListCollapsed.dis; window.vRenderCaseList()">
+                    <i class="fa-solid fa-wheelchair"></i> 身障 (${disCases.length})
+                    <i class="fa-solid fa-chevron-${disCollapsed ? 'right' : 'down'} ml-auto text-purple-300 text-xs"></i>
+                </div>`;
+                if (!disCollapsed) html += disCases.map(c => {
                     const isSelected = vSelectedIds.has(c.id);
                     const impChips = c.items.flatMap(it => (it.improvements || []).map(imp => imp.type + (imp.percentage ? ' ' + imp.percentage : '')));
                     return `
@@ -9313,12 +9333,16 @@ ${rawDraft}
                         </div>
                     </div>`;
                 }).join('');
-            }
+            } // end disCollapsed check (list is rendered above when !disCollapsed)
 
             // 中高勞通分組卡片
             if (elderGroups.size > 0) {
-                html += `<div class="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 mt-3 flex items-center gap-1.5"><i class="fa-solid fa-person-cane"></i> 中高勞通 (${elderCases.length})</div>`;
-                elderGroups.forEach((group, key) => {
+                const elderCollapsed = !!window._vListCollapsed.elder;
+                html += `<div class="text-xs font-bold text-amber-700 uppercase tracking-wide mb-2 mt-3 flex items-center gap-1.5 cursor-pointer select-none" onclick="window._vListCollapsed.elder=!window._vListCollapsed.elder; window.vRenderCaseList()">
+                    <i class="fa-solid fa-person-cane"></i> 中高勞通 (${elderCases.length})
+                    <i class="fa-solid fa-chevron-${elderCollapsed ? 'right' : 'down'} ml-auto text-amber-400 text-xs"></i>
+                </div>`;
+                if (!elderCollapsed) elderGroups.forEach((group, key) => {
                     const groupIds = group.cases.map(c => c.id);
                     const allSelected = groupIds.every(id => vSelectedIds.has(id));
                     const anySelected = groupIds.some(id => vSelectedIds.has(id));
@@ -9368,8 +9392,8 @@ ${rawDraft}
                             }).join('')}
                         </div>
                     </div>`;
-                });
-            }
+                }); // end elderGroups.forEach
+            } // end elderCollapsed check
 
             container.innerHTML = html || '<p class="text-center text-slate-400 py-8">無符合條件的案件</p>';
         }
@@ -9744,6 +9768,107 @@ ${rawDraft}
             XLSX.writeFile(wb, `${unitCases[0].year||''}${unitCases[0].unit||'單位'}_${verDates[0]||'未驗收'}_成效驗收.xlsx`);
             showToast('Excel 已下載');
         };
+
+        // ---- 品項清單獨立匯入（中高勞通） ----
+        document.getElementById('v-import-items').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const statusEl = document.getElementById('v-import-items-status');
+            statusEl.textContent = '讀取中...';
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const wb = XLSX.read(ev.target.result, { type: 'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+                    // 自動找標題列（前 5 行內含「申請單位」或「申請補助項目」）
+                    let headerIdx = -1;
+                    for (let i = 0; i < Math.min(5, rows.length); i++) {
+                        if (rows[i].some(c => String(c).includes('申請單位') || String(c).includes('申請補助項目'))) {
+                            headerIdx = i; break;
+                        }
+                    }
+                    if (headerIdx < 0) {
+                        statusEl.textContent = '❌ 找不到標題列（需含「申請單位」或「申請補助項目」欄）'; return;
+                    }
+
+                    const headers = rows[headerIdx].map(h => String(h).trim());
+                    const col = name => headers.findIndex(h => h.includes(name));
+
+                    const cNo     = col('編號');
+                    const cUnit   = col('申請單位');
+                    const cName   = col('申請補助項目');
+                    const cIUnit  = col('單位');
+                    const cPrice  = col('單價');
+                    const cQty    = col('數量');
+                    const cApply  = col('申請金額');
+                    const cApprv  = col('核定金額') >= 0 ? col('核定金額') : col('核准金額');
+                    const cRecyc  = col('是否回收');
+                    const cSubCat = col('補助分類');
+
+                    if (cUnit < 0 && cName < 0) {
+                        statusEl.textContent = '❌ 缺少「申請單位」及「申請補助項目」欄'; return;
+                    }
+
+                    let updatedKeys = new Set();
+                    let matchCount = 0, skipCount = 0;
+
+                    for (let i = headerIdx + 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        const unitName = cUnit >= 0 ? String(row[cUnit] || '').trim() : '';
+                        const itemName = cName >= 0 ? String(row[cName] || '').trim() : '';
+                        if (!itemName) { skipCount++; continue; }
+
+                        // 比對申請單位找 unitKey
+                        const matchedCases = unitName
+                            ? verifyData.cases.filter(c => c.category === '中高勞通' && (c.unit || '').trim() === unitName)
+                            : verifyData.cases.filter(c => c.category === '中高勞通');
+
+                        const keys = [...new Set(matchedCases.map(c => getUnitKey(c)))];
+                        if (keys.length === 0) { skipCount++; continue; }
+
+                        keys.forEach(uk => {
+                            if (!verifyData.unitItems[uk]) verifyData.unitItems[uk] = { items: [] };
+                            const items = verifyData.unitItems[uk].items;
+                            // 依品項名稱找現有品項，不存在則新增
+                            let existing = items.find(it => (it.name || '').trim() === itemName);
+                            if (!existing) {
+                                existing = { name: itemName, improvements: [], photos: [], assignedCaseIds: [] };
+                                items.push(existing);
+                            }
+                            // 合併欄位（Excel 有值才覆蓋）
+                            const setIfVal = (field, colIdx) => {
+                                if (colIdx >= 0 && String(row[colIdx] || '').trim())
+                                    existing[field] = String(row[colIdx]).trim();
+                            };
+                            if (cNo >= 0 && String(row[cNo] || '').trim()) existing.itemNo = String(row[cNo]).trim();
+                            setIfVal('itemUnit',        cIUnit);
+                            setIfVal('unitPrice',       cPrice);
+                            setIfVal('quantity',        cQty);
+                            setIfVal('appliedAmount',   cApply);
+                            setIfVal('approvedAmount',  cApprv);
+                            setIfVal('recyclable',      cRecyc);
+                            setIfVal('subsidyCategory', cSubCat);
+                            updatedKeys.add(uk);
+                            matchCount++;
+                        });
+                    }
+
+                    if (updatedKeys.size > 0) {
+                        saveVerifyData();
+                        updatedKeys.forEach(uk => saveUnitItems(uk));
+                        vRenderCaseList();
+                    }
+                    statusEl.textContent = `✅ 已更新 ${matchCount} 筆品項${skipCount > 0 ? `，跳過 ${skipCount} 筆` : ''}`;
+                    e.target.value = '';
+                } catch(err) {
+                    console.error(err);
+                    statusEl.textContent = '❌ 匯入失敗：' + err.message;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
 
         // ---- 批次下載照片 ----
         window.vDownloadPhotos = async function(caseId) {
@@ -10334,7 +10459,15 @@ ${rawDraft}
         // ==========================================
 
         let _docFloatMinimized = false;
-        let _docFloatFullH = 560;
+        let _docFloatFullH = 300; // 桌面預設高度(px)；手機用 dvh
+        function _docFloatMobileH() { return Math.round(window.innerHeight * 0.30); }
+        function _setDocFloatOpenH(win) {
+            if (window.innerWidth <= 520) {
+                win.style.height = '30dvh';
+            } else {
+                win.style.height = _docFloatFullH + 'px';
+            }
+        }
 
         // 統一入口：傳入 previewUrl / downloadUrl / filename 開啟浮動視窗
         window.openDocFloatPreview = function(previewUrl, downloadUrl, filename) {
@@ -10362,7 +10495,7 @@ ${rawDraft}
 
             // 還原正常大小（若之前最小化過）
             _docFloatMinimized = false;
-            win.style.height = _docFloatFullH + 'px';
+            _setDocFloatOpenH(win);
             iframe.style.display = '';
             if (loading) loading.style.display = 'flex';
             const minIcon = document.querySelector('#doc-float-min-btn i');
@@ -10405,13 +10538,13 @@ ${rawDraft}
             if (!win) return;
             _docFloatMinimized = !_docFloatMinimized;
             if (_docFloatMinimized) {
-                _docFloatFullH = win.offsetHeight || 560;
-                win.style.height = '40px';
+                if (window.innerWidth > 520) _docFloatFullH = win.offsetHeight || 300;
+                win.style.height = '48px';
                 if (iframe) iframe.style.display = 'none';
                 if (loading) loading.style.display = 'none';
                 if (minIcon) minIcon.className = 'fa-solid fa-expand text-xs';
             } else {
-                win.style.height = _docFloatFullH + 'px';
+                _setDocFloatOpenH(win);
                 if (iframe) iframe.style.display = '';
                 if (loading) loading.style.display = 'flex';
                 if (minIcon) minIcon.className = 'fa-solid fa-minus text-xs';
@@ -10419,20 +10552,22 @@ ${rawDraft}
         };
 
         // ---- 拖曳（Pointer Events，相容 iPad）----
-        // 手機（寬度 ≤ 520px）為全寬底部浮板，不需要水平拖曳，改為垂直滑動關閉
+        // 手機（寬度 ≤ 520px）：垂直拖曳調整高度，下拉 >80px 則最小化
+        // 桌面（> 520px）：自由拖曳視窗位置
         (function initDocFloatDrag() {
             const header = document.getElementById('doc-float-header');
             const win    = document.getElementById('doc-float-preview');
             if (!header || !win) return;
             let dragging = false, ox = 0, oy = 0;
-            let touchStartY = 0, touchMode = false;
+            let touchStartY = 0, touchStartH = 0, touchMode = false;
 
             header.addEventListener('pointerdown', e => {
                 if (e.target.closest('button, a')) return;
-                // 手機模式：僅支援向下滑動收起
+                // 手機模式：垂直拖曳調整面板高度
                 if (window.innerWidth <= 520) {
                     touchMode = true;
                     touchStartY = e.clientY;
+                    touchStartH = win.offsetHeight;
                     header.setPointerCapture(e.pointerId);
                     return;
                 }
@@ -10451,7 +10586,14 @@ ${rawDraft}
                 win.style.userSelect = 'none';
             });
             header.addEventListener('pointermove', e => {
-                if (touchMode) return; // 手機模式不做即時移動
+                if (touchMode) {
+                    // 手機：上拉放大、下拉縮小（限制在 80px ~ 80vh）
+                    if (_docFloatMinimized) return;
+                    const dy = touchStartY - e.clientY; // 正值=向上拉
+                    const newH = Math.max(80, Math.min(Math.round(window.innerHeight * 0.80), touchStartH + dy));
+                    win.style.height = newH + 'px';
+                    return;
+                }
                 if (!dragging) return;
                 let l = e.clientX - ox;
                 let t = e.clientY - oy;
@@ -10463,8 +10605,13 @@ ${rawDraft}
             header.addEventListener('pointerup', e => {
                 if (touchMode) {
                     touchMode = false;
-                    // 向下滑動超過 60px 則收起（最小化）
-                    if (e.clientY - touchStartY > 60) {
+                    const dy = e.clientY - touchStartY; // 正值=向下拖
+                    // 向下超過 80px 且目前是展開狀態 → 最小化
+                    if (dy > 80 && !_docFloatMinimized) {
+                        window.docFloatToggleMin();
+                    }
+                    // 向上超過 80px 且目前是最小化狀態 → 還原
+                    if (dy < -80 && _docFloatMinimized) {
                         window.docFloatToggleMin();
                     }
                     return;
@@ -10857,7 +11004,7 @@ ${rawDraft}
     <!-- 訪視評估表：可拖曳浮動預覽視窗 -->
     <div id="doc-float-preview"
          class="hidden fixed z-[600] flex flex-col shadow-2xl border border-slate-300 overflow-hidden bg-white"
-         style="bottom:0; right:0; left:0; width:100%; height:60dvh; border-radius:1.25rem 1.25rem 0 0;">
+         style="bottom:0; right:0; left:0; width:100%; height:30dvh; border-radius:1.25rem 1.25rem 0 0;">
         <!-- 拖曳把手標題列 -->
         <div id="doc-float-header"
              class="bg-slate-800 text-white flex items-center gap-3 px-4 py-3 shrink-0 select-none"
