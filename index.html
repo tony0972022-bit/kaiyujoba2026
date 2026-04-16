@@ -3131,7 +3131,7 @@
                     renderDistrictOptions();
                     loadCases();
                     vCurrentUid = user.uid; // 成效驗收模組同步用
-                    vLoadFromFirestore().then(() => { if (currentModule === 'verify') { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); } });
+                    vLoadFromFirestore().then(() => { migrateElderItemsToUnit(); if (currentModule === 'verify') { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); } });
                     initModuleTabs(); // 顯示功能模組切換列
                 } else {
                     overlay.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
@@ -8804,7 +8804,7 @@ ${rawDraft}
         // 🆕 成效驗收 模組 (v4)
         // ================================================================
         const VERIFY_KEY = 'verify_data_v3';
-        let verifyData = { cases: [] };
+        let verifyData = { cases: [], unitItems: {} };
         let currentVerifyCaseId = null;
         let vSelectedIds = new Set();
 
@@ -8840,12 +8840,12 @@ ${rawDraft}
                 if (!raw) raw = localStorage.getItem('verify_data_v2');
                 if (raw) verifyData = JSON.parse(raw);
                 if (!Array.isArray(verifyData.cases)) verifyData.cases = [];
+                if (!verifyData.unitItems || typeof verifyData.unitItems !== 'object') verifyData.unitItems = {};
                 verifyData.cases.forEach(c => {
                     if (!c.contactPerson) c.contactPerson = '';
                     if (!c.year) c.year = '';
                     if (Array.isArray(c.items)) {
                         c.items.forEach(item => {
-                            // 從舊的單一 improvement 字串遷移
                             if (!Array.isArray(item.improvements)) {
                                 if (item.improvement && IMPROVEMENT_TYPES.includes(item.improvement))
                                     item.improvements = [{ type: item.improvement, percentage: '' }];
@@ -8856,7 +8856,15 @@ ${rawDraft}
                         });
                     }
                 });
-            } catch(e) { verifyData = { cases: [] }; }
+                // 確保 unitItems 內每個品項格式完整
+                Object.values(verifyData.unitItems).forEach(ui => {
+                    (ui.items || []).forEach(item => {
+                        if (!Array.isArray(item.improvements)) item.improvements = [];
+                        if (!Array.isArray(item.photos)) item.photos = [];
+                        if (!Array.isArray(item.assignedCaseIds)) item.assignedCaseIds = [];
+                    });
+                });
+            } catch(e) { verifyData = { cases: [], unitItems: {} }; }
         }
 
         function saveVerifyData() {
@@ -8904,19 +8912,39 @@ ${rawDraft}
             if (!vCurrentUid || !db) return;
             try {
                 const snap = await getDocs(collection(db, 'users', vCurrentUid, 'verifyCases'));
-                if (snap.empty) return;
-                snap.forEach(d => {
-                    const data = d.data();
-                    if (Array.isArray(data.items)) {
-                        data.items.forEach(item => {
-                            if (!Array.isArray(item.improvements)) item.improvements = [];
-                            if (!Array.isArray(item.photos)) item.photos = [];
+                if (!snap.empty) {
+                    snap.forEach(d => {
+                        const data = d.data();
+                        if (Array.isArray(data.items)) {
+                            data.items.forEach(item => {
+                                if (!Array.isArray(item.improvements)) item.improvements = [];
+                                if (!Array.isArray(item.photos)) item.photos = [];
+                            });
+                        }
+                        const idx = verifyData.cases.findIndex(c => c.id === data.id);
+                        if (idx >= 0) verifyData.cases[idx] = data;
+                        else verifyData.cases.push(data);
+                    });
+                }
+                // 同步載入單位品項
+                try {
+                    const uiSnap = await getDocs(collection(db, 'users', vCurrentUid, 'unitItemsData'));
+                    if (!uiSnap.empty) {
+                        uiSnap.forEach(d => {
+                            const data = d.data();
+                            if (data.unitKey && Array.isArray(data.items)) {
+                                verifyData.unitItems[data.unitKey] = {
+                                    items: data.items.map(item => ({
+                                        ...item,
+                                        improvements: item.improvements || [],
+                                        photos: item.photos || [],
+                                        assignedCaseIds: item.assignedCaseIds || []
+                                    }))
+                                };
+                            }
                         });
                     }
-                    const idx = verifyData.cases.findIndex(c => c.id === data.id);
-                    if (idx >= 0) verifyData.cases[idx] = data;
-                    else verifyData.cases.push(data);
-                });
+                } catch(e2) { console.warn('loadUnitItems', e2); }
                 try { localStorage.setItem(VERIFY_KEY, JSON.stringify(verifyData)); } catch(e) {}
             } catch(e) { console.warn('vLoadFromFirestore', e); }
         }
@@ -9046,7 +9074,7 @@ ${rawDraft}
             this.value = '';
         });
 
-        // ---- Excel 匯入：中高勞通 (工作表7)  ★ 合併覆蓋，不清除現場已填資料 ----
+        // ---- Excel 匯入：中高勞通 (工作表7)  ★ 品項寫入 unitItems，案件基本資料合併覆蓋 ----
         document.getElementById('v-import-elder').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -9061,8 +9089,8 @@ ${rawDraft}
                     if (!ws) throw new Error('找不到「工作表7」');
                     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
                     if (rows.length < 2) throw new Error('工作表為空');
-                    // 品項欄起始 col = 36
                     const itemCol = 36;
+                    if (!verifyData.unitItems) verifyData.unitItems = {};
                     let count = 0;
                     for (let r = 1; r < rows.length; r++) {
                         const row = rows[r];
@@ -9081,7 +9109,8 @@ ${rawDraft}
                         const recyclable    = String(row[itemCol+6]  || '').trim();
                         const subsidyCategory = String(row[itemCol+7]|| '').trim();
                         if (!caseNo && !clientName) continue;
-                        // ★ 中高勞通：以 caseNo + clientName 定位，不刪現有資料
+
+                        // ── 更新/新建個案基本資料（不碰品項）──
                         let existing = verifyData.cases.find(c =>
                             c.category === '中高勞通' && c.year === year && c.caseNo === caseNo && c.clientName === clientName
                         );
@@ -9099,23 +9128,37 @@ ${rawDraft}
                             if (contactPerson) existing.contactPerson = contactPerson;
                             if (unitPhone)     existing.unitPhone     = unitPhone;
                         }
+
+                        // ── 品項寫入 unitItems（以 unitKey 為鍵）──
                         if (!itemName) continue;
-                        // ★ 中高勞通品項為單位共用：同 caseNo 下找到或新建品項
-                        let item = existing.items.find(i => i.name === itemName);
-                        if (!item) {
-                            item = { name: itemName, improvements: [], feedback: '', photos: [],
-                                     workStation: '', sharedUsers: '' };
-                            existing.items.push(item);
+                        const uk = getUnitKey(existing);
+                        if (!verifyData.unitItems[uk]) verifyData.unitItems[uk] = { items: [] };
+                        const unitItemsList = verifyData.unitItems[uk].items;
+                        let uItem = unitItemsList.find(i => i.name === itemName);
+                        if (!uItem) {
+                            uItem = {
+                                name: itemName, improvements: [], feedback: '', photos: [],
+                                workStation: '', sharedUsers: '', assignedCaseIds: []
+                            };
+                            unitItemsList.push(uItem);
                         }
-                        if (itemUnit)       item.itemUnit       = itemUnit;
-                        if (unitPrice)      item.unitPrice      = unitPrice;
-                        if (quantity)       item.quantity       = quantity;
-                        if (appliedAmount)  item.appliedAmount  = appliedAmount;
-                        if (approvedAmount) item.approvedAmount = approvedAmount;
-                        if (recyclable)     item.recyclable     = recyclable;
-                        if (subsidyCategory) item.subsidyCategory = subsidyCategory;
+                        // 覆蓋財務欄位（Excel 有值才更新，保留現場填寫的 workStation/sharedUsers/improvements 等）
+                        if (itemUnit)        uItem.itemUnit        = itemUnit;
+                        if (unitPrice)       uItem.unitPrice       = unitPrice;
+                        if (quantity)        uItem.quantity        = quantity;
+                        if (appliedAmount)   uItem.appliedAmount   = appliedAmount;
+                        if (approvedAmount)  uItem.approvedAmount  = approvedAmount;
+                        if (recyclable)      uItem.recyclable      = recyclable;
+                        if (subsidyCategory) uItem.subsidyCategory = subsidyCategory;
                     }
+
+                    // 同步所有新建/更新的 unitItems 到 Firestore
+                    const updatedKeys = [...new Set(
+                        verifyData.cases.filter(c=>c.category==='中高勞通'&&c.year===year).map(getUnitKey)
+                    )];
                     saveVerifyData();
+                    updatedKeys.forEach(uk => saveUnitItems(uk));
+
                     statusEl.textContent = `中高勞通清單已更新${year ? `（${year}）` : ''}，共 ${verifyData.cases.filter(c=>c.category==='中高勞通'&&c.year===year).length} 筆`;
                     if (currentModule === 'verify') { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); }
                     showToast('中高勞通成效清單匯入完成');
@@ -9301,6 +9344,7 @@ ${rawDraft}
                             </div>
                             <div class="flex flex-col items-end gap-1 shrink-0">
                                 <span class="text-xs text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded font-bold">${group.cases.length} 人</span>
+                                <button onclick="event.stopPropagation(); window.vOpenUnitItems('${key}')" class="text-xs bg-amber-500 hover:bg-amber-600 text-white px-2 py-0.5 rounded font-bold transition-colors"><i class="fa-solid fa-boxes-stacked mr-0.5"></i>品項</button>
                                 <button onclick="event.stopPropagation(); window.vExportUnitExcel('${key}')" class="text-xs bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-0.5 rounded font-bold transition-colors"><i class="fa-solid fa-file-excel mr-0.5"></i>匯出</button>
                             </div>
                         </div>
@@ -9364,7 +9408,20 @@ ${rawDraft}
             const statusColor = { pending: 'text-slate-600 bg-slate-100', inProgress: 'text-blue-700 bg-blue-100', closed: 'text-emerald-700 bg-emerald-100' };
             const catColor    = { '身障': 'text-purple-700 bg-purple-100', '中高勞通': 'text-amber-800 bg-amber-100' };
 
-            const itemsHtml = c.items.length === 0
+            // ── 中高勞通：品項改為單位層級，顯示導向按鈕 ──
+            const _unitKey = getUnitKey(c);
+            const _unitItemCount = getUnitItemsList(_unitKey).length;
+            const itemsHtml = c.category === '中高勞通'
+                ? `<div class="bg-amber-50 rounded-2xl border border-amber-200 p-5 text-center">
+                    <i class="fa-solid fa-boxes-stacked text-amber-400 text-3xl mb-3"></i>
+                    <p class="font-bold text-amber-900 mb-1">品項由單位統一管理</p>
+                    <p class="text-sm text-amber-700 mb-4">共 ${_unitItemCount} 個補助品項，包含工作站指派、改善效益與回饋紀錄</p>
+                    <button onclick="window.vOpenUnitItems('${_unitKey}')"
+                            class="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-colors active:scale-95 flex items-center gap-2 mx-auto">
+                        <i class="fa-solid fa-boxes-stacked"></i> 前往單位品項管理
+                    </button>
+                   </div>`
+                : c.items.length === 0
                 ? '<div class="text-center text-slate-400 py-8 bg-white rounded-2xl border border-slate-200">此案件無補助品項資料</div>'
                 : c.items.map((item, idx) => {
                     const photoHtml = (item.photos || []).map(p => {
@@ -9640,17 +9697,28 @@ ${rawDraft}
         };
 
         window.vExportUnitExcel = function(unitKey) {
-            const unitCases = verifyData.cases.filter(c => c.category === '中高勞通' && (c.year||'') + '_' + (c.caseNo || c.unit || '') === unitKey);
+            const unitCases = verifyData.cases.filter(c => c.category === '中高勞通' && getUnitKey(c) === unitKey);
             if (unitCases.length === 0) return;
+            const unitItems = getUnitItemsList(unitKey);
             const wb = XLSX.utils.book_new();
             const header = ['姓名', '申請補助項目', '單位', '單價', '數量', '申請金額', '核准金額',
                             '是否回收', '補助分類', '工作站別', '共用人',
                             ...IMPROVEMENT_TYPES, '整體改善比例', '使用回饋', '驗收日期'];
             const rows = [];
-            unitCases.forEach(c => {
-                c.items.forEach(item => {
-                    const typeVals = IMPROVEMENT_TYPES.map(t => { const imp = (item.improvements || []).find(i => i.type === t); return imp ? (imp.percentage || '✓') : ''; });
-                    const pcts = (item.improvements || []).filter(i => i.percentage).map(i => i.percentage);
+            unitItems.forEach(item => {
+                // Determine which cases this item is assigned to (fallback: all unit cases)
+                const assignedIds = item.assignedCaseIds && item.assignedCaseIds.length > 0
+                    ? item.assignedCaseIds
+                    : unitCases.map(c => c.id);
+                const assignedCases = assignedIds
+                    .map(id => verifyData.cases.find(c => c.id === id))
+                    .filter(Boolean);
+                const typeVals = IMPROVEMENT_TYPES.map(t => {
+                    const imp = (item.improvements || []).find(i => i.type === t);
+                    return imp ? (imp.percentage || '✓') : '';
+                });
+                const pcts = (item.improvements || []).filter(i => i.percentage).map(i => i.percentage);
+                assignedCases.forEach(c => {
                     rows.push([
                         c.clientName,
                         item.name, item.itemUnit||'', item.unitPrice||'', item.quantity||'',
@@ -10465,6 +10533,306 @@ ${rawDraft}
             document.getElementById('verify-main').classList.remove('hidden');
             document.getElementById('verify-schedule')?.classList.add('hidden');
             vUpdateSubTabsUI('main');
+        };
+
+        // ================================================================
+        // 🆕 中高勞通 單位品項管理 (Unit Items)
+        // ================================================================
+
+        // ---- 工具 ----
+        function getUnitKey(c) { return (c.year||'')+'_'+(c.caseNo||c.unit||''); }
+        function safeUnitKeyForDb(k) { return k.replace(/[^a-zA-Z0-9_-]/g,'_'); }
+        function getUnitItemsList(uk) { return ((verifyData.unitItems||{})[uk]?.items)||[]; }
+        function getUnitCasesForKey(uk) { return verifyData.cases.filter(c=>c.category==='中高勞通'&&getUnitKey(c)===uk); }
+
+        // ---- Firestore 儲存（單位品項）----
+        function saveUnitItems(uk) {
+            if (!verifyData.unitItems) verifyData.unitItems = {};
+            try { localStorage.setItem(VERIFY_KEY, JSON.stringify(verifyData)); } catch(e) {}
+            _syncUnitItemsFS(uk);
+        }
+        async function _syncUnitItemsFS(uk) {
+            if (!vCurrentUid || !db) return;
+            try {
+                const items = getUnitItemsList(uk).map(item => ({
+                    ...item,
+                    photos: (item.photos||[]).map(p=>({id:p.id,filename:p.filename,url:p.url||''}))
+                }));
+                await setDoc(doc(db,'users',vCurrentUid,'unitItemsData',safeUnitKeyForDb(uk)),
+                    {unitKey:uk, items}, {merge:true});
+            } catch(e) { console.warn('syncUnitItems',e); }
+        }
+
+        // ---- 資料遷移：舊品項（在各個案上）→ 新品項（在單位層級）----
+        function migrateElderItemsToUnit() {
+            if (!verifyData.unitItems) verifyData.unitItems = {};
+            const elderCases = verifyData.cases.filter(c=>c.category==='中高勞通');
+            const keys = [...new Set(elderCases.map(getUnitKey))];
+            let migrated = false;
+            keys.forEach(uk => {
+                if ((verifyData.unitItems[uk]?.items||[]).length > 0) return;
+                const uCases = elderCases.filter(c=>getUnitKey(c)===uk);
+                const hasItems = uCases.some(c=>(c.items||[]).length>0);
+                if (!hasItems) return;
+                const allNames = [...new Set(uCases.flatMap(c=>(c.items||[]).map(i=>i.name).filter(Boolean)))];
+                const merged = allNames.map(name => {
+                    const insts = uCases.flatMap(c=>(c.items||[]).filter(i=>i.name===name));
+                    const first = insts[0]||{};
+                    const impMap = new Map();
+                    insts.forEach(it=>(it.improvements||[]).forEach(imp=>{ if(!impMap.has(imp.type)) impMap.set(imp.type,imp); }));
+                    const seen=new Set();
+                    const photos = insts.flatMap(it=>it.photos||[]).filter(p=>{ if(seen.has(p.id)) return false; seen.add(p.id); return true; });
+                    return {
+                        name,
+                        itemUnit:first.itemUnit||'', unitPrice:first.unitPrice||'', quantity:first.quantity||'',
+                        appliedAmount:first.appliedAmount||'', approvedAmount:first.approvedAmount||'',
+                        recyclable:first.recyclable||'', subsidyCategory:first.subsidyCategory||'',
+                        workStation:first.workStation||'', sharedUsers:first.sharedUsers||'',
+                        improvements:[...impMap.values()],
+                        feedback: insts.find(it=>it.feedback)?.feedback||'',
+                        photos,
+                        assignedCaseIds: uCases.map(c=>c.id)
+                    };
+                });
+                verifyData.unitItems[uk] = { items: merged };
+                uCases.forEach(c=>{ c.items=[]; });
+                migrated = true;
+            });
+            if (migrated) {
+                try { localStorage.setItem(VERIFY_KEY, JSON.stringify(verifyData)); } catch(e) {}
+                keys.forEach(uk=>{ if((verifyData.unitItems[uk]?.items||[]).length>0) _syncUnitItemsFS(uk); });
+                vSyncAllToFirestore();
+            }
+        }
+
+        // ---- 單位品項管理頁 ----
+        window.vOpenUnitItems = function(unitKey) {
+            const uCases = getUnitCasesForKey(unitKey);
+            if (uCases.length === 0) return;
+            const ref = uCases[0];
+            const items = getUnitItemsList(unitKey);
+
+            document.getElementById('verify-main').classList.add('hidden');
+            document.getElementById('verify-schedule')?.classList.add('hidden');
+            document.getElementById('v-sub-tabs')?.classList.add('hidden');
+            document.getElementById('verify-detail').classList.remove('hidden');
+            currentVerifyCaseId = null;
+
+            // 更新頂列
+            const titleEl = document.getElementById('v-detail-title');
+            if (titleEl) titleEl.textContent = ref.unit || '單位品項管理';
+
+            function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+
+            // ---- 建立品項卡片 HTML ----
+            const itemsHtml = items.length === 0
+                ? `<div class="text-center text-slate-400 py-10">
+                    <i class="fa-solid fa-box-open text-3xl mb-3 text-slate-300"></i>
+                    <p class="font-bold">此單位尚無品項資料</p>
+                    <p class="text-sm mt-1">請先匯入中高勞通成效清單 Excel</p>
+                   </div>`
+                : items.map((item, idx) => {
+                    // 財務標籤
+                    const finTags = [
+                        item.itemUnit       ? `<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">${escH(item.itemUnit)}</span>` : '',
+                        item.quantity       ? `<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">× ${escH(item.quantity)}</span>` : '',
+                        item.unitPrice      ? `<span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">單價 ${escH(item.unitPrice)}</span>` : '',
+                        item.approvedAmount ? `<span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">核准 ${escH(item.approvedAmount)}</span>` : (item.appliedAmount ? `<span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">申請 ${escH(item.appliedAmount)}</span>` : ''),
+                        item.recyclable     ? `<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">回收：${escH(item.recyclable)}</span>` : '',
+                        item.subsidyCategory ? `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">${escH(item.subsidyCategory)}</span>` : '',
+                    ].filter(Boolean).join('');
+
+                    // 照片
+                    const photoHtml = (item.photos||[]).map(p => {
+                        const src = vGetPhotoData(p.id)||p.url||'';
+                        return src ? `<div class="relative w-20 h-20 shrink-0"><img src="${src}" class="w-full h-full object-cover rounded-lg border border-slate-200"><button onclick="window.vDeleteUnitItemPhoto('${escH(unitKey)}',${idx},'${p.id}')" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full text-xs flex items-center justify-center hover:bg-red-600 font-bold">×</button></div>` : '';
+                    }).join('');
+
+                    // 個案勾選
+                    const caseChecks = uCases.map(c => {
+                        const assigned = (item.assignedCaseIds||[]).includes(c.id);
+                        return `<label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer text-sm font-medium transition-colors ${assigned ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-slate-50 border-slate-200 text-slate-500'}">
+                            <input type="checkbox" class="w-4 h-4 accent-amber-600 shrink-0" ${assigned?'checked':''} onchange="window.vToggleItemCase('${escH(unitKey)}',${idx},'${c.id}',this.checked)">
+                            ${escH(c.clientName||'（無姓名）')}
+                        </label>`;
+                    }).join('');
+
+                    // 改善效益
+                    const impRows = IMPROVEMENT_TYPES.map(type => {
+                        const imp = (item.improvements||[]).find(i=>i.type===type);
+                        return `<div class="flex items-center gap-2 px-3 py-2 rounded-lg border ${imp?'bg-purple-50 border-purple-200':'bg-slate-50 border-slate-200'}">
+                            <input type="checkbox" class="w-4 h-4 accent-purple-600 shrink-0 cursor-pointer" ${imp?'checked':''} onchange="window.vToggleUnitItemImp('${escH(unitKey)}',${idx},'${type}',this.checked)">
+                            <span class="text-sm text-slate-700 flex-1">${type}</span>
+                            ${imp ? `<select class="text-xs border border-purple-300 rounded-lg p-1.5 bg-white focus:ring-1 focus:ring-purple-400" onchange="window.vSetUnitItemImpPct('${escH(unitKey)}',${idx},'${type}',this.value)">${IMPROVEMENT_PERCENTAGES.map(p=>`<option value="${p}" ${imp.percentage===p?'selected':''}>${p}</option>`).join('')}</select>` : `<span class="text-xs text-slate-300 mr-1">未勾選</span>`}
+                        </div>`;
+                    }).join('');
+
+                    return `<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+                        <!-- 品項標題 -->
+                        <div class="flex items-start gap-2 mb-3">
+                            <i class="fa-solid fa-box-open text-amber-400 text-base shrink-0 mt-0.5"></i>
+                            <div class="flex-1 min-w-0">
+                                <span class="font-bold text-slate-800 text-base">${escH(item.name||'（未命名）')}</span>
+                                ${finTags ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${finTags}</div>` : ''}
+                            </div>
+                            <span class="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded shrink-0">品項 ${idx+1}/${items.length}</span>
+                        </div>
+                        <!-- 工作站 + 共用人 -->
+                        <div class="grid grid-cols-2 gap-3 mb-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                            <div>
+                                <label class="block text-xs font-bold text-amber-700 mb-1"><i class="fa-solid fa-location-pin text-amber-400 mr-1"></i>工作站別</label>
+                                <input type="text" class="w-full p-2.5 border border-amber-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-400"
+                                       placeholder="例：作業台A" value="${escH(item.workStation||'')}"
+                                       onchange="window.vSetUnitItemWS('${escH(unitKey)}',${idx},this.value)">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-amber-700 mb-1"><i class="fa-solid fa-users text-amber-400 mr-1"></i>共用人數</label>
+                                <input type="text" class="w-full p-2.5 border border-amber-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-400"
+                                       placeholder="例：3人" value="${escH(item.sharedUsers||'')}"
+                                       onchange="window.vSetUnitItemSU('${escH(unitKey)}',${idx},this.value)">
+                            </div>
+                        </div>
+                        <!-- 誰用了這個品項 -->
+                        <div class="mb-3">
+                            <label class="block text-xs font-bold text-slate-500 mb-2"><i class="fa-solid fa-user-check text-slate-300 mr-1"></i>誰使用了這個品項</label>
+                            <div class="flex flex-wrap gap-2">${caseChecks}</div>
+                        </div>
+                        <!-- 改善效益 -->
+                        <div class="mb-3">
+                            <label class="block text-xs font-bold text-slate-500 mb-2">品項改善效益（可複選）</label>
+                            <div class="space-y-1.5">${impRows}</div>
+                        </div>
+                        <!-- 回饋文字 -->
+                        <div class="mb-3">
+                            <label class="block text-xs font-bold text-slate-500 mb-1.5">使用回饋 / 現場紀錄</label>
+                            <textarea class="w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400 resize-y" rows="2"
+                                      placeholder="記錄使用者的實際回饋、現場觀察..."
+                                      onchange="window.vSetUnitItemFeedback('${escH(unitKey)}',${idx},this.value)">${escH(item.feedback||'')}</textarea>
+                        </div>
+                        <!-- 照片 -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-2">品項照片</label>
+                            <div class="flex flex-wrap gap-2 items-start">
+                                ${photoHtml}
+                                <button onclick="window.vTakeUnitItemPhoto('${escH(unitKey)}',${idx})"
+                                        class="w-20 h-20 bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-500 transition-colors cursor-pointer shrink-0">
+                                    <i class="fa-solid fa-camera text-xl"></i><span class="text-xs mt-1">拍照</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+
+            document.getElementById('v-detail-content').innerHTML = `
+                <div class="bg-amber-50 rounded-2xl border border-amber-200 p-4 mb-1">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <div>
+                            <p class="font-bold text-amber-900 text-base">${escH(ref.unit||'（無單位名稱）')}</p>
+                            <p class="text-xs text-amber-700 mt-0.5">${escH(ref.year||'')} ${escH(ref.caseNo||'')} ・ ${uCases.length} 人</p>
+                        </div>
+                        ${ref.contactPerson||ref.unitPhone ? `<div class="text-sm text-amber-800 ml-auto flex items-center gap-3 flex-wrap">
+                            ${ref.contactPerson ? `<span><i class="fa-solid fa-user text-amber-400 mr-1"></i>${escH(ref.contactPerson)}</span>` : ''}
+                            ${ref.unitPhone ? `<a href="tel:${escH(ref.unitPhone)}" class="text-emerald-700 font-bold flex items-center gap-1"><i class="fa-solid fa-phone text-emerald-400 text-xs"></i>${escH(ref.unitPhone)}</a>` : ''}
+                        </div>` : ''}
+                    </div>
+                    <!-- 個案狀態一覽 -->
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        ${uCases.map(c => {
+                            const sc = {pending:'bg-slate-100 text-slate-600', inProgress:'bg-blue-100 text-blue-700', closed:'bg-emerald-100 text-emerald-700'};
+                            const sl = {pending:'未驗收', inProgress:'進行中', closed:'結案'};
+                            return `<button onclick="window.vOpenCase('${c.id}')"
+                                class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-200 bg-white text-xs font-bold text-amber-800 hover:bg-amber-100 active:scale-95 transition-colors">
+                                ${escH(c.clientName||'（無姓名）')}
+                                <span class="px-1.5 py-0.5 rounded text-xs ${sc[c.status]||''}">${sl[c.status]||''}</span>
+                            </button>`;
+                        }).join('')}
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h3 class="font-bold text-slate-700 text-base flex items-center gap-2 mt-4">
+                        <i class="fa-solid fa-boxes-stacked text-amber-500 text-lg"></i> 補助品項（共 ${items.length} 項）
+                    </h3>
+                    ${itemsHtml}
+                </div>
+            `;
+        };
+
+        // ---- 品項動作（workStation / sharedUsers / improvements / feedback / photos / caseAssign）----
+        window.vSetUnitItemWS = function(uk, idx, v) {
+            const items = getUnitItemsList(uk);
+            if (items[idx]) { items[idx].workStation = v; saveUnitItems(uk); }
+        };
+        window.vSetUnitItemSU = function(uk, idx, v) {
+            const items = getUnitItemsList(uk);
+            if (items[idx]) { items[idx].sharedUsers = v; saveUnitItems(uk); }
+        };
+        window.vToggleUnitItemImp = function(uk, idx, type, checked) {
+            const items = getUnitItemsList(uk);
+            if (!items[idx]) return;
+            if (!Array.isArray(items[idx].improvements)) items[idx].improvements = [];
+            if (checked) {
+                if (!items[idx].improvements.find(i=>i.type===type))
+                    items[idx].improvements.push({ type, percentage: IMPROVEMENT_PERCENTAGES[0] });
+            } else {
+                items[idx].improvements = items[idx].improvements.filter(i=>i.type!==type);
+            }
+            saveUnitItems(uk);
+            window.vOpenUnitItems(uk);
+        };
+        window.vSetUnitItemImpPct = function(uk, idx, type, pct) {
+            const items = getUnitItemsList(uk);
+            if (!items[idx]) return;
+            const imp = (items[idx].improvements||[]).find(i=>i.type===type);
+            if (imp) { imp.percentage = pct; saveUnitItems(uk); }
+        };
+        window.vSetUnitItemFeedback = function(uk, idx, v) {
+            const items = getUnitItemsList(uk);
+            if (items[idx]) { items[idx].feedback = v; saveUnitItems(uk); }
+        };
+        window.vToggleItemCase = function(uk, itemIdx, caseId, checked) {
+            const items = getUnitItemsList(uk);
+            if (!items[itemIdx]) return;
+            if (!Array.isArray(items[itemIdx].assignedCaseIds)) items[itemIdx].assignedCaseIds = [];
+            if (checked) {
+                if (!items[itemIdx].assignedCaseIds.includes(caseId)) items[itemIdx].assignedCaseIds.push(caseId);
+            } else {
+                items[itemIdx].assignedCaseIds = items[itemIdx].assignedCaseIds.filter(id=>id!==caseId);
+            }
+            saveUnitItems(uk);
+        };
+        window.vTakeUnitItemPhoto = function(uk, idx) {
+            const input = document.createElement('input');
+            input.type='file'; input.accept='image/*'; input.capture='environment';
+            input.onchange = async function() {
+                const file = input.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async function(ev) {
+                    const compressed = await vCompressPhoto(ev.target.result, 800, 0.75);
+                    const photoId = 'up_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
+                    const items = getUnitItemsList(uk);
+                    if (!items[idx]) return;
+                    const uCases = getUnitCasesForKey(uk);
+                    const ref = uCases[0]||{};
+                    const fn = `${ref.unit||'單位'}_品項${idx+1}_${photoId.slice(-4)}.jpg`;
+                    items[idx].photos = items[idx].photos||[];
+                    items[idx].photos.push({ id:photoId, filename:fn, url:'' });
+                    vSavePhotoData(photoId, compressed);
+                    saveUnitItems(uk);
+                    window.vOpenUnitItems(uk);
+                    showToast('照片已儲存');
+                };
+                reader.readAsDataURL(file);
+            };
+            input.click();
+        };
+        window.vDeleteUnitItemPhoto = function(uk, idx, photoId) {
+            const items = getUnitItemsList(uk);
+            if (!items[idx]) return;
+            items[idx].photos = (items[idx].photos||[]).filter(p=>p.id!==photoId);
+            vDeletePhotoData(photoId);
+            saveUnitItems(uk);
+            window.vOpenUnitItems(uk);
+            showToast('照片已刪除');
         };
 
     </script>
