@@ -10771,11 +10771,53 @@ ${rawDraft}
         }
 
         // ---- 單位品項管理頁 ----
+        window._unitItemsManage = window._unitItemsManage || {};   // { uk: bool }
+        window._unitItemsSelected = window._unitItemsSelected || {}; // { uk: Set<idx> }
+
+        window.vToggleUnitItemManage = function(uk) {
+            window._unitItemsManage[uk] = !window._unitItemsManage[uk];
+            if (!window._unitItemsManage[uk]) window._unitItemsSelected[uk] = new Set();
+            window.vOpenUnitItems(uk);
+        };
+        window.vSelectAllUnitItems = function(uk, all) {
+            const items = getUnitItemsList(uk);
+            window._unitItemsSelected[uk] = all ? new Set(items.map((_,i)=>i)) : new Set();
+            window.vOpenUnitItems(uk);
+        };
+        window.vToggleUnitItemSelect = function(uk, idx, checked) {
+            if (!window._unitItemsSelected[uk]) window._unitItemsSelected[uk] = new Set();
+            if (checked) window._unitItemsSelected[uk].add(idx);
+            else window._unitItemsSelected[uk].delete(idx);
+            // 更新計數（不需完整重繪）
+            const countEl = document.getElementById('unit-items-sel-count');
+            if (countEl) countEl.textContent = `已選 ${window._unitItemsSelected[uk].size} / ${getUnitItemsList(uk).length} 項`;
+            const delBtn = document.getElementById('unit-items-del-btn');
+            if (delBtn) {
+                const n = window._unitItemsSelected[uk].size;
+                delBtn.textContent = `刪除選取 (${n})`;
+                delBtn.disabled = n === 0;
+                delBtn.className = `text-xs px-3 py-1.5 rounded-lg font-bold transition-colors ${n>0?'bg-red-500 text-white hover:bg-red-600':'bg-red-100 text-red-300 cursor-not-allowed'}`;
+            }
+        };
+        window.vDeleteSelectedUnitItems = function(uk) {
+            const sel = window._unitItemsSelected[uk];
+            if (!sel || sel.size === 0) return;
+            if (!confirm(`確定刪除選取的 ${sel.size} 個品項？此操作無法還原。`)) return;
+            if (!verifyData.unitItems[uk]) return;
+            verifyData.unitItems[uk].items = verifyData.unitItems[uk].items.filter((_,i) => !sel.has(i));
+            window._unitItemsSelected[uk] = new Set();
+            window._unitItemsManage[uk] = false;
+            saveUnitItems(uk);
+            window.vOpenUnitItems(uk);
+        };
+
         window.vOpenUnitItems = function(unitKey) {
             const uCases = getUnitCasesForKey(unitKey);
             if (uCases.length === 0) return;
             const ref = uCases[0];
             const items = getUnitItemsList(unitKey);
+            const inManageMode = !!window._unitItemsManage[unitKey];
+            const selectedSet = window._unitItemsSelected[unitKey] || new Set();
 
             document.getElementById('verify-main').classList.add('hidden');
             document.getElementById('verify-schedule')?.classList.add('hidden');
@@ -10832,10 +10874,11 @@ ${rawDraft}
                         </div>`;
                     }).join('');
 
-                    return `<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+                    const isSelected = selectedSet.has(idx);
+                    return `<div class="bg-white rounded-2xl border ${inManageMode && isSelected ? 'border-red-400 ring-2 ring-red-200' : 'border-slate-200'} shadow-sm p-4 sm:p-5 transition-all">
                         <!-- 品項標題 -->
                         <div class="flex items-start gap-2 mb-3">
-                            <i class="fa-solid fa-box-open text-amber-400 text-base shrink-0 mt-0.5"></i>
+                            ${inManageMode ? `<input type="checkbox" class="w-5 h-5 accent-red-500 shrink-0 mt-0.5 cursor-pointer" ${isSelected?'checked':''} onchange="window.vToggleUnitItemSelect('${escH(unitKey)}',${idx},this.checked)">` : '<i class="fa-solid fa-box-open text-amber-400 text-base shrink-0 mt-0.5"></i>'}
                             <div class="flex-1 min-w-0">
                                 <span class="font-bold text-slate-800 text-base">${escH(item.name||'（未命名）')}</span>
                                 ${finTags ? `<div class="flex flex-wrap gap-1.5 mt-1.5">${finTags}</div>` : ''}
@@ -10914,9 +10957,26 @@ ${rawDraft}
                     </div>
                 </div>
                 <div class="space-y-4">
-                    <h3 class="font-bold text-slate-700 text-base flex items-center gap-2 mt-4">
-                        <i class="fa-solid fa-boxes-stacked text-amber-500 text-lg"></i> 補助品項（共 ${items.length} 項）
-                    </h3>
+                    <div class="flex items-center gap-2 mt-4">
+                        <h3 class="font-bold text-slate-700 text-base flex items-center gap-2 flex-1">
+                            <i class="fa-solid fa-boxes-stacked text-amber-500 text-lg"></i> 補助品項（共 ${items.length} 項）
+                        </h3>
+                        ${items.length > 0 ? `<button onclick="window.vToggleUnitItemManage('${escH(unitKey)}')"
+                            class="text-xs px-3 py-1.5 rounded-lg font-bold transition-colors shrink-0 ${inManageMode ? 'bg-slate-200 text-slate-700 hover:bg-slate-300' : 'bg-rose-100 text-rose-600 hover:bg-rose-200'}">
+                            ${inManageMode ? '<i class="fa-solid fa-check mr-1"></i>完成' : '<i class="fa-solid fa-trash-can mr-1"></i>管理'}
+                        </button>` : ''}
+                    </div>
+                    ${inManageMode ? `<div class="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
+                        <button onclick="window.vSelectAllUnitItems('${escH(unitKey)}', true)" class="text-xs bg-white border border-slate-300 text-slate-700 px-2.5 py-1.5 rounded-lg font-bold hover:bg-slate-100 shrink-0">全選</button>
+                        <button onclick="window.vSelectAllUnitItems('${escH(unitKey)}', false)" class="text-xs bg-white border border-slate-300 text-slate-600 px-2.5 py-1.5 rounded-lg font-bold hover:bg-slate-100 shrink-0">取消</button>
+                        <span id="unit-items-sel-count" class="text-xs text-slate-500 flex-1">已選 ${selectedSet.size} / ${items.length} 項</span>
+                        <button id="unit-items-del-btn"
+                            onclick="window.vDeleteSelectedUnitItems('${escH(unitKey)}')"
+                            ${selectedSet.size === 0 ? 'disabled' : ''}
+                            class="text-xs px-3 py-1.5 rounded-lg font-bold transition-colors shrink-0 ${selectedSet.size > 0 ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-red-100 text-red-300 cursor-not-allowed'}">
+                            刪除選取 (${selectedSet.size})
+                        </button>
+                    </div>` : ''}
                     ${itemsHtml}
                 </div>
             `;
