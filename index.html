@@ -9356,24 +9356,71 @@ ${rawDraft}
                     </div>`;
                 }).join('');
 
+            const docFile = c.docFile || null;
+            const hasDoc = !!(docFile?.previewUrl);
+
             document.getElementById('v-detail-content').innerHTML = `
-                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                    <div class="flex items-center gap-2 mb-4 flex-wrap">
-                        <span class="text-xs font-bold px-2 py-0.5 rounded ${catColor[c.category] || ''}">${c.category}</span>
-                        <span class="text-xs font-bold px-2 py-0.5 rounded ${statusColor[c.status] || ''}">${statusLabel[c.status] || ''}</span>
-                        ${c.year ? `<span class="text-xs text-slate-400 font-bold">${c.year}</span>` : ''}
-                        ${c.caseNo ? `<span class="text-xs text-slate-400">${c.caseNo}</span>` : ''}
+                <!-- 成效基本資料（可展開/收起） -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+                    <!-- ▸ 標題列（永遠可見）：展開開關 + 狀態標籤 + 預覽按鈕 -->
+                    <div class="px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors select-none"
+                         onclick="(function(){const b=document.getElementById('v-basic-body');const i=document.getElementById('v-basic-chevron');b.classList.toggle('hidden');i.classList.toggle('rotate-180');})()">
+                        <!-- 第一行：折疊圖示 + 標題 + 預覽按鈕 -->
+                        <div class="flex items-center gap-2">
+                            <i id="v-basic-chevron" class="fa-solid fa-chevron-down text-slate-400 text-sm transition-transform shrink-0"></i>
+                            <span class="font-bold text-slate-700 text-sm flex-1">成效基本資料</span>
+                            <!-- 預覽按鈕：永遠在外、不受展開影響 -->
+                            <button onclick="event.stopPropagation(); window.vPreviewDocFloat('${caseId}')"
+                                    class="shrink-0 flex items-center gap-1.5 text-xs font-bold px-2.5 rounded-lg transition-colors
+                                           ${hasDoc ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}"
+                                    style="min-height:34px;"
+                                    title="${hasDoc ? '浮動預覽訪視評估表' : '尚未上傳評估表'}">
+                                <i class="fa-solid ${hasDoc ? 'fa-eye' : 'fa-file-word'} text-xs"></i>
+                                ${hasDoc ? '預覽評估表' : '未上傳'}
+                            </button>
+                        </div>
+                        <!-- 第二行：類別 + 狀態 + 年度 -->
+                        <div class="flex items-center gap-2 mt-1.5 ml-5">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded ${catColor[c.category] || ''}">${c.category}</span>
+                            <span class="text-xs font-bold px-2 py-0.5 rounded ${statusColor[c.status] || ''}">${statusLabel[c.status] || ''}</span>
+                            ${c.year ? `<span class="text-xs text-slate-400 font-bold">${c.year}</span>` : ''}
+                        </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">單位名稱</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unit" value="${(c.unit||'').replace(/"/g,'&quot;')}"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">聯繫窗口</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="contactPerson" value="${(c.contactPerson||'').replace(/"/g,'&quot;')}"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">單位電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unitPhone" value="${(c.unitPhone||'').replace(/"/g,'&quot;')}"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">個案姓名</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientName" value="${(c.clientName||'').replace(/"/g,'&quot;')}"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">個案電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientPhone" placeholder="個案手機或市話" value="${(c.clientPhone||'').replace(/"/g,'&quot;')}"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 mb-1">地址</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="address" placeholder="單位或個案地址" value="${(c.address||'').replace(/"/g,'&quot;')}"></div>
-                        <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">成效驗收日 <span class="text-purple-500">=</span> 結案日</label><input type="date" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="verificationDate" value="${c.verificationDate||''}"></div>
+
+                    <!-- ▸ 可收起區域 -->
+                    <div id="v-basic-body" class="px-3 pb-4 sm:px-5 sm:pb-5 border-t border-slate-100">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">單位名稱</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unit" value="${(c.unit||'').replace(/"/g,'&quot;')}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">聯繫窗口</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="contactPerson" value="${(c.contactPerson||'').replace(/"/g,'&quot;')}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">單位電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unitPhone" value="${(c.unitPhone||'').replace(/"/g,'&quot;')}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">個案姓名</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientName" value="${(c.clientName||'').replace(/"/g,'&quot;')}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">個案電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientPhone" placeholder="個案手機或市話" value="${(c.clientPhone||'').replace(/"/g,'&quot;')}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">地址</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="address" placeholder="單位或個案地址" value="${(c.address||'').replace(/"/g,'&quot;')}"></div>
+                            <div class="sm:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">成效驗收日 <span class="text-purple-500">=</span> 結案日</label><input type="date" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="verificationDate" value="${c.verificationDate||''}"></div>
+                        </div>
+
+                        <!-- 訪視評估表上傳區（在基本資料展開內） -->
+                        <div class="mt-4 p-3 rounded-xl border ${hasDoc ? 'border-blue-200 bg-blue-50' : 'border-dashed border-slate-300 bg-slate-50'} flex items-center gap-3 flex-wrap">
+                            <i class="fa-solid fa-file-word ${hasDoc ? 'text-blue-500' : 'text-slate-300'} text-lg shrink-0"></i>
+                            <div class="flex-1 min-w-0" style="min-width:120px;">
+                                ${hasDoc
+                                    ? `<p class="text-sm font-bold text-blue-700 truncate">${(docFile.filename||'').replace(/</g,'&lt;')}</p>
+                                       <p class="text-xs text-slate-400 mt-0.5">上傳於 ${docFile.uploadedAt ? new Date(docFile.uploadedAt).toLocaleDateString('zh-TW') : '未知時間'}</p>`
+                                    : `<p class="text-sm text-slate-500 font-bold">訪視評估表（.docx / .pdf）</p>
+                                       <p class="text-xs text-slate-400 mt-0.5">上傳後可隨時浮動預覽</p>`
+                                }
+                            </div>
+                            <button onclick="window.vTriggerDocUpload('${caseId}')"
+                                    class="shrink-0 ${hasDoc ? 'bg-blue-500 hover:bg-blue-600' : 'bg-purple-500 hover:bg-purple-600'} text-white text-xs font-bold px-3 rounded-lg transition-colors active:scale-95 flex items-center gap-1.5"
+                                    style="min-height:40px;">
+                                <i class="fa-solid ${hasDoc ? 'fa-arrow-up-from-bracket' : 'fa-upload'}"></i>
+                                ${hasDoc ? '重新上傳' : '選擇上傳'}
+                            </button>
+                        </div>
+
+                        <button onclick="window.vSaveBasicInfo()" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-base transition-colors active:scale-[0.98] flex items-center justify-center gap-2" style="min-height:48px;"><i class="fa-solid fa-floppy-disk"></i>儲存基本資料</button>
                     </div>
-                    <button onclick="window.vSaveBasicInfo()" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold text-base transition-colors active:scale-[0.98]"><i class="fa-solid fa-floppy-disk mr-2"></i>儲存基本資料</button>
                 </div>
 
                 <div class="space-y-4">
@@ -9751,62 +9798,68 @@ ${rawDraft}
                 const isFirst = idx === 0, isLast = idx === keys.length - 1;
                 const safeKey = escH(key);
 
-                return `<div class="sched-card bg-white rounded-2xl border border-slate-200 shadow-sm p-4" data-key="${safeKey}">
-                    <div class="flex items-start gap-3">
-                        <div class="sched-drag-handle text-slate-300 hover:text-purple-400 cursor-grab active:cursor-grabbing pt-0.5 text-xl shrink-0 select-none touch-none px-0.5" title="拖曳排序">
+                return `<div class="sched-card bg-white rounded-2xl border border-slate-200 shadow-sm p-3 sm:p-4" data-key="${safeKey}">
+                    <div class="flex items-start gap-2 sm:gap-3">
+                        <!-- 拖曳把手 -->
+                        <div class="sched-drag-handle text-slate-300 hover:text-purple-400 cursor-grab active:cursor-grabbing pt-1 text-xl shrink-0 select-none touch-none px-1" title="拖曳排序" style="min-width:28px;min-height:44px;display:flex;align-items:flex-start;justify-content:center;">
                             <i class="fa-solid fa-grip-vertical"></i>
                         </div>
                         <div class="flex-1 min-w-0 space-y-2.5">
                             <!-- 時間 + 名稱 + 標籤 -->
                             <div class="flex items-center gap-2 flex-wrap">
-                                <input type="time" class="border border-slate-200 rounded-lg px-2 py-1 text-base font-bold text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-400 w-[7.5rem] shrink-0"
+                                <input type="time" class="border border-slate-200 rounded-lg px-2 py-1.5 text-base font-bold text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-400 shrink-0" style="min-width:7rem;width:7.5rem;"
                                        value="${escH(visitTime)}" data-key="${safeKey}"
                                        onchange="window.schedSaveTime('${safeKey}', this.value)">
-                                <span class="font-bold text-slate-800 text-base">${escH(g.name)}</span>
+                                <span class="font-bold text-slate-800 text-base leading-tight">${escH(g.name)}</span>
                                 ${catBadge}
                                 <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">${cnt} 人</span>
                             </div>
                             <!-- 聯繫人 + 電話 -->
-                            ${(g.contactPerson || g.unitPhone) ? `<div class="flex items-center gap-4 flex-wrap text-sm text-slate-500">
+                            ${(g.contactPerson || g.unitPhone) ? `<div class="flex items-center gap-3 flex-wrap text-sm text-slate-500">
                                 ${g.contactPerson ? `<span><i class="fa-solid fa-user text-xs mr-1 text-slate-300"></i>${escH(g.contactPerson)}</span>` : ''}
-                                ${g.unitPhone ? `<a href="tel:${escH(g.unitPhone)}" class="flex items-center gap-1.5 text-emerald-600 font-medium"><i class="fa-solid fa-phone text-xs text-emerald-400"></i>${escH(g.unitPhone)}</a>` : ''}
+                                ${g.unitPhone ? `<a href="tel:${escH(g.unitPhone)}" class="flex items-center gap-1.5 text-emerald-600 font-medium" style="min-height:36px;"><i class="fa-solid fa-phone text-xs text-emerald-400"></i>${escH(g.unitPhone)}</a>` : ''}
                             </div>` : ''}
                             <!-- 地址 -->
                             <div class="flex items-center gap-2">
                                 <i class="fa-solid fa-location-dot text-purple-300 text-sm shrink-0"></i>
-                                <input type="text" class="sched-addr-field flex-1 min-w-0 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400"
+                                <input type="text" class="sched-addr-field flex-1 min-w-0 text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400"
                                        placeholder="輸入地址..." value="${escH(addr)}" data-key="${safeKey}"
                                        oninput="window.schedDebounceSaveAddr('${safeKey}', this.value)">
                                 <button onclick="window.schedCopyAddr('${safeKey}')"
-                                        class="shrink-0 text-slate-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition-colors active:scale-90" title="複製地址，貼到 Google 導航">
-                                    <i class="fa-solid fa-copy text-sm"></i>
+                                        class="shrink-0 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors active:scale-90"
+                                        style="min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;" title="複製地址，貼到 Google 導航">
+                                    <i class="fa-solid fa-copy text-base"></i>
                                 </button>
                             </div>
                             <!-- 備註 -->
                             <div class="flex items-start gap-2">
-                                <i class="fa-solid fa-note-sticky text-slate-300 text-sm shrink-0 mt-2"></i>
-                                <textarea class="sched-notes-field flex-1 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400 resize-none"
+                                <i class="fa-solid fa-note-sticky text-slate-300 text-sm shrink-0 mt-2.5"></i>
+                                <textarea class="sched-notes-field flex-1 text-sm border border-slate-200 rounded-lg px-2.5 py-2 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400 resize-none"
                                           placeholder="備註..." rows="1" data-key="${safeKey}"
                                           oninput="autoResizeTextarea(this); window.schedDebounceSaveNotes('${safeKey}', this.value)">${escH(notes)}</textarea>
                             </div>
                             <!-- 訪視評估表 -->
-                            <div class="flex items-center gap-2 pt-1 border-t border-slate-100 mt-1">
-                                <i class="fa-solid fa-file-word text-blue-400 text-sm shrink-0"></i>
+                            <div class="pt-2 border-t border-slate-100 mt-1">
                                 ${docFile
-                                    ? `<button onclick="window.schedPreviewDoc('${safeKey}')"
-                                              class="flex-1 min-w-0 text-left text-sm text-blue-600 font-medium truncate hover:underline active:opacity-70">
-                                            <i class="fa-solid fa-eye mr-1 text-blue-400 text-xs"></i>${escH(docFile.filename)}
-                                        </button>
-                                        <button onclick="window.schedPreviewDoc('${safeKey}')"
-                                                class="shrink-0 bg-blue-100 hover:bg-blue-200 text-blue-700 text-xs px-2.5 py-1 rounded-lg font-bold transition-colors active:scale-90">
-                                            預覽
-                                        </button>
-                                        <button onclick="window.schedTriggerDocUpload('${safeKey}')"
-                                                class="shrink-0 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors" title="重新上傳">
-                                            <i class="fa-solid fa-arrow-up-from-bracket text-xs"></i>
-                                        </button>`
+                                    ? `<div class="flex items-center gap-2 mb-2">
+                                            <i class="fa-solid fa-file-word text-blue-400 text-sm shrink-0"></i>
+                                            <span class="flex-1 min-w-0 text-sm text-blue-600 font-medium truncate">${escH(docFile.filename)}</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <button onclick="window.schedPreviewDoc('${safeKey}')"
+                                                    class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm rounded-xl font-bold flex items-center justify-center gap-1.5 active:scale-95 transition-colors"
+                                                    style="min-height:40px;">
+                                                <i class="fa-solid fa-eye text-xs"></i> 預覽評估表
+                                            </button>
+                                            <button onclick="window.schedTriggerDocUpload('${safeKey}')"
+                                                    class="shrink-0 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm rounded-xl font-bold flex items-center gap-1.5 px-3 active:scale-95 transition-colors"
+                                                    style="min-height:40px;">
+                                                <i class="fa-solid fa-arrow-up-from-bracket text-xs"></i> 重新上傳
+                                            </button>
+                                        </div>`
                                     : `<button onclick="window.schedTriggerDocUpload('${safeKey}')"
-                                              class="flex-1 text-left text-sm text-slate-400 hover:text-blue-600 transition-colors flex items-center gap-1.5">
+                                              class="w-full border-2 border-dashed border-slate-200 hover:border-blue-300 rounded-xl text-sm text-slate-400 hover:text-blue-600 flex items-center justify-center gap-2 active:scale-95 transition-colors"
+                                              style="min-height:44px;">
                                             <i class="fa-solid fa-upload text-xs"></i>
                                             <span>上傳訪視評估表 (.docx)</span>
                                         </button>`
@@ -9814,14 +9867,16 @@ ${rawDraft}
                             </div>
                         </div>
                         <!-- 上移/下移 -->
-                        <div class="flex flex-col gap-0.5 shrink-0 pt-0.5">
+                        <div class="flex flex-col gap-1 shrink-0 pt-0.5">
                             <button onclick="window.schedMoveUp('${safeKey}')"
-                                    class="p-1.5 rounded-lg transition-colors ${isFirst ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'}"
+                                    class="rounded-lg transition-colors ${isFirst ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'}"
+                                    style="min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;"
                                     ${isFirst ? 'disabled' : ''} title="上移">
                                 <i class="fa-solid fa-chevron-up text-sm"></i>
                             </button>
                             <button onclick="window.schedMoveDown('${safeKey}')"
-                                    class="p-1.5 rounded-lg transition-colors ${isLast ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'}"
+                                    class="rounded-lg transition-colors ${isLast ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'}"
+                                    style="min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;"
                                     ${isLast ? 'disabled' : ''} title="下移">
                                 <i class="fa-solid fa-chevron-down text-sm"></i>
                             </button>
@@ -10009,106 +10064,256 @@ ${rawDraft}
 
         let schedDocUploadKey = '';   // 目前正在上傳的 key
 
-        // 觸發隱藏 file input
+        // 觸發隱藏 file input（行程表卡片）
         window.schedTriggerDocUpload = function(key) {
             schedDocUploadKey = key;
+            _schedDocUploadCaseId = '';
             const inp = document.getElementById('sched-doc-file-input');
             if (inp) { inp.value = ''; inp.click(); }
         };
 
-        // 處理檔案選取後的上傳
+        // 觸發隱藏 file input（詳情頁）
+        let _schedDocUploadCaseId = '';
+        window.vTriggerDocUpload = function(caseId) {
+            _schedDocUploadCaseId = caseId;
+            schedDocUploadKey = '';
+            const inp = document.getElementById('sched-doc-file-input');
+            if (inp) { inp.value = ''; inp.click(); }
+        };
+
+        // 共用上傳處理
         document.getElementById('sched-doc-file-input')?.addEventListener('change', async function(e) {
             const file = e.target.files[0];
-            if (!file || !schedDocUploadKey) return;
-            const key = schedDocUploadKey;
-            schedDocUploadKey = '';
+            if (!file) return;
+            const fromSchedule = !!schedDocUploadKey;
+            const fromDetail   = !!_schedDocUploadCaseId;
+            if (!fromSchedule && !fromDetail) return;
 
-            // 找到對應卡片，顯示上傳中狀態
-            const card = [...document.querySelectorAll('#sched-list .sched-card')]
-                .find(c => c.dataset.key === key);
-            const docRow = card?.querySelector('.fa-file-word')?.closest('.flex');
-            if (docRow) {
-                docRow.innerHTML = `<i class="fa-solid fa-file-word text-blue-400 text-sm shrink-0"></i>
-                    <span class="text-sm text-blue-500 flex items-center gap-1.5">
-                        <i class="fa-solid fa-spinner fa-spin text-xs"></i> 上傳中：${file.name}
-                    </span>`;
+            const key    = schedDocUploadKey;
+            const caseId = _schedDocUploadCaseId;
+            schedDocUploadKey = ''; _schedDocUploadCaseId = '';
+
+            // 行程表卡片：顯示上傳中
+            if (fromSchedule) {
+                const card = [...document.querySelectorAll('#sched-list .sched-card')]
+                    .find(c => c.dataset.key === key);
+                const docRow = card?.querySelector('.fa-file-word')?.closest('.flex');
+                if (docRow) docRow.innerHTML = `<i class="fa-solid fa-file-word text-blue-400 text-sm shrink-0"></i>
+                    <span class="text-sm text-blue-500 flex items-center gap-1.5"><i class="fa-solid fa-spinner fa-spin text-xs"></i> 上傳中：${file.name}</span>`;
+            }
+            // 詳情頁：顯示上傳中
+            if (fromDetail) {
+                const uploadBtn = document.querySelector(`button[onclick*="vTriggerDocUpload"]`);
+                if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 上傳中…'; }
             }
 
             try {
-                const timestamp = Date.now();
-                const safeName = file.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]/g, '_');
-                const uploadName = `評估表_${timestamp}_${safeName}`;
-                const result = await uploadToGoogleDrive(file, uploadName);
-
-                const docFile = {
+                const safeName   = file.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]/g, '_');
+                const uploadName = `評估表_${Date.now()}_${safeName}`;
+                const result     = await uploadToGoogleDrive(file, uploadName);
+                const docFile    = {
                     filename: file.name,
-                    previewUrl: result.previewUrl || result.downloadUrl || '',
-                    downloadUrl: result.downloadUrl || result.previewUrl || '',
-                    uploadedAt: new Date().toISOString()
+                    previewUrl:   result.previewUrl  || result.downloadUrl || '',
+                    downloadUrl:  result.downloadUrl || result.previewUrl  || '',
+                    uploadedAt:   new Date().toISOString()
                 };
 
-                // 儲存到 verifyData.cases（身障：單筆，中高勞通：整個單位）
-                schedGetCasesForKey(key).forEach(c => { c.docFile = docFile; });
-                saveVerifyData();
-                showToast(`✅ 已上傳：${file.name}`);
-                renderScheduleView();
+                if (fromSchedule) {
+                    // 行程表：更新同單位所有案件
+                    schedGetCasesForKey(key).forEach(c => { c.docFile = docFile; });
+                    saveVerifyData();
+                    showToast(`✅ 已上傳：${file.name}`);
+                    renderScheduleView();
+                }
+                if (fromDetail) {
+                    // 詳情頁：更新指定案件（中高勞通整個單位同步）
+                    const c = verifyData.cases.find(x => x.id === caseId);
+                    if (c) {
+                        const unitKey = schedKeyForCase(c);
+                        schedGetCasesForKey(unitKey).forEach(x => { x.docFile = docFile; });
+                    }
+                    saveVerifyData();
+                    showToast(`✅ 已上傳：${file.name}`);
+                    window.vOpenCase(caseId); // 重新渲染詳情頁
+                }
             } catch(err) {
                 showToast(`❌ 上傳失敗：${err.message}`);
-                renderScheduleView();
+                if (fromSchedule) renderScheduleView();
+                if (fromDetail && caseId) window.vOpenCase(caseId);
             }
         });
 
-        // 開啟預覽 Modal
-        window.schedPreviewDoc = function(key) {
-            const repCase = verifyData.cases.find(c => schedKeyForCase(c) === key);
-            const docFile = repCase?.docFile;
-            if (!docFile?.previewUrl) { showToast('找不到檔案連結，請重新上傳'); return; }
+        // ==========================================
+        // 浮動預覽視窗 — 開啟 / 關閉 / 最小化 / 拖曳
+        // ==========================================
 
-            const modal = document.getElementById('sched-doc-modal');
-            const iframe = document.getElementById('sched-doc-iframe');
-            const titleEl = document.getElementById('sched-doc-modal-title');
-            const dlLink = document.getElementById('sched-doc-modal-download');
-            const loading = document.getElementById('sched-doc-loading');
+        let _docFloatMinimized = false;
+        let _docFloatFullH = 560;
 
-            if (!modal || !iframe) return;
+        // 統一入口：傳入 previewUrl / downloadUrl / filename 開啟浮動視窗
+        window.openDocFloatPreview = function(previewUrl, downloadUrl, filename) {
+            if (!previewUrl) { showToast('⚠️ 找不到檔案連結，請重新上傳'); return; }
+            const win   = document.getElementById('doc-float-preview');
+            const iframe = document.getElementById('doc-float-iframe');
+            const titleEl = document.getElementById('doc-float-title');
+            const extLink = document.getElementById('doc-float-ext');
+            const loading = document.getElementById('doc-float-loading');
+            if (!win || !iframe) return;
 
-            // 標題與下載連結
-            if (titleEl) titleEl.textContent = docFile.filename || '訪視評估表';
-            if (dlLink) dlLink.href = docFile.downloadUrl || docFile.previewUrl;
-
-            // 重設載入指示
+            if (titleEl) titleEl.textContent = filename || '訪視評估表';
+            if (extLink) extLink.href = downloadUrl || previewUrl;
             if (loading) loading.style.display = 'flex';
             iframe.src = 'about:blank';
 
-            // Google Docs 嵌入 URL
-            // 若 previewUrl 已是 drive.google.com/file 格式，轉成 /preview 路徑
-            let embedUrl = docFile.previewUrl;
+            // 轉成 Google Docs embed URL
+            let embedUrl = previewUrl;
             if (embedUrl.includes('drive.google.com/file/d/')) {
-                embedUrl = embedUrl.replace(/\/view.*$/, '/preview').replace(/\/edit.*$/, '/preview');
+                embedUrl = embedUrl.replace(/\/view[^/]*$/, '/preview').replace(/\/edit[^/]*$/, '/preview');
+                if (!embedUrl.endsWith('/preview')) embedUrl += '/preview';
             } else if (!embedUrl.includes('/preview') && !embedUrl.includes('docs.google.com/viewer')) {
-                // 使用 Google Docs Viewer 作為備援
                 embedUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(embedUrl)}&embedded=true`;
             }
 
-            modal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-            // 給 iframe 一點時間讓 DOM 渲染完畢再設 src
+            // 還原正常大小（若之前最小化過）
+            _docFloatMinimized = false;
+            win.style.height = _docFloatFullH + 'px';
+            iframe.style.display = '';
+            if (loading) loading.style.display = 'flex';
+            const minIcon = document.querySelector('#doc-float-min-btn i');
+            if (minIcon) minIcon.className = 'fa-solid fa-minus text-xs';
+
+            win.classList.remove('hidden');
             requestAnimationFrame(() => { iframe.src = embedUrl; });
         };
 
-        // 關閉預覽 Modal
-        window.schedCloseDocPreview = function() {
-            const modal = document.getElementById('sched-doc-modal');
-            const iframe = document.getElementById('sched-doc-iframe');
-            if (modal) modal.classList.add('hidden');
-            if (iframe) iframe.src = 'about:blank';
-            document.body.style.overflow = '';
+        // 從行程表卡片呼叫
+        window.schedPreviewDoc = function(key) {
+            const repCase = verifyData.cases.find(c => schedKeyForCase(c) === key);
+            const d = repCase?.docFile;
+            if (!d?.previewUrl) { showToast('⚠️ 尚未上傳評估表，請在案件詳情頁上傳'); return; }
+            window.openDocFloatPreview(d.previewUrl, d.downloadUrl, d.filename);
         };
 
-        // 點擊背景也可關閉
-        document.getElementById('sched-doc-modal')?.addEventListener('click', function(e) {
-            if (e.target === this) window.schedCloseDocPreview();
-        });
+        // 從詳情頁呼叫（傳 caseId）
+        window.vPreviewDocFloat = function(caseId) {
+            const c = verifyData.cases.find(x => x.id === caseId);
+            const d = c?.docFile;
+            if (!d?.previewUrl) { showToast('⚠️ 尚未上傳評估表，請展開基本資料後上傳'); return; }
+            window.openDocFloatPreview(d.previewUrl, d.downloadUrl, d.filename);
+        };
+
+        // 關閉
+        window.docFloatClose = function() {
+            const win = document.getElementById('doc-float-preview');
+            const iframe = document.getElementById('doc-float-iframe');
+            if (win)   win.classList.add('hidden');
+            if (iframe) iframe.src = 'about:blank';
+        };
+
+        // 最小化 / 還原
+        window.docFloatToggleMin = function() {
+            const win   = document.getElementById('doc-float-preview');
+            const iframe = document.getElementById('doc-float-iframe');
+            const loading = document.getElementById('doc-float-loading');
+            const minIcon = document.querySelector('#doc-float-min-btn i');
+            if (!win) return;
+            _docFloatMinimized = !_docFloatMinimized;
+            if (_docFloatMinimized) {
+                _docFloatFullH = win.offsetHeight || 560;
+                win.style.height = '40px';
+                if (iframe) iframe.style.display = 'none';
+                if (loading) loading.style.display = 'none';
+                if (minIcon) minIcon.className = 'fa-solid fa-expand text-xs';
+            } else {
+                win.style.height = _docFloatFullH + 'px';
+                if (iframe) iframe.style.display = '';
+                if (loading) loading.style.display = 'flex';
+                if (minIcon) minIcon.className = 'fa-solid fa-minus text-xs';
+            }
+        };
+
+        // ---- 拖曳（Pointer Events，相容 iPad）----
+        // 手機（寬度 ≤ 520px）為全寬底部浮板，不需要水平拖曳，改為垂直滑動關閉
+        (function initDocFloatDrag() {
+            const header = document.getElementById('doc-float-header');
+            const win    = document.getElementById('doc-float-preview');
+            if (!header || !win) return;
+            let dragging = false, ox = 0, oy = 0;
+            let touchStartY = 0, touchMode = false;
+
+            header.addEventListener('pointerdown', e => {
+                if (e.target.closest('button, a')) return;
+                // 手機模式：僅支援向下滑動收起
+                if (window.innerWidth <= 520) {
+                    touchMode = true;
+                    touchStartY = e.clientY;
+                    header.setPointerCapture(e.pointerId);
+                    return;
+                }
+                e.preventDefault();
+                touchMode = false;
+                // 桌面：轉為 left/top 定位（取消 right/bottom）
+                const r = win.getBoundingClientRect();
+                win.style.right  = 'auto';
+                win.style.bottom = 'auto';
+                win.style.left   = r.left + 'px';
+                win.style.top    = r.top  + 'px';
+                ox = e.clientX - r.left;
+                oy = e.clientY - r.top;
+                dragging = true;
+                header.setPointerCapture(e.pointerId);
+                win.style.userSelect = 'none';
+            });
+            header.addEventListener('pointermove', e => {
+                if (touchMode) return; // 手機模式不做即時移動
+                if (!dragging) return;
+                let l = e.clientX - ox;
+                let t = e.clientY - oy;
+                l = Math.max(0, Math.min(window.innerWidth  - 80, l));
+                t = Math.max(0, Math.min(window.innerHeight - 40, t));
+                win.style.left = l + 'px';
+                win.style.top  = t + 'px';
+            });
+            header.addEventListener('pointerup', e => {
+                if (touchMode) {
+                    touchMode = false;
+                    // 向下滑動超過 60px 則收起（最小化）
+                    if (e.clientY - touchStartY > 60) {
+                        window.docFloatToggleMin();
+                    }
+                    return;
+                }
+                dragging = false;
+                win.style.userSelect = '';
+            });
+            header.addEventListener('pointercancel', () => {
+                touchMode = false;
+                dragging = false;
+                win.style.userSelect = '';
+            });
+        })();
+
+        // ---- 底部拖曳縮放高度 ----
+        (function initDocFloatResize() {
+            const handle = document.getElementById('doc-float-resize');
+            const win    = document.getElementById('doc-float-preview');
+            if (!handle || !win) return;
+            let resizing = false, startY = 0, startH = 0;
+
+            handle.addEventListener('pointerdown', e => {
+                e.preventDefault();
+                resizing = true; startY = e.clientY; startH = win.offsetHeight;
+                handle.setPointerCapture(e.pointerId);
+            });
+            handle.addEventListener('pointermove', e => {
+                if (!resizing) return;
+                const newH = Math.max(160, startH + (e.clientY - startY));
+                win.style.height = newH + 'px';
+                _docFloatFullH = newH;
+            });
+            handle.addEventListener('pointerup',     () => { resizing = false; });
+            handle.addEventListener('pointercancel', () => { resizing = false; });
+        })();
 
         // ---- 子標籤切換 ----
         function vUpdateSubTabsUI(active) {
@@ -10163,43 +10368,54 @@ ${rawDraft}
         </div>
     </div>
 
-    <!-- 訪視評估表文件預覽 Modal -->
-    <div id="sched-doc-modal" class="hidden fixed inset-0 z-[600] flex flex-col"
-         style="background:rgba(0,0,0,0.65)">
-        <!-- 頂部標題列 -->
-        <div class="bg-slate-800 text-white flex items-center gap-3 px-4 py-3 shrink-0">
-            <i class="fa-solid fa-file-word text-blue-400 text-xl shrink-0"></i>
-            <span id="sched-doc-modal-title" class="flex-1 font-bold text-base truncate">訪視評估表</span>
-            <a id="sched-doc-modal-download" href="#" target="_blank"
-               class="text-slate-300 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors text-sm font-bold flex items-center gap-1.5 shrink-0">
-                <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i> 開新頁
+    <!-- 訪視評估表：可拖曳浮動預覽視窗 -->
+    <div id="doc-float-preview"
+         class="hidden fixed z-[600] flex flex-col shadow-2xl border border-slate-300 overflow-hidden bg-white"
+         style="bottom:0; right:0; left:0; width:100%; height:60dvh; border-radius:1.25rem 1.25rem 0 0;">
+        <!-- 拖曳把手標題列 -->
+        <div id="doc-float-header"
+             class="bg-slate-800 text-white flex items-center gap-3 px-4 py-3 shrink-0 select-none"
+             style="cursor:move; min-height:48px;">
+            <i class="fa-solid fa-file-word text-blue-400 text-base shrink-0"></i>
+            <span id="doc-float-title" class="flex-1 text-sm font-bold truncate">訪視評估表</span>
+            <button id="doc-float-min-btn" onclick="window.docFloatToggleMin()"
+                    class="text-slate-300 hover:text-white rounded hover:bg-slate-700 transition-colors shrink-0 flex items-center justify-center"
+                    style="min-width:36px;min-height:36px;" title="最小化/還原">
+                <i class="fa-solid fa-minus text-sm"></i>
+            </button>
+            <a id="doc-float-ext" href="#" target="_blank"
+               class="text-slate-300 hover:text-white rounded hover:bg-slate-700 transition-colors shrink-0 flex items-center justify-center"
+               style="min-width:36px;min-height:36px;" title="開新頁全螢幕">
+                <i class="fa-solid fa-arrow-up-right-from-square text-sm"></i>
             </a>
-            <button onclick="window.schedCloseDocPreview()"
-                    class="text-slate-300 hover:text-white p-2 rounded-lg hover:bg-slate-700 transition-colors text-xl shrink-0" title="關閉">
-                <i class="fa-solid fa-xmark"></i>
+            <button onclick="window.docFloatClose()"
+                    class="text-slate-300 hover:text-white rounded hover:bg-slate-700 transition-colors shrink-0 flex items-center justify-center"
+                    style="min-width:36px;min-height:36px;" title="關閉">
+                <i class="fa-solid fa-xmark text-base"></i>
             </button>
         </div>
-        <!-- iframe 預覽區 -->
-        <div class="flex-1 relative bg-white">
-            <div id="sched-doc-loading" class="absolute inset-0 flex items-center justify-center bg-white z-10">
-                <div class="text-center text-slate-500">
-                    <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-400 mb-3"></i>
-                    <p class="text-sm font-bold">載入中，請稍候…</p>
-                    <p class="text-xs text-slate-400 mt-1">首次開啟 Google Docs 預覽需要幾秒鐘</p>
-                </div>
+        <!-- 載入中提示 -->
+        <div id="doc-float-loading"
+             class="absolute inset-0 flex items-center justify-center bg-white"
+             style="top:48px; z-index:5;">
+            <div class="text-center">
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-blue-400 mb-3 block"></i>
+                <p class="text-sm font-bold text-slate-500">載入中，請稍候…</p>
+                <p class="text-xs text-slate-400 mt-1">Google Docs 預覽約需數秒</p>
             </div>
-            <iframe id="sched-doc-iframe" src="about:blank"
-                    class="w-full h-full border-0"
-                    onload="document.getElementById('sched-doc-loading').style.display='none'">
-            </iframe>
         </div>
-        <!-- 底部提示 -->
-        <div class="bg-slate-800 text-slate-400 text-xs text-center py-2 shrink-0">
-            點擊「開新頁」可在 Google Docs 全螢幕查看 &nbsp;|&nbsp; 點右上角 <i class="fa-solid fa-xmark text-xs"></i> 關閉預覽
+        <!-- iframe 內容 -->
+        <iframe id="doc-float-iframe" src="about:blank" class="flex-1 w-full border-0"
+                onload="document.getElementById('doc-float-loading').style.display='none'"></iframe>
+        <!-- 底部拉伸把手 -->
+        <div id="doc-float-resize"
+             class="shrink-0 flex items-center justify-center bg-slate-100 hover:bg-purple-200 transition-colors"
+             style="cursor:s-resize; height:20px;">
+            <div class="w-10 h-1 bg-slate-400 rounded-full"></div>
         </div>
     </div>
 
-    <!-- 行程表文件上傳隱藏輸入 -->
+    <!-- 文件上傳隱藏輸入（行程表 & 詳情頁共用） -->
     <input type="file" id="sched-doc-file-input" accept=".docx,.doc,.pdf" class="hidden">
 
     <!-- LINE QR 浮動按鈕（在身障/中高齡工作區以外也可用） -->
