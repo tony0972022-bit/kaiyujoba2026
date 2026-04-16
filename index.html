@@ -1230,6 +1230,16 @@
     <!-- ===================== 成效驗收 模組 ===================== -->
     <div id="verify-module" class="hidden flex-1 flex flex-col overflow-hidden bg-slate-50">
 
+        <!-- 成效驗收子標籤列 -->
+        <div id="v-sub-tabs" class="bg-white border-b border-slate-200 flex shrink-0 no-print z-10">
+            <button class="v-sub-tab-btn flex-1 py-2.5 text-sm font-bold text-purple-600 border-b-2 border-purple-600" data-subtab="main" onclick="window.switchToVerifyMain()">
+                <i class="fa-solid fa-clipboard-check mr-1"></i> 驗收作業
+            </button>
+            <button class="v-sub-tab-btn flex-1 py-2.5 text-sm text-slate-500 hover:text-purple-500 transition-colors" data-subtab="schedule" onclick="window.switchToScheduleView()">
+                <i class="fa-solid fa-route mr-1"></i> 行程表
+            </button>
+        </div>
+
         <!-- 主視圖：匯入 + 儀表板 + 案件列表 -->
         <div id="verify-main" class="flex-1 overflow-y-auto">
             <div class="max-w-5xl mx-auto p-4 md:p-6 pb-24 space-y-6">
@@ -1321,6 +1331,40 @@
 
             </div>
         </div><!-- end verify-main -->
+
+        <!-- ===================== 行程表視圖 ===================== -->
+        <div id="verify-schedule" class="hidden flex-1 overflow-y-auto">
+            <div class="max-w-3xl mx-auto p-4 md:p-5 pb-28">
+
+                <!-- 日期導覽列 -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 mb-4 flex items-center gap-2">
+                    <button onclick="window.schedPrevDay()" class="text-slate-400 hover:text-purple-600 p-2 rounded-xl hover:bg-purple-50 transition-colors text-lg shrink-0">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <input type="date" id="sched-date-input"
+                           class="flex-1 min-w-0 p-2 border border-slate-200 rounded-xl text-base font-bold text-center text-slate-800 focus:ring-2 focus:ring-purple-400 bg-white"
+                           onchange="window.schedChangeDate(this.value)">
+                    <button onclick="window.schedNextDay()" class="text-slate-400 hover:text-purple-600 p-2 rounded-xl hover:bg-purple-50 transition-colors text-lg shrink-0">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                    <button onclick="window.schedToday()" class="bg-purple-100 text-purple-700 px-4 py-2 rounded-xl font-bold text-sm hover:bg-purple-200 transition-colors shrink-0 active:scale-95">
+                        今天
+                    </button>
+                </div>
+
+                <!-- 摘要 -->
+                <div id="sched-summary" class="text-sm font-bold text-slate-500 mb-3 px-1 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-info text-purple-400"></i>
+                    <span></span>
+                </div>
+
+                <!-- 行程卡片列表 -->
+                <div id="sched-list" class="space-y-3">
+                    <p class="text-center text-slate-400 py-10">請選擇日期</p>
+                </div>
+
+            </div>
+        </div><!-- end verify-schedule -->
 
         <!-- 詳情視圖（點選案件後顯示） -->
         <div id="verify-detail" class="hidden flex-1 flex flex-col overflow-hidden">
@@ -9248,6 +9292,8 @@ ${rawDraft}
             if (!c) return;
 
             document.getElementById('verify-main').classList.add('hidden');
+            document.getElementById('verify-schedule')?.classList.add('hidden');
+            document.getElementById('v-sub-tabs')?.classList.add('hidden');
             document.getElementById('verify-detail').classList.remove('hidden');
             document.getElementById('v-detail-title').textContent = `${c.clientName || '無姓名'} ｜ ${c.unit || ''}`;
 
@@ -9491,6 +9537,7 @@ ${rawDraft}
             currentVerifyCaseId = null;
             document.getElementById('verify-main').classList.remove('hidden');
             document.getElementById('verify-detail').classList.add('hidden');
+            document.getElementById('v-sub-tabs')?.classList.remove('hidden');
             vRenderDashboard(); vRenderCaseList();
         };
 
@@ -9574,6 +9621,396 @@ ${rawDraft}
             document.body.appendChild(a); a.click(); document.body.removeChild(a);
             URL.revokeObjectURL(url);
             showToast('工作站範本已下載');
+        };
+
+
+        // ==========================================
+        // 成效驗收 行程表 模組
+        // ==========================================
+
+        let scheduleData = {};         // { [dateStr]: { order: [...], entries: { key: { visitTime } } } }
+        let currentScheduleDate = '';
+        const schedAddrTimers = {};
+        const schedNotesTimers = {};
+
+        // 每筆案件/單位在行程表中的唯一 key
+        function schedKeyForCase(c) {
+            if (c.category === '身障') return 'dis_' + c.id;
+            return 'elder_' + (c.year || '') + '_SEP_' + (c.caseNo || c.unit || '');
+        }
+
+        // 根據 key 找回所有對應案件
+        function schedGetCasesForKey(key) {
+            return verifyData.cases.filter(c => schedKeyForCase(c) === key);
+        }
+
+        function getScheduleForDate(dateStr) {
+            if (!scheduleData[dateStr]) scheduleData[dateStr] = { order: [], entries: {} };
+            if (!scheduleData[dateStr].entries) scheduleData[dateStr].entries = {};
+            return scheduleData[dateStr];
+        }
+
+        async function loadScheduleFromFirebase(dateStr) {
+            if (!vCurrentUid || !db) return;
+            try {
+                const docRef = doc(db, 'users', vCurrentUid, 'scheduleData', dateStr);
+                const snap = await getDoc(docRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (!data.entries) data.entries = {};
+                    scheduleData[dateStr] = data;
+                }
+            } catch(e) { console.warn('loadScheduleFromFirebase', e); }
+        }
+
+        async function saveScheduleToFirebase(dateStr) {
+            if (!vCurrentUid || !db) return;
+            const data = scheduleData[dateStr];
+            if (!data) return;
+            try {
+                await setDoc(doc(db, 'users', vCurrentUid, 'scheduleData', dateStr), data);
+            } catch(e) { console.warn('saveScheduleToFirebase', e); }
+        }
+
+        function renderScheduleView() {
+            const dateStr = currentScheduleDate;
+            const container = document.getElementById('sched-list');
+            const summaryEl = document.getElementById('sched-summary');
+            if (!container) return;
+
+            function escH(s) {
+                return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+            }
+
+            if (!dateStr) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-10">請選擇日期</p>';
+                if (summaryEl) summaryEl.querySelector('span').textContent = '';
+                return;
+            }
+
+            const dayCases = verifyData.cases.filter(c => c.verificationDate === dateStr);
+
+            if (dayCases.length === 0) {
+                container.innerHTML = `<div class="text-center text-slate-400 py-10">
+                    <i class="fa-solid fa-calendar-xmark text-3xl mb-3 text-slate-300"></i>
+                    <p class="text-base font-bold">這天沒有安排驗收案件</p>
+                    <p class="text-sm mt-1">請在「驗收作業」頁面設定驗收日期</p>
+                </div>`;
+                if (summaryEl) summaryEl.querySelector('span').textContent = '此日無排程';
+                return;
+            }
+
+            const sched = getScheduleForDate(dateStr);
+
+            // ---- 建立群組 ----
+            const groups = new Map();
+            dayCases.forEach(c => {
+                const key = schedKeyForCase(c);
+                if (!groups.has(key)) {
+                    if (c.category === '身障') {
+                        groups.set(key, { type: '身障', cases: [c], name: c.clientName || '（無姓名）',
+                            unit: c.unit, contactPerson: c.contactPerson, unitPhone: c.unitPhone });
+                    } else {
+                        groups.set(key, { type: '中高勞通', cases: [c], name: c.unit || '（無單位）',
+                            unit: c.unit, contactPerson: c.contactPerson, unitPhone: c.unitPhone });
+                    }
+                } else {
+                    groups.get(key).cases.push(c);
+                }
+            });
+
+            // ---- 決定排列順序 ----
+            let keys = [...groups.keys()];
+            const stored = (sched.order || []).filter(k => keys.includes(k));
+            const newKeys = keys.filter(k => !stored.includes(k));
+            keys = [...stored, ...newKeys];
+            if (JSON.stringify(keys) !== JSON.stringify(sched.order || [])) {
+                sched.order = [...keys];
+                // 若有新案件加進來，儲存更新後的順序
+                saveScheduleToFirebase(dateStr);
+            }
+
+            // ---- 摘要 ----
+            const totalPeople = [...groups.values()].reduce((s, g) => s + g.cases.length, 0);
+            if (summaryEl) summaryEl.querySelector('span').textContent = `共 ${groups.size} 個地點，${totalPeople} 人`;
+
+            // ---- 渲染卡片 ----
+            container.innerHTML = keys.map((key, idx) => {
+                const g = groups.get(key);
+                const entry = (sched.entries || {})[key] || {};
+                const visitTime = entry.visitTime || '';
+                const cnt = g.cases.length;
+                // 取地址/備註（以第一筆 case 為主）
+                const repCase = verifyData.cases.find(c => schedKeyForCase(c) === key) || g.cases[0];
+                const addr  = repCase ? (repCase.address || '') : '';
+                const notes = repCase ? (repCase.notes  || '') : '';
+                const catBadge = g.type === '身障'
+                    ? '<span class="text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold">身障</span>'
+                    : '<span class="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold">中高勞通</span>';
+                const isFirst = idx === 0, isLast = idx === keys.length - 1;
+                const safeKey = escH(key);
+
+                return `<div class="sched-card bg-white rounded-2xl border border-slate-200 shadow-sm p-4" data-key="${safeKey}">
+                    <div class="flex items-start gap-3">
+                        <div class="sched-drag-handle text-slate-300 hover:text-purple-400 cursor-grab active:cursor-grabbing pt-0.5 text-xl shrink-0 select-none touch-none px-0.5" title="拖曳排序">
+                            <i class="fa-solid fa-grip-vertical"></i>
+                        </div>
+                        <div class="flex-1 min-w-0 space-y-2.5">
+                            <!-- 時間 + 名稱 + 標籤 -->
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <input type="time" class="border border-slate-200 rounded-lg px-2 py-1 text-base font-bold text-blue-700 bg-blue-50 focus:ring-2 focus:ring-blue-400 w-[7.5rem] shrink-0"
+                                       value="${escH(visitTime)}" data-key="${safeKey}"
+                                       onchange="window.schedSaveTime('${safeKey}', this.value)">
+                                <span class="font-bold text-slate-800 text-base">${escH(g.name)}</span>
+                                ${catBadge}
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">${cnt} 人</span>
+                            </div>
+                            <!-- 聯繫人 + 電話 -->
+                            ${(g.contactPerson || g.unitPhone) ? `<div class="flex items-center gap-4 flex-wrap text-sm text-slate-500">
+                                ${g.contactPerson ? `<span><i class="fa-solid fa-user text-xs mr-1 text-slate-300"></i>${escH(g.contactPerson)}</span>` : ''}
+                                ${g.unitPhone ? `<a href="tel:${escH(g.unitPhone)}" class="flex items-center gap-1.5 text-emerald-600 font-medium"><i class="fa-solid fa-phone text-xs text-emerald-400"></i>${escH(g.unitPhone)}</a>` : ''}
+                            </div>` : ''}
+                            <!-- 地址 -->
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-location-dot text-purple-300 text-sm shrink-0"></i>
+                                <input type="text" class="sched-addr-field flex-1 min-w-0 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400"
+                                       placeholder="輸入地址..." value="${escH(addr)}" data-key="${safeKey}"
+                                       oninput="window.schedDebounceSaveAddr('${safeKey}', this.value)">
+                                <button onclick="window.schedCopyAddr('${safeKey}')"
+                                        class="shrink-0 text-slate-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition-colors active:scale-90" title="複製地址，貼到 Google 導航">
+                                    <i class="fa-solid fa-copy text-sm"></i>
+                                </button>
+                            </div>
+                            <!-- 備註 -->
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-note-sticky text-slate-300 text-sm shrink-0 mt-2"></i>
+                                <textarea class="sched-notes-field flex-1 text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-400 resize-none"
+                                          placeholder="備註..." rows="1" data-key="${safeKey}"
+                                          oninput="autoResizeTextarea(this); window.schedDebounceSaveNotes('${safeKey}', this.value)">${escH(notes)}</textarea>
+                            </div>
+                        </div>
+                        <!-- 上移/下移 -->
+                        <div class="flex flex-col gap-0.5 shrink-0 pt-0.5">
+                            <button onclick="window.schedMoveUp('${safeKey}')"
+                                    class="p-1.5 rounded-lg transition-colors ${isFirst ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'}"
+                                    ${isFirst ? 'disabled' : ''} title="上移">
+                                <i class="fa-solid fa-chevron-up text-sm"></i>
+                            </button>
+                            <button onclick="window.schedMoveDown('${safeKey}')"
+                                    class="p-1.5 rounded-lg transition-colors ${isLast ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:text-purple-600 hover:bg-purple-50'}"
+                                    ${isLast ? 'disabled' : ''} title="下移">
+                                <i class="fa-solid fa-chevron-down text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            container.querySelectorAll('textarea').forEach(el => autoResizeTextarea(el));
+            schedInitDnD();
+        }
+
+        // ---- 存訪視時間（自動按時間排序）----
+        window.schedSaveTime = function(key, val) {
+            const dateStr = currentScheduleDate;
+            if (!dateStr) return;
+            const sched = getScheduleForDate(dateStr);
+            if (!sched.entries[key]) sched.entries[key] = {};
+            sched.entries[key].visitTime = val;
+            // 如果有時間則自動排序
+            if (val) {
+                sched.order = [...(sched.order || [])].sort((a, b) => {
+                    const ta = (sched.entries[a] || {}).visitTime || '99:99';
+                    const tb = (sched.entries[b] || {}).visitTime || '99:99';
+                    return ta.localeCompare(tb);
+                });
+                renderScheduleView();
+            }
+            saveScheduleToFirebase(dateStr);
+        };
+
+        // ---- 存地址（防抖 800ms）----
+        window.schedDebounceSaveAddr = function(key, val) {
+            clearTimeout(schedAddrTimers[key]);
+            schedAddrTimers[key] = setTimeout(() => {
+                schedGetCasesForKey(key).forEach(c => { c.address = val; });
+                saveVerifyData();
+            }, 800);
+        };
+
+        // ---- 存備註（防抖 800ms）----
+        window.schedDebounceSaveNotes = function(key, val) {
+            clearTimeout(schedNotesTimers[key]);
+            schedNotesTimers[key] = setTimeout(() => {
+                schedGetCasesForKey(key).forEach(c => { c.notes = val; });
+                saveVerifyData();
+            }, 800);
+        };
+
+        // ---- 複製地址 ----
+        window.schedCopyAddr = function(key) {
+            let val = '';
+            document.querySelectorAll('#sched-list .sched-addr-field').forEach(inp => {
+                if (inp.dataset.key === key) val = inp.value.trim();
+            });
+            if (!val) { showToast('⚠️ 請先填寫地址'); return; }
+            const doCopy = () => showToast('📋 地址已複製，可直接貼到 Google 導航！');
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(val).then(doCopy).catch(() => {
+                    const t = document.createElement('textarea');
+                    t.value = val; document.body.appendChild(t); t.select();
+                    document.execCommand('copy'); document.body.removeChild(t); doCopy();
+                });
+            } else {
+                const t = document.createElement('textarea');
+                t.value = val; document.body.appendChild(t); t.select();
+                document.execCommand('copy'); document.body.removeChild(t); doCopy();
+            }
+        };
+
+        // ---- 上移 / 下移 ----
+        window.schedMoveUp = function(key) {
+            const dateStr = currentScheduleDate;
+            if (!dateStr) return;
+            const order = getScheduleForDate(dateStr).order;
+            const idx = order.indexOf(key);
+            if (idx <= 0) return;
+            [order[idx-1], order[idx]] = [order[idx], order[idx-1]];
+            saveScheduleToFirebase(dateStr);
+            renderScheduleView();
+        };
+
+        window.schedMoveDown = function(key) {
+            const dateStr = currentScheduleDate;
+            if (!dateStr) return;
+            const order = getScheduleForDate(dateStr).order;
+            const idx = order.indexOf(key);
+            if (idx < 0 || idx >= order.length - 1) return;
+            [order[idx], order[idx+1]] = [order[idx+1], order[idx]];
+            saveScheduleToFirebase(dateStr);
+            renderScheduleView();
+        };
+
+        // ---- 拖曳排序（Pointer Events，相容 iPad）----
+        function schedInitDnD() {
+            const container = document.getElementById('sched-list');
+            if (!container) return;
+            let dragging = null;
+
+            container.querySelectorAll('.sched-drag-handle').forEach(handle => {
+                handle.addEventListener('pointerdown', e => {
+                    const card = handle.closest('.sched-card');
+                    if (!card) return;
+                    e.preventDefault();
+                    dragging = card;
+                    handle.setPointerCapture(e.pointerId);
+                    card.classList.add('opacity-50', 'ring-2', 'ring-purple-400', 'ring-offset-2');
+                });
+
+                handle.addEventListener('pointermove', e => {
+                    if (!dragging) return;
+                    e.preventDefault();
+                    // 清除舊的 drop 指示
+                    container.querySelectorAll('.sched-card').forEach(c => c.style.borderTop = '');
+                    const y = e.clientY;
+                    const targets = [...container.querySelectorAll('.sched-card')].filter(c => c !== dragging);
+                    let insertBefore = null;
+                    for (const t of targets) {
+                        const r = t.getBoundingClientRect();
+                        if (y < r.top + r.height * 0.5) { insertBefore = t; break; }
+                    }
+                    handle._insertBefore = insertBefore;
+                    if (insertBefore) insertBefore.style.borderTop = '3px solid #a855f7';
+                });
+
+                handle.addEventListener('pointerup', () => {
+                    if (!dragging) return;
+                    container.querySelectorAll('.sched-card').forEach(c => {
+                        c.style.borderTop = '';
+                        c.classList.remove('opacity-50', 'ring-2', 'ring-purple-400', 'ring-offset-2');
+                    });
+                    const ib = handle._insertBefore;
+                    if (ib && ib !== dragging) container.insertBefore(dragging, ib);
+                    else if (!ib) container.appendChild(dragging);
+                    // 更新 order
+                    const dateStr = currentScheduleDate;
+                    if (dateStr) {
+                        const sched = getScheduleForDate(dateStr);
+                        sched.order = [...container.querySelectorAll('.sched-card')].map(c => c.dataset.key);
+                        saveScheduleToFirebase(dateStr);
+                    }
+                    dragging = null;
+                    handle._insertBefore = null;
+                });
+
+                handle.addEventListener('pointercancel', () => {
+                    if (dragging) {
+                        dragging.classList.remove('opacity-50', 'ring-2', 'ring-purple-400', 'ring-offset-2');
+                        container.querySelectorAll('.sched-card').forEach(c => c.style.borderTop = '');
+                        dragging = null;
+                    }
+                });
+            });
+        }
+
+        // ---- 日期切換 ----
+        window.schedChangeDate = async function(dateStr) {
+            currentScheduleDate = dateStr;
+            if (dateStr) await loadScheduleFromFirebase(dateStr);
+            renderScheduleView();
+        };
+
+        function schedNavDay(delta) {
+            const input = document.getElementById('sched-date-input');
+            const base = input?.value || new Date().toISOString().split('T')[0];
+            const d = new Date(base + 'T00:00:00');
+            d.setDate(d.getDate() + delta);
+            const newDate = d.toISOString().split('T')[0];
+            if (input) input.value = newDate;
+            window.schedChangeDate(newDate);
+        }
+
+        window.schedPrevDay = () => schedNavDay(-1);
+        window.schedNextDay = () => schedNavDay(1);
+        window.schedToday = function() {
+            const today = new Date().toISOString().split('T')[0];
+            const input = document.getElementById('sched-date-input');
+            if (input) input.value = today;
+            window.schedChangeDate(today);
+        };
+
+        // ---- 子標籤切換 ----
+        function vUpdateSubTabsUI(active) {
+            document.querySelectorAll('.v-sub-tab-btn').forEach(btn => {
+                const on = btn.dataset.subtab === active;
+                btn.classList.toggle('text-purple-600', on);
+                btn.classList.toggle('border-b-2', on);
+                btn.classList.toggle('border-purple-600', on);
+                btn.classList.toggle('font-bold', on);
+                btn.classList.toggle('text-slate-500', !on);
+            });
+        }
+
+        window.switchToScheduleView = async function() {
+            document.getElementById('v-sub-tabs')?.classList.remove('hidden');
+            document.getElementById('verify-main').classList.add('hidden');
+            document.getElementById('verify-schedule')?.classList.remove('hidden');
+            document.getElementById('v-batch-bar')?.classList.add('hidden');
+            vUpdateSubTabsUI('schedule');
+            if (!currentScheduleDate) {
+                const today = new Date().toISOString().split('T')[0];
+                currentScheduleDate = today;
+                const input = document.getElementById('sched-date-input');
+                if (input) input.value = today;
+            }
+            await loadScheduleFromFirebase(currentScheduleDate);
+            renderScheduleView();
+        };
+
+        window.switchToVerifyMain = function() {
+            document.getElementById('verify-main').classList.remove('hidden');
+            document.getElementById('verify-schedule')?.classList.add('hidden');
+            vUpdateSubTabsUI('main');
         };
 
     </script>
