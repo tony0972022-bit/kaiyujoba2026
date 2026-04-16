@@ -113,6 +113,16 @@
         </div>
     </header>
 
+    <!-- 功能模組切換列 (登入後顯示) -->
+    <div id="module-tabs" class="hidden bg-slate-700 flex no-print z-10 shrink-0">
+        <button class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-white bg-slate-600 border-b-2 border-blue-400 transition-colors" data-module="visit">
+            <i class="fa-solid fa-stethoscope mr-1.5"></i> 訪視案件
+        </button>
+        <button class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-600 transition-colors" data-module="verify">
+            <i class="fa-solid fa-clipboard-check mr-1.5"></i> 成效驗收
+        </button>
+    </div>
+
     <!-- 主選單 Tabs -->
     <div id="main-tabs" class="bg-white shadow-sm flex no-print z-10 shrink-0">
         <button class="main-tab-btn flex-1 py-3 md:py-4 text-sm md:text-base font-bold text-blue-600 border-b-4 border-blue-600" data-target="list">
@@ -1216,6 +1226,114 @@
             </div>
         </div>
     </main>
+
+    <!-- ===================== 成效驗收 模組 ===================== -->
+    <div id="verify-module" class="hidden flex-1 flex flex-col overflow-hidden bg-slate-50">
+
+        <!-- 主視圖：匯入 + 儀表板 + 案件列表 -->
+        <div id="verify-main" class="flex-1 overflow-y-auto">
+            <div class="max-w-5xl mx-auto p-4 md:p-6 pb-24 space-y-6">
+
+                <!-- 匯入區 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-base text-slate-700 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-file-excel text-emerald-600 text-lg"></i> 匯入身障成效清單
+                        </h3>
+                        <p class="text-xs text-slate-500 mb-3">支援 .xlsx，自動讀取 JA、UH 工作表</p>
+                        <label class="flex items-center justify-center gap-2 w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 px-4 rounded-xl font-bold cursor-pointer text-center transition-colors active:scale-95">
+                            <i class="fa-solid fa-upload"></i> 選擇身障清單
+                            <input type="file" id="v-import-dis" accept=".xlsx" class="hidden">
+                        </label>
+                        <p id="v-import-dis-status" class="text-xs text-slate-400 mt-2 text-center">尚未匯入</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                        <h3 class="font-bold text-base text-slate-700 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-file-excel text-amber-600 text-lg"></i> 匯入中高勞通成效清單
+                        </h3>
+                        <p class="text-xs text-slate-500 mb-3">支援 .xlsx，自動讀取「工作表7」</p>
+                        <label class="flex items-center justify-center gap-2 w-full bg-amber-500 hover:bg-amber-600 text-white py-3 px-4 rounded-xl font-bold cursor-pointer text-center transition-colors active:scale-95">
+                            <i class="fa-solid fa-upload"></i> 選擇中高勞通清單
+                            <input type="file" id="v-import-elder" accept=".xlsx" class="hidden">
+                        </label>
+                        <p id="v-import-elder-status" class="text-xs text-slate-400 mt-2 text-center">尚未匯入</p>
+                    </div>
+                </div>
+
+                <!-- 儀表板 -->
+                <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-700 mb-5 border-b pb-3">
+                        <i class="fa-solid fa-chart-bar text-blue-500 mr-2"></i>驗收進度總覽
+                    </h2>
+                    <div class="grid grid-cols-3 gap-3 md:gap-5">
+                        <div class="bg-slate-50 border border-slate-200 p-4 md:p-6 rounded-xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.vFilterByStatus('pending')">
+                            <p class="text-xs md:text-sm font-bold text-slate-500 mb-2">📋 未驗收</p>
+                            <p class="text-3xl md:text-4xl font-black text-slate-600" id="v-count-pending">0</p>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-200 p-4 md:p-6 rounded-xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.vFilterByStatus('inProgress')">
+                            <p class="text-xs md:text-sm font-bold text-blue-700 mb-2">🔄 進行中</p>
+                            <p class="text-3xl md:text-4xl font-black text-blue-600" id="v-count-inprogress">0</p>
+                        </div>
+                        <div class="bg-emerald-50 border border-emerald-200 p-4 md:p-6 rounded-xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.vFilterByStatus('closed')">
+                            <p class="text-xs md:text-sm font-bold text-emerald-700 mb-2">✅ 結案</p>
+                            <p class="text-3xl md:text-4xl font-black text-emerald-600" id="v-count-closed">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 驗收作業區 -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-5 md:p-6 border-b border-slate-100">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                            <h2 class="text-lg font-bold text-slate-700">
+                                <i class="fa-solid fa-calendar-check text-purple-500 mr-2"></i>驗收作業區
+                            </h2>
+                        </div>
+                        <div class="flex flex-wrap gap-3 items-center">
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-bold text-slate-600 whitespace-nowrap">驗收日期：</label>
+                                <input type="date" id="v-date-picker" class="p-2 border border-slate-200 rounded-lg text-base focus:ring-2 focus:ring-purple-500 bg-white">
+                            </div>
+                            <button onclick="document.getElementById('v-date-picker').value=''; window.vRenderCaseList()" class="text-xs px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg font-bold border border-slate-200 transition-colors">
+                                清除日期
+                            </button>
+                            <select id="v-filter-status" class="p-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500">
+                                <option value="">全部狀態</option>
+                                <option value="pending">未驗收</option>
+                                <option value="inProgress">進行中</option>
+                                <option value="closed">結案</option>
+                            </select>
+                            <select id="v-filter-cat" class="p-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-purple-500">
+                                <option value="">全部類別</option>
+                                <option value="身障">身障</option>
+                                <option value="中高勞通">中高勞通</option>
+                            </select>
+                            <input type="text" id="v-search" placeholder="搜尋姓名或單位..." class="p-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 min-w-[140px]">
+                        </div>
+                    </div>
+                    <div id="v-case-list" class="p-4 space-y-3 min-h-[200px]">
+                        <p class="text-center text-slate-400 py-8">請匯入成效清單後開始驗收作業</p>
+                    </div>
+                </div>
+
+            </div>
+        </div><!-- end verify-main -->
+
+        <!-- 詳情視圖（點選案件後顯示） -->
+        <div id="verify-detail" class="hidden flex-1 flex flex-col overflow-hidden">
+            <div class="bg-purple-700 text-white px-4 py-3 flex items-center gap-3 shrink-0">
+                <button onclick="window.vBackToList()" class="text-white hover:text-purple-200 p-2 -ml-2 text-xl">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <h2 id="v-detail-title" class="font-bold text-lg flex-1 truncate">驗收紀錄</h2>
+                <button id="v-btn-close-case" onclick="window.vCloseCase()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors active:scale-95">
+                    <i class="fa-solid fa-check-circle mr-1"></i> 結案
+                </button>
+            </div>
+            <div id="v-detail-content" class="flex-1 overflow-y-auto p-4 md:p-6 pb-24 space-y-5 max-w-3xl mx-auto w-full"></div>
+        </div><!-- end verify-detail -->
+
+    </div><!-- end verify-module -->
 
     <!-- ================= 身障案件工作區（全螢幕，獨立於 main 之外） ================= -->
     <div id="view-dis-case" class="hidden fixed inset-0 bg-slate-100 z-50 flex flex-col">
@@ -2947,6 +3065,7 @@
                     renderDistrictOwnerOptions();
                     renderDistrictOptions();
                     loadCases();
+                    initModuleTabs(); // 顯示功能模組切換列
                 } else {
                     overlay.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
                     statusEl.innerHTML = '<i class="fa-solid fa-user-xmark"></i> 未登入';
@@ -8613,6 +8732,459 @@ ${rawDraft}
             XLSX.writeFile(wb, '單位人員清單範本.xlsx');
             showToast('人員清單範本已下載');
         };
+
+        // ================================================================
+        // 🆕 成效驗收 模組
+        // ================================================================
+        const VERIFY_KEY = 'verify_data_v2';
+        let verifyData = { cases: [] };
+        let currentVerifyCaseId = null;
+
+        function loadVerifyData() {
+            try {
+                const raw = localStorage.getItem(VERIFY_KEY);
+                if (raw) verifyData = JSON.parse(raw);
+                if (!Array.isArray(verifyData.cases)) verifyData.cases = [];
+            } catch(e) { verifyData = { cases: [] }; }
+        }
+
+        function saveVerifyData() {
+            try { localStorage.setItem(VERIFY_KEY, JSON.stringify(verifyData)); }
+            catch(e) { console.error('saveVerifyData error', e); }
+        }
+
+        function genVerifyId() {
+            return 'v_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        }
+
+        // ---- 模組切換 ----
+        let currentModule = localStorage.getItem('activeModule_v1') || 'visit';
+
+        function switchModule(mod) {
+            currentModule = mod;
+            localStorage.setItem('activeModule_v1', mod);
+            const isVerify = mod === 'verify';
+
+            document.getElementById('main-tabs').classList.toggle('hidden', isVerify);
+            document.getElementById('main-content').classList.toggle('hidden', isVerify);
+            document.getElementById('verify-module').classList.toggle('hidden', !isVerify);
+
+            document.querySelectorAll('.module-tab-btn').forEach(btn => {
+                const active = btn.dataset.module === mod;
+                btn.classList.toggle('bg-slate-600', active);
+                btn.classList.toggle('border-b-2', active);
+                btn.classList.toggle('border-blue-400', active);
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('text-slate-300', !active);
+            });
+
+            if (isVerify) {
+                vRenderDashboard();
+                vRenderCaseList();
+            }
+        }
+
+        document.querySelectorAll('.module-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchModule(btn.dataset.module));
+        });
+
+        function initModuleTabs() {
+            document.getElementById('module-tabs').classList.remove('hidden');
+            switchModule(currentModule);
+        }
+
+        // ---- Excel 匯入：身障 (JA + UH) ----
+        document.getElementById('v-import-dis').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const statusEl = document.getElementById('v-import-dis-status');
+            statusEl.textContent = '讀取中...';
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const wb = XLSX.read(ev.target.result, { type: 'array' });
+                    verifyData.cases = verifyData.cases.filter(c => c.category !== '身障');
+                    let count = 0;
+
+                    ['JA', 'UH', 'a'].forEach(sheetName => {
+                        const ws = wb.Sheets[sheetName];
+                        if (!ws) return;
+                        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                        if (rows.length < 2) return;
+
+                        for (let r = 1; r < rows.length; r++) {
+                            const row = rows[r];
+                            if (!row || row.every(c => !c)) continue;
+
+                            const caseNo      = String(row[4]  || '').trim();  // col5 編號
+                            const clientName  = String(row[5]  || '').trim();  // col6 姓名
+                            const unit        = String(row[14] || '').trim();  // col15 單位名稱
+                            const unitPhone   = String(row[17] || '').trim();  // col18 連絡電話
+                            // JA: 申請補助項目 col32 (idx31), UH: col30 (idx29)
+                            const itemName    = String(sheetName === 'UH' ? row[29] : row[31] || '').trim();
+
+                            if (!caseNo && !clientName) continue;
+
+                            let existing = verifyData.cases.find(c =>
+                                c.category === '身障' && c.caseNo === caseNo && c.clientName === clientName
+                            );
+                            if (!existing) {
+                                existing = {
+                                    id: genVerifyId(), category: '身障',
+                                    caseNo, clientName, unit, unitPhone,
+                                    clientPhone: '', address: '',
+                                    verificationDate: '', status: 'pending',
+                                    items: [], notes: ''
+                                };
+                                verifyData.cases.push(existing);
+                                count++;
+                            }
+                            if (itemName && !existing.items.some(i => i.name === itemName)) {
+                                existing.items.push({ name: itemName, improvement: '', feedback: '' });
+                            }
+                        }
+                    });
+
+                    saveVerifyData();
+                    statusEl.textContent = `已匯入 ${count} 筆身障案件`;
+                    if (currentModule === 'verify') { vRenderDashboard(); vRenderCaseList(); }
+                    showToast('身障成效清單匯入完成');
+                } catch(err) {
+                    statusEl.textContent = '匯入失敗：' + err.message;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            this.value = '';
+        });
+
+        // ---- Excel 匯入：中高勞通 (工作表7) ----
+        document.getElementById('v-import-elder').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const statusEl = document.getElementById('v-import-elder-status');
+            statusEl.textContent = '讀取中...';
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const wb = XLSX.read(ev.target.result, { type: 'array' });
+                    const ws = wb.Sheets['工作表7'];
+                    if (!ws) throw new Error('找不到「工作表7」，請確認檔案');
+                    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                    if (rows.length < 2) throw new Error('工作表為空');
+
+                    verifyData.cases = verifyData.cases.filter(c => c.category !== '中高勞通');
+                    let count = 0;
+
+                    for (let r = 1; r < rows.length; r++) {
+                        const row = rows[r];
+                        if (!row || row.every(c => !c)) continue;
+
+                        const caseNo     = String(row[6]  || '').trim();  // col7 編號
+                        const unit       = String(row[7]  || '').trim();  // col8 廠商名稱
+                        const unitPhone  = String(row[10] || '').trim();  // col11 連絡電話
+                        const clientName = String(row[30] || '').trim();  // col31 姓名
+                        const itemName   = String(row[36] || '').trim();  // col37 申請補助項目
+
+                        if (!caseNo && !clientName) continue;
+
+                        let existing = verifyData.cases.find(c =>
+                            c.category === '中高勞通' && c.caseNo === caseNo && c.clientName === clientName
+                        );
+                        if (!existing) {
+                            existing = {
+                                id: genVerifyId(), category: '中高勞通',
+                                caseNo, clientName, unit, unitPhone,
+                                clientPhone: '', address: '',
+                                verificationDate: '', status: 'pending',
+                                items: [], notes: ''
+                            };
+                            verifyData.cases.push(existing);
+                            count++;
+                        }
+                        if (itemName && !existing.items.some(i => i.name === itemName)) {
+                            existing.items.push({ name: itemName, improvement: '', feedback: '' });
+                        }
+                    }
+
+                    saveVerifyData();
+                    statusEl.textContent = `已匯入 ${count} 筆中高勞通案件`;
+                    if (currentModule === 'verify') { vRenderDashboard(); vRenderCaseList(); }
+                    showToast('中高勞通成效清單匯入完成');
+                } catch(err) {
+                    statusEl.textContent = '匯入失敗：' + err.message;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            this.value = '';
+        });
+
+        // ---- 儀表板 ----
+        function vRenderDashboard() {
+            const cases = verifyData.cases;
+            document.getElementById('v-count-pending').textContent   = cases.filter(c => c.status === 'pending').length;
+            document.getElementById('v-count-inprogress').textContent = cases.filter(c => c.status === 'inProgress').length;
+            document.getElementById('v-count-closed').textContent    = cases.filter(c => c.status === 'closed').length;
+        }
+
+        window.vFilterByStatus = function(status) {
+            document.getElementById('v-filter-status').value = status;
+            vRenderCaseList();
+        };
+
+        // ---- 案件列表 ----
+        function vRenderCaseList() {
+            const container = document.getElementById('v-case-list');
+            if (!container) return;
+            const dateVal      = document.getElementById('v-date-picker').value;
+            const statusFilter = document.getElementById('v-filter-status').value;
+            const catFilter    = document.getElementById('v-filter-cat').value;
+            const searchTerm   = (document.getElementById('v-search').value || '').trim().toLowerCase();
+
+            let cases = [...verifyData.cases];
+            if (dateVal)      cases = cases.filter(c => c.verificationDate === dateVal);
+            if (statusFilter) cases = cases.filter(c => c.status === statusFilter);
+            if (catFilter)    cases = cases.filter(c => c.category === catFilter);
+            if (searchTerm)   cases = cases.filter(c =>
+                (c.clientName || '').toLowerCase().includes(searchTerm) ||
+                (c.unit || '').toLowerCase().includes(searchTerm) ||
+                (c.caseNo || '').toLowerCase().includes(searchTerm)
+            );
+
+            if (verifyData.cases.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-8">請匯入成效清單後開始驗收作業</p>';
+                return;
+            }
+            if (cases.length === 0) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-8">無符合條件的案件</p>';
+                return;
+            }
+
+            const statusLabel = { pending: '未驗收', inProgress: '進行中', closed: '結案' };
+            const statusColor = {
+                pending:    'bg-slate-100 text-slate-600',
+                inProgress: 'bg-blue-100 text-blue-700',
+                closed:     'bg-emerald-100 text-emerald-700'
+            };
+            const catColor = {
+                '身障':   'bg-purple-100 text-purple-700',
+                '中高勞通': 'bg-amber-100 text-amber-800'
+            };
+
+            container.innerHTML = cases.map(c => `
+                <div class="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.99]"
+                     onclick="window.vOpenCase('${c.id}')">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs font-bold px-2 py-0.5 rounded ${catColor[c.category] || 'bg-slate-100 text-slate-600'}">${c.category}</span>
+                            <span class="text-xs font-bold px-2 py-0.5 rounded ${statusColor[c.status] || 'bg-slate-100 text-slate-600'}">${statusLabel[c.status] || c.status}</span>
+                            ${c.caseNo ? `<span class="text-xs text-slate-400 font-medium">${c.caseNo}</span>` : ''}
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-slate-300 shrink-0 mt-0.5 text-sm"></i>
+                    </div>
+                    <div class="font-bold text-slate-800 text-base mb-1">${c.clientName || '（無姓名）'}</div>
+                    <div class="text-sm text-slate-500 space-y-0.5">
+                        ${c.unit       ? `<div><i class="fa-solid fa-building text-xs mr-1.5 text-slate-300"></i>${c.unit}</div>` : ''}
+                        ${c.unitPhone  ? `<div><i class="fa-solid fa-phone text-xs mr-1.5 text-slate-300"></i>${c.unitPhone}</div>` : ''}
+                        ${c.clientPhone ? `<div><i class="fa-solid fa-mobile text-xs mr-1.5 text-slate-300"></i>個案：${c.clientPhone}</div>` : ''}
+                        ${c.address    ? `<div><i class="fa-solid fa-location-dot text-xs mr-1.5 text-slate-300"></i>${c.address}</div>` : ''}
+                        ${c.verificationDate ? `<div><i class="fa-solid fa-calendar text-xs mr-1.5 text-slate-300"></i>驗收日：${c.verificationDate}</div>` : ''}
+                    </div>
+                    ${c.items.length > 0 ? `
+                    <div class="mt-2 flex flex-wrap gap-1">
+                        ${c.items.map(it => `<span class="text-xs bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-slate-500 max-w-[200px] truncate" title="${it.name}">${it.name}</span>`).join('')}
+                    </div>` : ''}
+                </div>
+            `).join('');
+        }
+        window.vRenderCaseList = vRenderCaseList;
+
+        // 篩選器事件
+        ['v-date-picker','v-filter-status','v-filter-cat'].forEach(id => {
+            document.getElementById(id).addEventListener('change', vRenderCaseList);
+        });
+        document.getElementById('v-search').addEventListener('input', vRenderCaseList);
+
+        // ---- 改善效益選項 ----
+        const IMPROVEMENT_OPTIONS = [
+            '', '提高工作獨立性', '提升工作效率', '增加工作品質', '降低職災風險', '減少身體不適'
+        ];
+
+        // ---- 開啟案件詳情 ----
+        window.vOpenCase = function(caseId) {
+            currentVerifyCaseId = caseId;
+            const c = verifyData.cases.find(x => x.id === caseId);
+            if (!c) return;
+
+            document.getElementById('verify-main').classList.add('hidden');
+            document.getElementById('verify-detail').classList.remove('hidden');
+            document.getElementById('v-detail-title').textContent = `${c.clientName || '無姓名'} ｜ ${c.unit || ''}`;
+
+            // 更新結案按鈕
+            const btn = document.getElementById('v-btn-close-case');
+            if (c.status === 'closed') {
+                btn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 已結案';
+                btn.className = 'bg-slate-500 text-white px-4 py-2 rounded-xl font-bold text-sm cursor-default';
+                btn.onclick = null;
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-check-circle mr-1"></i> 結案';
+                btn.className = 'bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold text-sm transition-colors active:scale-95';
+                btn.onclick = window.vCloseCase;
+            }
+
+            const statusLabel = { pending: '未驗收', inProgress: '進行中', closed: '結案' };
+            const statusColor = { pending: 'text-slate-600 bg-slate-100', inProgress: 'text-blue-700 bg-blue-100', closed: 'text-emerald-700 bg-emerald-100' };
+            const catColor    = { '身障': 'text-purple-700 bg-purple-100', '中高勞通': 'text-amber-800 bg-amber-100' };
+
+            document.getElementById('v-detail-content').innerHTML = `
+                <!-- 基本資訊 -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <div class="flex items-center gap-2 mb-4 flex-wrap">
+                        <span class="text-xs font-bold px-2 py-0.5 rounded ${catColor[c.category] || ''}">${c.category}</span>
+                        <span class="text-xs font-bold px-2 py-0.5 rounded ${statusColor[c.status] || ''}">${statusLabel[c.status] || ''}</span>
+                        ${c.caseNo ? `<span class="text-xs text-slate-400 font-bold">${c.caseNo}</span>` : ''}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">單位名稱</label>
+                            <input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unit" value="${(c.unit||'').replace(/"/g,'&quot;')}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">單位電話</label>
+                            <input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="unitPhone" value="${(c.unitPhone||'').replace(/"/g,'&quot;')}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">個案姓名</label>
+                            <input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientName" value="${(c.clientName||'').replace(/"/g,'&quot;')}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">個案電話 <span class="text-slate-300 font-normal">(可自行填寫)</span></label>
+                            <input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientPhone" placeholder="個案手機或市話" value="${(c.clientPhone||'').replace(/"/g,'&quot;')}">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">地址 <span class="text-slate-300 font-normal">(可自行填寫)</span></label>
+                            <input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="address" placeholder="單位或個案地址" value="${(c.address||'').replace(/"/g,'&quot;')}">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1">成效驗收日 <span class="text-purple-500">=</span> 結案日</label>
+                            <input type="date" class="v-field w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="verificationDate" value="${c.verificationDate||''}">
+                        </div>
+                    </div>
+                    <button onclick="window.vSaveBasicInfo()" class="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold text-base transition-colors active:scale-[0.98]">
+                        <i class="fa-solid fa-floppy-disk mr-2"></i>儲存基本資料
+                    </button>
+                </div>
+
+                <!-- 補助品項與改善效益 -->
+                <div class="space-y-4">
+                    <h3 class="font-bold text-slate-700 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-purple-500 text-lg"></i> 補助品項與改善效益記錄
+                    </h3>
+                    ${c.items.length === 0
+                        ? '<div class="text-center text-slate-400 py-8 bg-white rounded-2xl border border-slate-200">此案件無補助品項資料</div>'
+                        : c.items.map((item, idx) => `
+                        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="font-bold text-base text-slate-800 flex items-center gap-2">
+                                    <i class="fa-solid fa-box-open text-purple-400"></i>
+                                    <span>${item.name || '（未命名品項）'}</span>
+                                </h4>
+                                <span class="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded">品項 ${idx+1}／${c.items.length}</span>
+                            </div>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5">改善效益</label>
+                                    <select class="w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400"
+                                            onchange="window.vSaveItemField(${idx}, 'improvement', this.value)">
+                                        ${IMPROVEMENT_OPTIONS.map(opt =>
+                                            `<option value="${opt}" ${item.improvement === opt ? 'selected' : ''}>${opt || '（請選擇改善效益）'}</option>`
+                                        ).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1.5">使用回饋</label>
+                                    <textarea class="w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400 resize-y"
+                                              rows="3" placeholder="記錄使用者的實際回饋、改善情況..."
+                                              onchange="window.vSaveItemField(${idx}, 'feedback', this.value)">${item.feedback || ''}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <!-- 整體備註 -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <label class="block text-sm font-bold text-slate-600 mb-2">整體備註</label>
+                    <textarea id="v-notes" class="w-full p-3 border border-slate-200 rounded-xl text-base bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400 resize-y"
+                              rows="3" placeholder="其他補充說明..."
+                              onchange="window.vSaveNotes(this.value)">${c.notes || ''}</textarea>
+                </div>
+            `;
+        };
+
+        window.vBackToList = function() {
+            currentVerifyCaseId = null;
+            document.getElementById('verify-main').classList.remove('hidden');
+            document.getElementById('verify-detail').classList.add('hidden');
+            vRenderDashboard();
+            vRenderCaseList();
+        };
+
+        window.vSaveBasicInfo = function() {
+            if (!currentVerifyCaseId) return;
+            const c = verifyData.cases.find(x => x.id === currentVerifyCaseId);
+            if (!c) return;
+            document.querySelectorAll('.v-field').forEach(el => {
+                const field = el.dataset.field;
+                if (field) c[field] = el.value;
+            });
+            // Auto-set status: if verificationDate set and was pending → inProgress
+            if (c.status === 'pending' && c.verificationDate) c.status = 'inProgress';
+            saveVerifyData();
+            showToast('已儲存');
+        };
+
+        window.vSaveItemField = function(idx, field, value) {
+            if (!currentVerifyCaseId) return;
+            const c = verifyData.cases.find(x => x.id === currentVerifyCaseId);
+            if (!c || !c.items[idx]) return;
+            c.items[idx][field] = value;
+            saveVerifyData();
+        };
+
+        window.vSaveNotes = function(value) {
+            if (!currentVerifyCaseId) return;
+            const c = verifyData.cases.find(x => x.id === currentVerifyCaseId);
+            if (!c) return;
+            c.notes = value;
+            saveVerifyData();
+        };
+
+        window.vCloseCase = function() {
+            if (!currentVerifyCaseId) return;
+            const c = verifyData.cases.find(x => x.id === currentVerifyCaseId);
+            if (!c) return;
+            if (!c.verificationDate) {
+                // Auto-fill today
+                c.verificationDate = new Date().toISOString().slice(0, 10);
+                const dateEl = document.querySelector('.v-field[data-field="verificationDate"]');
+                if (dateEl) dateEl.value = c.verificationDate;
+            }
+            c.status = 'closed';
+            saveVerifyData();
+            showToast('已結案');
+            const btn = document.getElementById('v-btn-close-case');
+            if (btn) {
+                btn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 已結案';
+                btn.className = 'bg-slate-500 text-white px-4 py-2 rounded-xl font-bold text-sm cursor-default';
+                btn.onclick = null;
+            }
+            // Update status label in title area if still open
+            const titleEl = document.getElementById('v-detail-title');
+            if (titleEl) titleEl.textContent = `${c.clientName || '無姓名'} ｜ ${c.unit || ''}`;
+        };
+
+        // ---- 初始化 verify 資料 ----
+        loadVerifyData();
 
         window.downloadWorkstationTemplate = function() {
             const lines = [
