@@ -116,11 +116,14 @@
 
     <!-- 功能模組切換列 (登入後顯示) -->
     <div id="module-tabs" class="hidden bg-slate-700 flex no-print z-10 shrink-0">
-        <button class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-white bg-slate-600 border-b-2 border-blue-400 transition-colors" data-module="visit">
+        <button id="btn-module-visit" class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-white bg-slate-600 border-b-2 border-blue-400 transition-colors" data-module="visit">
             <i class="fa-solid fa-stethoscope mr-1.5"></i> 訪視案件
         </button>
-        <button class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-600 transition-colors" data-module="verify">
+        <button id="btn-module-verify" class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-600 transition-colors" data-module="verify">
             <i class="fa-solid fa-clipboard-check mr-1.5"></i> 成效驗收
+        </button>
+        <button id="btn-module-itinerary" class="module-tab-btn flex-1 py-2.5 text-sm font-bold text-slate-300 hover:text-white hover:bg-slate-600 transition-colors" data-module="itinerary">
+            <i class="fa-solid fa-route mr-1.5"></i> 訪視行程表
         </button>
     </div>
 
@@ -1289,9 +1292,6 @@
                             <h2 class="text-lg font-bold text-slate-700">
                                 <i class="fa-solid fa-calendar-check text-purple-500 mr-2"></i>驗收作業區
                             </h2>
-                            <button id="btn-toggle-itinerary" onclick="window.vToggleItineraryMode()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-bold text-sm shadow-sm transition-colors flex items-center gap-2">
-                                <i class="fa-solid fa-route"></i> 切換行程表模式
-                            </button>
                         </div>
                         <div class="flex flex-wrap gap-3 items-center">
                             <div class="flex items-center gap-2">
@@ -1320,38 +1320,6 @@
                     </div>
                     <div id="v-case-list" class="p-4 space-y-3 min-h-[200px]">
                         <p class="text-center text-slate-400 py-8">請匯入成效清單後開始驗收作業</p>
-                    </div>
-                    <!-- 新增：行程表模式容器 -->
-                    <div id="v-itinerary-list" class="hidden p-4 space-y-3 min-h-[200px] bg-slate-50 relative">
-                        <div class="flex flex-col items-center justify-center py-8 text-slate-400">
-                            <i class="fa-solid fa-route text-4xl mb-3 text-slate-300"></i>
-                            <p>行程表模式下將只顯示符合「驗收日期」的案件。</p>
-                            <p class="text-sm">支援拖曳排序、一鍵複製地址與快速標記狀態！</p>
-                        </div>
-                    </div>
-                    
-                    <!-- 行程表備註/取消 Modal -->
-                    <div id="v-itinerary-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col">
-                            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                <h3 class="font-bold text-slate-700">更新行程狀態</h3>
-                                <button onclick="document.getElementById('v-itinerary-modal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-                            </div>
-                            <div class="p-5 flex-1 overflow-y-auto">
-                                <label class="block text-sm font-bold text-slate-600 mb-2">更改狀態：</label>
-                                <select id="v-iti-status-select" class="w-full p-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-400 mb-4">
-                                    <option value="pending">待訪視</option>
-                                    <option value="done">已訪視 (✓)</option>
-                                    <option value="cancelled">行程取消 (✗)</option>
-                                </select>
-                                <label class="block text-sm font-bold text-slate-600 mb-2">備註事項/取消原因：</label>
-                                <textarea id="v-iti-note-input" rows="3" class="w-full p-3 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-400 placeholder:text-slate-300" placeholder="填寫聯絡狀況或取消原因..."></textarea>
-                            </div>
-                            <div class="p-4 border-t border-slate-100 bg-slate-50 flex gap-2">
-                                <button onclick="document.getElementById('v-itinerary-modal').classList.add('hidden')" class="flex-1 bg-white border border-slate-200 text-slate-600 font-bold py-2.5 rounded-xl hover:bg-slate-50">取消</button>
-                                <button id="v-iti-save-btn" class="flex-1 bg-indigo-600 text-white font-bold py-2.5 rounded-xl hover:bg-indigo-700 shadow-sm">儲存</button>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
