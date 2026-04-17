@@ -1290,17 +1290,20 @@
                         <i class="fa-solid fa-chart-bar text-blue-500 mr-2"></i>驗收進度總覽
                     </h2>
                     <div class="grid grid-cols-3 gap-3 md:gap-5">
-                        <div class="bg-slate-50 border border-slate-200 p-4 md:p-6 rounded-xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.vFilterByStatus('pending')">
-                            <p class="text-xs md:text-sm font-bold text-slate-500 mb-2">📋 未驗收</p>
-                            <p class="text-3xl md:text-4xl font-black text-slate-600" id="v-count-pending">0</p>
+                        <div class="bg-slate-50 border border-slate-200 p-4 md:p-5 rounded-xl cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.vFilterByStatus('pending')">
+                            <p class="text-xs md:text-sm font-bold text-slate-500 mb-2 text-center">📋 未驗收</p>
+                            <p class="text-3xl md:text-4xl font-black text-slate-600 text-center mb-2" id="v-count-pending">0</p>
+                            <div id="v-count-pending-detail" class="space-y-0.5"></div>
                         </div>
-                        <div class="bg-blue-50 border border-blue-200 p-4 md:p-6 rounded-xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.vFilterByStatus('inProgress')">
-                            <p class="text-xs md:text-sm font-bold text-blue-700 mb-2">🔄 進行中</p>
-                            <p class="text-3xl md:text-4xl font-black text-blue-600" id="v-count-inprogress">0</p>
+                        <div class="bg-blue-50 border border-blue-200 p-4 md:p-5 rounded-xl cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.vFilterByStatus('inProgress')">
+                            <p class="text-xs md:text-sm font-bold text-blue-700 mb-2 text-center">🔄 進行中</p>
+                            <p class="text-3xl md:text-4xl font-black text-blue-600 text-center mb-2" id="v-count-inprogress">0</p>
+                            <div id="v-count-inprogress-detail" class="space-y-0.5"></div>
                         </div>
-                        <div class="bg-emerald-50 border border-emerald-200 p-4 md:p-6 rounded-xl text-center cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.vFilterByStatus('closed')">
-                            <p class="text-xs md:text-sm font-bold text-emerald-700 mb-2">✅ 結案</p>
-                            <p class="text-3xl md:text-4xl font-black text-emerald-600" id="v-count-closed">0</p>
+                        <div class="bg-emerald-50 border border-emerald-200 p-4 md:p-5 rounded-xl cursor-pointer hover:shadow-md transition-shadow active:scale-95" onclick="window.vFilterByStatus('closed')">
+                            <p class="text-xs md:text-sm font-bold text-emerald-700 mb-2 text-center">✅ 結案</p>
+                            <p class="text-3xl md:text-4xl font-black text-emerald-600 text-center mb-2" id="v-count-closed">0</p>
+                            <div id="v-count-closed-detail" class="space-y-0.5"></div>
                         </div>
                     </div>
                 </div>
@@ -3145,7 +3148,15 @@
                     renderDistrictOptions();
                     loadCases();
                     vCurrentUid = user.uid; // 成效驗收模組同步用
-                    vLoadFromFirestore().then(() => { migrateElderItemsToUnit(); if (currentModule === 'verify') { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); } });
+                    vLoadFromFirestore().then(() => {
+                        migrateElderItemsToUnit();
+                        if (currentModule === 'verify') {
+                            // 驗收日期篩選預設今日
+                            const dp = document.getElementById('v-date-picker');
+                            if (dp && !dp.value) dp.value = new Date().toISOString().slice(0, 10);
+                            vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList();
+                        }
+                    });
                     initModuleTabs(); // 顯示功能模組切換列
                 } else {
                     overlay.classList.remove('hidden', 'opacity-0', 'pointer-events-none');
@@ -8993,7 +9004,11 @@ ${rawDraft}
                 btn.classList.toggle('text-white', active);
                 btn.classList.toggle('text-slate-300', !active);
             });
-            if (isVerify) { vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList(); }
+            if (isVerify) {
+                const dp = document.getElementById('v-date-picker');
+                if (dp && !dp.value) dp.value = new Date().toISOString().slice(0, 10);
+                vRenderDashboard(); vPopulateYearFilter(); vRenderCaseList();
+            }
         }
 
         document.querySelectorAll('.module-tab-btn').forEach(btn => {
@@ -9194,9 +9209,26 @@ ${rawDraft}
         // ---- 儀表板 ----
         function vRenderDashboard() {
             const cases = verifyData.cases;
-            document.getElementById('v-count-pending').textContent    = cases.filter(c => c.status === 'pending').length;
-            document.getElementById('v-count-inprogress').textContent = cases.filter(c => c.status === 'inProgress').length;
-            document.getElementById('v-count-closed').textContent     = cases.filter(c => c.status === 'closed').length;
+            ['pending','inProgress','closed'].forEach(status => {
+                const sc = cases.filter(c => c.status === status);
+                const idMap = { pending:'v-count-pending', inProgress:'v-count-inprogress', closed:'v-count-closed' };
+                const el = document.getElementById(idMap[status]);
+                if (el) el.textContent = sc.length;
+
+                // 分類明細
+                const detailEl = document.getElementById(idMap[status] + '-detail');
+                if (!detailEl) return;
+                const disCnt   = sc.filter(c => c.category === '身障').length;
+                const elderArr = sc.filter(c => c.category === '中高勞通');
+                const elderUnits = new Set(elderArr.map(c => getUnitKey(c))).size;
+                const elderPpl   = elderArr.length;
+                const colorMap = { pending:'text-slate-500', inProgress:'text-blue-600', closed:'text-emerald-600' };
+                const col = colorMap[status];
+                let html = '';
+                if (disCnt > 0)   html += `<div class="flex items-center justify-between text-xs ${col}"><span class="text-slate-400"><i class="fa-solid fa-wheelchair mr-1 text-purple-400"></i>身障</span><span class="font-bold">${disCnt} 人</span></div>`;
+                if (elderPpl > 0) html += `<div class="flex items-center justify-between text-xs ${col}"><span class="text-slate-400"><i class="fa-solid fa-person-cane mr-1 text-amber-400"></i>中高勞通</span><span class="font-bold">${elderUnits} 家・${elderPpl} 人</span></div>`;
+                detailEl.innerHTML = html;
+            });
         }
 
         window.vFilterByStatus = function(status) {
@@ -9329,7 +9361,17 @@ ${rawDraft}
                                 </div>
                                 ${impChips.length > 0 ? `<div class="mt-1.5 flex flex-wrap gap-1">${impChips.slice(0,4).map(ch => `<span class="text-xs bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded text-purple-700">${ch}</span>`).join('')}</div>` : ''}
                             </div>
-                            <i class="fa-solid fa-chevron-right text-slate-300 shrink-0 mt-1 text-xs cursor-pointer" onclick="window.vOpenCase('${c.id}')"></i>
+                            <div class="flex flex-col items-end gap-1 shrink-0 ml-1">
+                                <i class="fa-solid fa-chevron-right text-slate-300 text-xs cursor-pointer" onclick="window.vOpenCase('${c.id}')"></i>
+                                <button onclick="event.stopPropagation(); window.vExportCaseExcel('${c.id}')" title="下載 Excel"
+                                    class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 px-1.5 py-0.5 rounded transition-colors" style="min-height:24px;">
+                                    <i class="fa-solid fa-file-excel"></i>
+                                </button>
+                                <button onclick="event.stopPropagation(); window.vDownloadPhotos('${c.id}')" title="下載照片"
+                                    class="text-xs bg-blue-50 hover:bg-blue-100 text-blue-500 border border-blue-200 px-1.5 py-0.5 rounded transition-colors" style="min-height:24px;">
+                                    <i class="fa-solid fa-images"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>`;
                 }).join('');
@@ -9387,7 +9429,13 @@ ${rawDraft}
                                         </div>
                                         ${impChips.length > 0 ? `<div class="flex flex-wrap gap-1 mt-0.5">${impChips.slice(0,3).map(ch => `<span class="text-xs bg-amber-50 border border-amber-200 px-1 py-0.5 rounded text-amber-700">${ch}</span>`).join('')}</div>` : ''}
                                     </div>
-                                    <i class="fa-solid fa-chevron-right text-slate-300 text-xs shrink-0"></i>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button onclick="event.stopPropagation(); window.vExportCaseExcel('${c.id}')" title="下載 Excel"
+                                            class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 px-1.5 py-0.5 rounded transition-colors">
+                                            <i class="fa-solid fa-file-excel"></i>
+                                        </button>
+                                        <i class="fa-solid fa-chevron-right text-slate-300 text-xs cursor-pointer"></i>
+                                    </div>
                                 </div>`;
                             }).join('')}
                         </div>
