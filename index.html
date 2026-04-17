@@ -9519,6 +9519,9 @@ ${rawDraft}
                                 <button onclick="window.vTakePhoto('${caseId}', ${idx})" class="w-20 h-20 bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-purple-50 hover:border-purple-400 hover:text-purple-500 transition-colors cursor-pointer shrink-0">
                                     <i class="fa-solid fa-camera text-xl"></i><span class="text-xs mt-1">拍照</span>
                                 </button>
+                                <button onclick="window.vPickPhoto('${caseId}', ${idx})" class="w-20 h-20 bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-500 transition-colors cursor-pointer shrink-0">
+                                    <i class="fa-solid fa-image text-xl"></i><span class="text-xs mt-1">選圖</span>
+                                </button>
                             </div>
                         </div>
                     </div>`;
@@ -9565,7 +9568,14 @@ ${rawDraft}
                             <div><label class="block text-xs font-bold text-slate-500 mb-1">個案姓名</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientName" value="${(c.clientName||'').replace(/"/g,'&quot;')}"></div>
                             <div><label class="block text-xs font-bold text-slate-500 mb-1">個案電話</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="clientPhone" placeholder="個案手機或市話" value="${(c.clientPhone||'').replace(/"/g,'&quot;')}"></div>
                             <div><label class="block text-xs font-bold text-slate-500 mb-1">地址</label><input type="text" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="address" placeholder="單位或個案地址" value="${(c.address||'').replace(/"/g,'&quot;')}"></div>
-                            <div class="sm:col-span-2"><label class="block text-xs font-bold text-slate-500 mb-1">成效驗收日 <span class="text-purple-500">=</span> 結案日</label><input type="date" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="verificationDate" value="${c.verificationDate||''}"></div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">驗收狀態</label>
+                                <select class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="status" onchange="window.vOnStatusChange(this.value)">
+                                    <option value="pending" ${c.status==='pending'?'selected':''}>未驗收</option>
+                                    <option value="inProgress" ${c.status==='inProgress'?'selected':''}>進行中</option>
+                                    <option value="closed" ${c.status==='closed'?'selected':''}>結案</option>
+                                </select>
+                            </div>
+                            <div><label class="block text-xs font-bold text-slate-500 mb-1">成效驗收日 <span class="text-purple-500">=</span> 結案日</label><input type="date" class="v-field w-full p-3 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-400" data-field="verificationDate" value="${c.verificationDate||''}"></div>
                         </div>
 
                         <!-- 訪視評估表上傳區（在基本資料展開內） -->
@@ -9650,28 +9660,37 @@ ${rawDraft}
         };
 
         // ---- 照片功能 ----
+        // 共用的照片處理核心（身障品項）
+        function _vProcessCasePhoto(caseId, itemIdx, file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(ev) {
+                const compressed = await vCompressPhoto(ev.target.result, 800, 0.75);
+                const photoId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5);
+                const c = verifyData.cases.find(x => x.id === caseId);
+                if (!c || !c.items[itemIdx]) return;
+                const fn = `${c.unit||'單位'}_${c.clientName||'姓名'}_${c.verificationDate||new Date().toISOString().slice(0,10)}_成效驗收_品項${itemIdx+1}_${photoId.slice(-4)}.jpg`;
+                c.items[itemIdx].photos.push({ id: photoId, filename: fn, url: '' });
+                vSavePhotoData(photoId, compressed);
+                saveVerifyData();
+                vSyncCasePhotos(caseId);
+                window.vOpenCase(caseId);
+                showToast('照片已儲存');
+            };
+            reader.readAsDataURL(file);
+        }
         window.vTakePhoto = function(caseId, itemIdx) {
             const input = document.createElement('input');
             input.type = 'file'; input.accept = 'image/*'; input.capture = 'environment';
-            input.onchange = async function() {
-                const file = input.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = async function(ev) {
-                    const compressed = await vCompressPhoto(ev.target.result, 800, 0.75);
-                    const photoId = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5);
-                    const c = verifyData.cases.find(x => x.id === caseId);
-                    if (!c || !c.items[itemIdx]) return;
-                    const fn = `${c.unit||'單位'}_${c.clientName||'姓名'}_${c.verificationDate||new Date().toISOString().slice(0,10)}_成效驗收_品項${itemIdx+1}_${photoId.slice(-4)}.jpg`;
-                    c.items[itemIdx].photos.push({ id: photoId, filename: fn, url: '' });
-                    vSavePhotoData(photoId, compressed);
-                    saveVerifyData();
-                    vSyncCasePhotos(caseId);
-                    window.vOpenCase(caseId);
-                    showToast('照片已儲存');
-                };
-                reader.readAsDataURL(file);
-            };
+            input.onchange = function() { _vProcessCasePhoto(caseId, itemIdx, input.files[0]); };
+            input.click();
+        };
+
+        // 選圖（不強制開相機，從相簿/檔案選）
+        window.vPickPhoto = function(caseId, itemIdx) {
+            const input = document.createElement('input');
+            input.type = 'file'; input.accept = 'image/*'; // 無 capture 屬性 → 開檔案選擇器
+            input.onchange = function() { _vProcessCasePhoto(caseId, itemIdx, input.files[0]); };
             input.click();
         };
 
@@ -9934,6 +9953,15 @@ ${rawDraft}
             c.notes = value; saveVerifyData();
         };
 
+        window.vOnStatusChange = function(newStatus) {
+            if (newStatus === 'inProgress') {
+                const dateEl = document.querySelector('.v-field[data-field="verificationDate"]');
+                if (dateEl && !dateEl.value) {
+                    dateEl.value = new Date().toISOString().slice(0, 10);
+                }
+            }
+        };
+
         window.vCloseCase = function() {
             if (!currentVerifyCaseId) return;
             const c = verifyData.cases.find(x => x.id === currentVerifyCaseId);
@@ -9943,9 +9971,10 @@ ${rawDraft}
                 const dateEl = document.querySelector('.v-field[data-field="verificationDate"]');
                 if (dateEl) dateEl.value = c.verificationDate;
             }
-            c.status = 'closed'; saveVerifyData(); showToast('已結案');
+            c.status = 'closed'; saveVerifyData();
             const btn = document.getElementById('v-btn-close-case');
             if (btn) { btn.innerHTML = '<i class="fa-solid fa-lock mr-1"></i> 已結案'; btn.className = 'bg-slate-500 text-white px-3 py-1.5 rounded-xl font-bold text-sm cursor-default'; btn.onclick = null; }
+            showToast('已結案');
         };
 
         // ---- 初始化 verify 資料 ----
@@ -10926,6 +10955,10 @@ ${rawDraft}
                                         class="w-20 h-20 bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-amber-50 hover:border-amber-400 hover:text-amber-500 transition-colors cursor-pointer shrink-0">
                                     <i class="fa-solid fa-camera text-xl"></i><span class="text-xs mt-1">拍照</span>
                                 </button>
+                                <button onclick="window.vPickUnitItemPhoto('${escH(unitKey)}',${idx})"
+                                        class="w-20 h-20 bg-slate-100 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-500 transition-colors cursor-pointer shrink-0">
+                                    <i class="fa-solid fa-image text-xl"></i><span class="text-xs mt-1">選圖</span>
+                                </button>
                             </div>
                         </div>
                     </div>`;
@@ -11025,29 +11058,37 @@ ${rawDraft}
             }
             saveUnitItems(uk);
         };
+        // 共用核心（單位品項照片）
+        function _vProcessUnitItemPhoto(uk, idx, file) {
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(ev) {
+                const compressed = await vCompressPhoto(ev.target.result, 800, 0.75);
+                const photoId = 'up_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
+                const items = getUnitItemsList(uk);
+                if (!items[idx]) return;
+                const uCases = getUnitCasesForKey(uk);
+                const ref = uCases[0]||{};
+                const fn = `${ref.unit||'單位'}_品項${idx+1}_${photoId.slice(-4)}.jpg`;
+                items[idx].photos = items[idx].photos||[];
+                items[idx].photos.push({ id:photoId, filename:fn, url:'' });
+                vSavePhotoData(photoId, compressed);
+                saveUnitItems(uk);
+                window.vOpenUnitItems(uk);
+                showToast('照片已儲存');
+            };
+            reader.readAsDataURL(file);
+        }
         window.vTakeUnitItemPhoto = function(uk, idx) {
             const input = document.createElement('input');
             input.type='file'; input.accept='image/*'; input.capture='environment';
-            input.onchange = async function() {
-                const file = input.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = async function(ev) {
-                    const compressed = await vCompressPhoto(ev.target.result, 800, 0.75);
-                    const photoId = 'up_'+Date.now()+'_'+Math.random().toString(36).slice(2,5);
-                    const items = getUnitItemsList(uk);
-                    if (!items[idx]) return;
-                    const uCases = getUnitCasesForKey(uk);
-                    const ref = uCases[0]||{};
-                    const fn = `${ref.unit||'單位'}_品項${idx+1}_${photoId.slice(-4)}.jpg`;
-                    items[idx].photos = items[idx].photos||[];
-                    items[idx].photos.push({ id:photoId, filename:fn, url:'' });
-                    vSavePhotoData(photoId, compressed);
-                    saveUnitItems(uk);
-                    window.vOpenUnitItems(uk);
-                    showToast('照片已儲存');
-                };
-                reader.readAsDataURL(file);
-            };
+            input.onchange = function() { _vProcessUnitItemPhoto(uk, idx, input.files[0]); };
+            input.click();
+        };
+        window.vPickUnitItemPhoto = function(uk, idx) {
+            const input = document.createElement('input');
+            input.type='file'; input.accept='image/*'; // 無 capture → 開相簿/檔案選擇器
+            input.onchange = function() { _vProcessUnitItemPhoto(uk, idx, input.files[0]); };
             input.click();
         };
         window.vDeleteUnitItemPhoto = function(uk, idx, photoId) {
